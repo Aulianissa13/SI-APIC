@@ -12,60 +12,41 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
 
 <style>
     /* Override Font Bawaan */
-    body, .h1, .h2, .h3, .h4, .h5, .h6 {
-        font-family: 'Roboto', sans-serif !important;
-    }
+    body, .h1, .h2, .h3, .h4, .h5, .h6 { font-family: 'Roboto', sans-serif !important; }
 
-    /* Styling Label Form agar lebih profesional */
+    /* Styling Label Form */
     .form-label-pro {
-        font-size: 0.75rem;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-        color: #5a5c69;
-        margin-bottom: 5px;
+        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+        letter-spacing: 0.05em; color: #5a5c69; margin-bottom: 5px;
     }
 
-    /* Input Field yang lebih lega */
+    /* Input Field */
     .form-control-pro {
-        border-radius: 4px; /* Sudut sedikit kotak */
-        border: 1px solid #d1d3e2;
-        padding: 10px 15px; /* Lebih tinggi */
-        height: auto;
-        font-size: 0.95rem;
-        color: #333;
+        border-radius: 4px; border: 1px solid #d1d3e2; padding: 10px 15px;
+        height: auto; font-size: 0.95rem; color: #333;
     }
-
     .form-control-pro:focus {
-        border-color: #006B3F; /* Warna Hijau saat diklik */
-        box-shadow: 0 0 0 0.2rem rgba(0, 107, 63, 0.25);
+        border-color: #006B3F; box-shadow: 0 0 0 0.2rem rgba(0, 107, 63, 0.25);
     }
 
-    /* Input Readonly (Abu-abu soft) */
+    /* Readonly */
     .bg-readonly {
-        background-color: #f8f9fc !important;
-        color: #6e707e;
-        border: 1px solid #e3e6f0;
-        cursor: not-allowed;
+        background-color: #f8f9fc !important; color: #6e707e;
+        border: 1px solid #e3e6f0; cursor: not-allowed;
     }
 
     /* Card Header Hijau PN */
-    .card-header-pro {
-        background-color: #006B3F;
-        color: white;
-        padding: 15px 20px;
-    }
+    .card-header-pro { background-color: #006B3F; color: white; padding: 15px 20px; }
 
     /* Divider Section */
     .section-title {
-        border-bottom: 2px solid #006B3F;
-        padding-bottom: 5px;
-        margin-bottom: 20px;
-        margin-top: 10px;
-        color: #006B3F;
-        font-weight: 700;
-        font-size: 1.1rem;
+        border-bottom: 2px solid #006B3F; padding-bottom: 5px; margin-bottom: 20px;
+        margin-top: 10px; color: #006B3F; font-weight: 700; font-size: 1.1rem;
     }
+
+    /* Efek Transparan untuk Box Kuota yang tidak aktif */
+    .quota-box { transition: all 0.3s; opacity: 0.5; filter: grayscale(100%); }
+    .quota-active { opacity: 1 !important; filter: grayscale(0%) !important; transform: scale(1.02); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
 </style>
 
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
@@ -76,53 +57,34 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
 <div class="row">
 
     <div class="col-lg-4 mb-4">
-        
         <div class="card shadow-sm mb-4" style="border-top: 5px solid #d4af37;">
-            
             <div class="card-body text-center pb-2">
                 <div class="mb-3 mx-auto shadow-sm" style="width: 100px; height: 100px; border-radius: 50%; overflow: hidden; border: 4px solid #d4af37; padding: 2px;">
                     <img src="assets/img/undraw_profile.svg" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
                 </div>
-                
                 <h5 class="font-weight-bold text-dark mb-1"><?php echo $user['nama_lengkap']; ?></h5>
-                <span class="badge badge-light border px-3 py-1 text-muted" style="font-size: 0.8rem;">
-                    NIP. <?php echo $user['nip']; ?>
-                </span>
+                <span class="badge badge-light border px-3 py-1 text-muted">NIP. <?php echo $user['nip']; ?></span>
             </div>
 
             <hr class="mx-4 my-2">
 
             <div class="card-body pt-1">
-                
-                <h6 class="font-weight-bold text-center mb-3" style="color: #006B3F; font-size: 0.8rem; letter-spacing: 1px;">
-                    STATUS KUOTA CUTI
-                </h6>
+                <h6 class="font-weight-bold text-center mb-3" style="color: #006B3F; font-size: 0.8rem; letter-spacing: 1px;">STATUS KUOTA CUTI</h6>
                 
                 <div class="row no-gutters mb-3">
-                    
-                    <div class="col-6 pr-2">
-                        <div class="p-3 rounded text-center h-100 d-flex flex-column justify-content-center" 
+                    <div class="col-12">
+                        <div id="box-tahunan" class="quota-box p-3 rounded text-center d-flex flex-column justify-content-center" 
                              style="background-color: #f0fdf4; border: 1px solid #006B3F;">
-                            <small class="text-uppercase font-weight-bold" style="color: #006B3F; font-size: 0.65rem;">Tahun Ini (N)</small>
+                            <small class="text-uppercase font-weight-bold" style="color: #006B3F; font-size: 0.65rem;">Sisa Cuti Tahunan (N)</small>
                             <h2 class="font-weight-bold mb-0 mt-1" style="color: #006B3F;"><?php echo $user['sisa_cuti_n']; ?></h2>
                             <small class="text-muted" style="font-size: 0.7rem;">Hari</small>
+                            <input type="hidden" id="max_tahunan" value="<?php echo $user['sisa_cuti_n']; ?>">
                         </div>
                     </div>
-
-                    <div class="col-6 pl-2">
-                        <div class="p-3 rounded text-center h-100 d-flex flex-column justify-content-center" 
-                             style="background-color: #fffdf0; border: 1px dashed #d4af37;">
-                            <small class="text-uppercase font-weight-bold" style="color: #bfa12f; font-size: 0.65rem;">Tahun Lalu</small>
-                            <h2 class="font-weight-bold mb-0 mt-1" style="color: #d4af37;"><?php echo $user['sisa_cuti_n1']; ?></h2>
-                            <small class="text-muted" style="font-size: 0.7rem;">Hari</small>
-                        </div>
-                    </div>
-
                 </div>
 
-                <div class="rounded p-3 d-flex align-items-center justify-content-between shadow-sm" 
+                <div id="box-sakit" class="quota-box rounded p-3 d-flex align-items-center justify-content-between shadow-sm" 
                      style="background: rgb(0,107,63); background: linear-gradient(135deg, rgba(0,107,63,1) 0%, rgba(0,77,45,1) 100%); color: white;">
-                    
                     <div class="d-flex align-items-center">
                         <div class="bg-white rounded-circle d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px; color: #006B3F;">
                             <i class="fas fa-briefcase-medical"></i>
@@ -132,11 +94,14 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
                             <small style="opacity: 0.8; font-size: 0.7rem;">Kuota Tersedia</small>
                         </div>
                     </div>
-                    
                     <div class="text-right">
                         <span class="h4 font-weight-bold mb-0"><?php echo $user['kuota_cuti_sakit']; ?></span>
+                        <input type="hidden" id="max_sakit" value="<?php echo $user['kuota_cuti_sakit']; ?>">
                     </div>
+                </div>
 
+                <div id="box-unlimited" class="mt-3 text-center alert alert-info" style="display: none; font-size: 0.8rem;">
+                    <i class="fas fa-info-circle"></i> Jenis cuti ini <b>TIDAK</b> memotong kuota tahunan.
                 </div>
 
             </div>
@@ -155,7 +120,7 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
             </div>
             <div class="card-body px-4 py-4">
                 
-                <form action="pages/user/proses_cuti.php" method="POST">
+                <form action="pages/user/proses_cuti.php" method="POST" id="formCuti">
                     <input type="hidden" name="id_user" value="<?php echo $user['id_user']; ?>">
 
                     <div class="section-title">A. DATA PEGAWAI</div>
@@ -202,10 +167,10 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
 
                     <div class="form-group">
                         <label class="form-label-pro">Jenis Cuti yang Diambil</label>
-                        <select name="id_jenis" class="form-control form-control-pro" required>
-                            <option value="">-- Silakan Pilih --</option>
+                        <select name="id_jenis" id="jenis_cuti" class="form-control form-control-pro" required onchange="cekJenisCuti()">
+                            <option value="" data-nama="">-- Silakan Pilih --</option>
                             <?php while($j = mysqli_fetch_array($query_jenis)) { ?>
-                                <option value="<?php echo $j['id_jenis']; ?>">
+                                <option value="<?php echo $j['id_jenis']; ?>" data-nama="<?php echo strtolower($j['nama_jenis']); ?>">
                                     <?php echo $j['nama_jenis']; ?>
                                 </option>
                             <?php } ?>
@@ -226,6 +191,10 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
                             <input type="text" name="lama_hari" id="lama_hari" class="form-control form-control-pro bg-readonly" readonly placeholder="0 Hari">
                         </div>
                     </div>
+                    
+                    <div id="alert-kuota" class="alert alert-danger text-center font-weight-bold" style="display:none; font-size: 0.85rem;">
+                        <i class="fas fa-exclamation-triangle"></i> Durasi pengajuan melebihi sisa kuota Anda!
+                    </div>
 
                     <div class="form-group">
                         <label class="form-label-pro">Alasan Cuti</label>
@@ -244,7 +213,7 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
                             <a href="index.php" class="btn btn-secondary btn-block py-2">Batal</a>
                         </div>
                         <div class="col-md-6">
-                            <button type="submit" class="btn btn-success btn-block py-2 font-weight-bold" style="background-color: #006B3F; border-color: #006B3F;">
+                            <button type="submit" id="btnSubmit" class="btn btn-success btn-block py-2 font-weight-bold" style="background-color: #006B3F; border-color: #006B3F;">
                                 <i class="fas fa-save mr-2"></i> Simpan & Cetak Formulir
                             </button>
                         </div>
@@ -258,46 +227,118 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
 </div>
 
 <script>
-    // Panggil fungsi saat tanggal diubah
-    document.getElementById("tgl_mulai").addEventListener("change", hitungHariKerja);
-    document.getElementById("tgl_selesai").addEventListener("change", hitungHariKerja);
+    // 1. EVENT LISTENER
+    document.getElementById("tgl_mulai").addEventListener("change", updateKalkulasi);
+    document.getElementById("tgl_selesai").addEventListener("change", updateKalkulasi);
+    document.getElementById("jenis_cuti").addEventListener("change", updateKalkulasi);
 
-    function hitungHariKerja() {
+    // 2. FUNGSI UTAMA (Menghitung hari & Cek Kuota)
+    function updateKalkulasi() {
         var tglMulai = document.getElementById("tgl_mulai").value;
         var tglSelesai = document.getElementById("tgl_selesai").value;
         var outputHari = document.getElementById("lama_hari");
+        
+        // Ambil Jenis Cuti
+        var selectBox = document.getElementById("jenis_cuti");
+        var selectedOption = selectBox.options[selectBox.selectedIndex];
+        var namaJenis = selectedOption.getAttribute('data-nama') || ""; // "cuti tahunan", "cuti sakit", dll
 
-        // Pastikan kedua tanggal sudah dipilih
-        if (tglMulai != "" && tglSelesai != "") {
-            
-            var date1 = new Date(tglMulai);
-            var date2 = new Date(tglSelesai);
+        // UI: Highlight Box Kuota yang Relevan
+        highlightBox(namaJenis);
 
-            if (date2 < date1) {
-                alert("Tanggal Selesai tidak boleh mundur dari Tanggal Mulai!");
-                document.getElementById("tgl_selesai").value = ""; // Reset tanggal selesai
-                outputHari.value = "";
-                return;
+        // Jika tanggal belum lengkap, stop
+        if (tglMulai == "" || tglSelesai == "") {
+            outputHari.value = "";
+            return;
+        }
+
+        var date1 = new Date(tglMulai);
+        var date2 = new Date(tglSelesai);
+
+        // Validasi Mundur
+        if (date2 < date1) {
+            alert("Tanggal Selesai tidak boleh mundur dari Tanggal Mulai!");
+            document.getElementById("tgl_selesai").value = "";
+            outputHari.value = "";
+            return;
+        }
+
+        // HITUNG HARI (LOGIKA KERJA)
+        // Catatan: Cuti Melahirkan biasanya kalender (termasuk sabtu minggu), 
+        // tapi Cuti Tahunan hanya hari kerja. 
+        // Agar aman & standar, sistem default hitung HARI KERJA (Senin-Jumat).
+        // Jika Cuti Melahirkan, Admin bisa maklum jika hitungannya beda, atau manual adjust.
+        
+        var count = 0;
+        var curDate = new Date(date1.getTime());
+
+        while (curDate <= date2) {
+            var dayOfWeek = curDate.getDay();
+            // 0=Minggu, 6=Sabtu (Skip Sabtu Minggu)
+            if(dayOfWeek !== 0 && dayOfWeek !== 6) {
+                count++;
             }
+            curDate.setDate(curDate.getDate() + 1);
+        }
 
-            var count = 0;
-            var curDate = new Date(date1.getTime()); // Copy tanggal mulai
+        // Tampilkan Hasil Hari
+        outputHari.value = count;
 
-            while (curDate <= date2) {
-                var dayOfWeek = curDate.getDay();
-                
-                // 0 = Minggu, 6 = Sabtu
-                // Jika BUKAN Sabtu (6) dan BUKAN Minggu (0), maka hitung
-                if(dayOfWeek !== 0 && dayOfWeek !== 6) {
-                    count++;
-                }
-                
-                // Maju ke hari berikutnya
-                curDate.setDate(curDate.getDate() + 1);
-            }
+        // 3. VALIDASI KUOTA (CRITICAL PART)
+        validasiStok(namaJenis, count);
+    }
 
-            // Tampilkan hasil ke input readonly
-            outputHari.value = count;
+    // Fungsi Mengatur Tampilan Box Kuota
+    function highlightBox(jenis) {
+        var boxTahunan = document.getElementById("box-tahunan");
+        var boxSakit = document.getElementById("box-sakit");
+        var boxUnlimited = document.getElementById("box-unlimited");
+
+        // Reset semua ke redup dulu
+        boxTahunan.classList.remove("quota-active");
+        boxSakit.classList.remove("quota-active");
+        boxUnlimited.style.display = "none";
+
+        if (jenis.includes("tahunan")) {
+            boxTahunan.classList.add("quota-active");
+        } else if (jenis.includes("sakit")) {
+            boxSakit.classList.add("quota-active");
+        } else if (jenis !== "") {
+            // Jenis lain (Melahirkan, Besar, dll) -> Tampilkan pesan Unlimited
+            boxUnlimited.style.display = "block";
+        }
+    }
+
+    // Fungsi Cek Stok vs Input
+    function validasiStok(jenis, lamaHari) {
+        var btnSubmit = document.getElementById("btnSubmit");
+        var alertKuota = document.getElementById("alert-kuota");
+        
+        var maxStok = 999; // Default unlimited
+        
+        // Tentukan batas stok berdasarkan jenis
+        if (jenis.includes("tahunan")) {
+            maxStok = parseInt(document.getElementById("max_tahunan").value);
+        } else if (jenis.includes("sakit")) {
+            maxStok = parseInt(document.getElementById("max_sakit").value);
+        } else {
+            // Cuti Melahirkan / Besar -> Tidak ada limit
+            maxStok = 999;
+        }
+
+        // Cek Logika
+        if (lamaHari > maxStok) {
+            // Jika lebih besar dari stok
+            alertKuota.style.display = "block"; // Munculkan pesan error
+            btnSubmit.disabled = true;          // Matikan tombol submit
+            btnSubmit.classList.add("btn-secondary");
+            btnSubmit.classList.remove("btn-success");
+        } else {
+            // Aman
+            alertKuota.style.display = "none";
+            btnSubmit.disabled = false;
+            btnSubmit.classList.add("btn-success");
+            btnSubmit.classList.remove("btn-secondary");
         }
     }
 </script>

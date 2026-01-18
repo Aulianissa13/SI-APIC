@@ -4,7 +4,7 @@ include '../../config/database.php';
 // Ambil ID dari URL
 $id_pengajuan = $_GET['id'];
 
-// Ambil Data Lengkap
+// Ambil Data Lengkap (Pastikan kolom kuota_cuti_sakit terpanggil di SELECT *)
 $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
@@ -12,21 +12,79 @@ $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti
 
 $data = mysqli_fetch_array($query);
 
-// Logic Centang
-$j = $data['id_jenis'];
-$c1 = ($j == '1') ? '&#10003;' : ''; 
-$c2 = ($j == '4') ? '&#10003;' : ''; 
-$c3 = ($j == '2') ? '&#10003;' : ''; 
-$c4 = ($j == '5') ? '&#10003;' : ''; 
-$c5 = ($j == '3') ? '&#10003;' : ''; 
-$c6 = ($j == '6') ? '&#10003;' : ''; 
+// ============================================================
+// --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
+// ============================================================
 
-// Logic Tahun
+$id_jenis   = $data['id_jenis']; 
+$lama_ambil = $data['lama_hari'];
+
+// Variabel default
+$sisa_n_tampil = $data['sisa_cuti_n']; 
+
+// Siapkan variabel kosong untuk setiap kolom keterangan di Tabel V
+$ket_tahunan = "";
+$ket_besar   = "";
+$ket_sakit   = "";
+$ket_lahir   = "";
+$ket_penting = "";
+$ket_luar    = "";
+
+// LOGIKA PENEMPATAN KETERANGAN
+switch ($id_jenis) {
+    case '1': // Cuti Tahunan
+        // Hitung mundur sisa
+        $sisa_awal     = $data['sisa_cuti_n'] + $lama_ambil;
+        $sisa_n_tampil = $sisa_awal; // Tampilkan sisa awal di kolom angka
+        
+        $ket_tahunan   = "Diambil " . $lama_ambil . " hari, sisa " . $data['sisa_cuti_n'] . " hari";
+        break;
+
+    case '2': // Cuti Sakit
+        // Ambil kuota sakit dari database
+        $sisa_sakit_db   = $data['kuota_cuti_sakit'];
+        // Hitung sisa sakit sebelum diambil (Logic Matematika Balik)
+        $sisa_sakit_awal = $sisa_sakit_db + $lama_ambil;
+        
+        // Isi keterangan di kolom Cuti Sakit
+        $ket_sakit       = "Diambil " . $lama_ambil . " hari, sisa " . $sisa_sakit_db . " hari";
+        break;
+
+    case '4': // Cuti Besar
+        // Karena biasanya Cuti Besar itu Hak (tanpa kuota di DB), cukup tampilkan diambilnya
+        $ket_besar       = "Diambil " . $lama_ambil . " hari";
+        break;
+
+    case '5': // Cuti Melahirkan
+        $ket_lahir       = "Diambil " . $lama_ambil . " hari"; // Atau 3 Bulan
+        break;
+
+    case '3': // Alasan Penting
+        $ket_penting     = "Diambil " . $lama_ambil . " hari";
+        break;
+
+    case '6': // Luar Tanggungan Negara
+        $ket_luar        = "Diambil " . $lama_ambil . " hari";
+        break;
+}
+
+// ============================================================
+// --- LOGIC CHECKLIST (CENTANG) ---
+// ============================================================
+$c1 = ($id_jenis == '1') ? '&#10003;' : ''; // Tahunan
+$c2 = ($id_jenis == '4') ? '&#10003;' : ''; // Besar
+$c3 = ($id_jenis == '2') ? '&#10003;' : ''; // Sakit
+$c4 = ($id_jenis == '5') ? '&#10003;' : ''; // Melahirkan
+$c5 = ($id_jenis == '3') ? '&#10003;' : ''; // Penting
+$c6 = ($id_jenis == '6') ? '&#10003;' : ''; // Luar Tanggungan
+
+// ============================================================
+// --- LOGIC TAHUN ---
+// ============================================================
 $tahun_n  = date('Y');
 $tahun_n1 = $tahun_n - 1;
 $tahun_n2 = $tahun_n - 2;
 
-// Format Tanggal
 function tgl_indo($tanggal){
     $bulan = array (
         1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -41,7 +99,7 @@ function tgl_indo($tanggal){
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Cuti F4 - <?php echo $data['no_surat']; ?></title>
+    <title>Cetak Cuti F4 - <?php echo $data['nomor_surat']; ?></title>
     <style>
         /* --- SETUP KERTAS F4 (FOLIO) --- */
         @page {
@@ -111,50 +169,23 @@ function tgl_indo($tanggal){
         .bl-0 { border-left: none !important; }
         .br-0 { border-right: none !important; }
         .bb-0 { border-bottom: none !important; }
-        .no-border { border: none !important; } /* Class untuk menghilangkan border */
+        .no-border { border: none !important; }
 
         .check-col { text-align: center; font-size: 11pt; font-weight: bold; }
 
         /* --- CSS KHUSUS --- */
-
-        /* 1. Alasan Cuti */
-        .cell-alasan {
-            height: 25px !important; 
-            padding: 5px !important;
-            vertical-align: top;
-        }
-
-        /* 2. Alamat */
-        .cell-alamat {
-            height: auto !important;
-            padding: 5px !important;
-            vertical-align: top;
-        }
-
-        /* 3. Definisi Lebar Kolom Kanan (Agar lurus 6cm) */
-        .col-right-fixed {
-            width: 6cm !important; 
-            min-width: 6cm !important;
-            max-width: 6cm !important;
-        }
-
-        /* 4. Kotak TTD (Tinggi 3cm) */
-        .box-ttd-fixed {
-            height: 3cm; 
-            width: 100%;
-            position: relative;
-            box-sizing: border-box;
-            padding: 5px;
-        }
-
+        .cell-alasan { height: 25px !important; padding: 5px !important; vertical-align: top; }
+        .cell-alamat { height: auto !important; padding: 5px !important; vertical-align: top; }
+        .col-right-fixed { width: 6cm !important; min-width: 6cm !important; max-width: 6cm !important; }
+        .box-ttd-fixed { height: 3cm; width: 100%; position: relative; box-sizing: border-box; padding: 5px; }
         .nip-bottom {
-            position: absolute;
-            bottom: 5px;
-            left: 5px;
-            right: 5px;
-            border-bottom: 1px solid #000;
-            font-weight: bold;
+            position: absolute; bottom: 5px; left: 5px; right: 5px;
+            border-bottom: none; border-top: 2px solid #000;
+            font-weight: bold; padding-top: 2px;
         }
+        
+        /* Utility font kecil untuk keterangan */
+        .small-text { font-size: 8pt; }
 
         @media print { .no-print { display: none !important; } }
     </style>
@@ -262,29 +293,33 @@ function tgl_indo($tanggal){
                 <td width="10%" class="text-center">Sisa</td>
                 <td width="20%" class="text-center">Keterangan</td>
                 <td rowspan="4" class="valign-top" style="height: auto;"></td> 
+                
                 <td>3. CUTI SAKIT</td>
-                <td></td> 
+                <td class="text-center small-text"><?php echo $ket_sakit; ?></td> 
             </tr>
             <tr>
                 <td class="text-center"><?php echo $tahun_n2; ?></td>
                 <td class="text-center">-</td>
                 <td></td>
+                
                 <td>4. CUTI MELAHIRKAN</td>
-                <td></td> 
+                <td class="text-center small-text"><?php echo $ket_lahir; ?></td> 
             </tr>
             <tr>
                 <td class="text-center"><?php echo $tahun_n1; ?></td>
                 <td class="text-center"><?php echo $data['sisa_cuti_n1']; ?></td>
                 <td></td>
+                
                 <td>5. CUTI KARENA ALASAN PENTING</td>
-                <td></td> 
+                <td class="text-center small-text"><?php echo $ket_penting; ?></td> 
             </tr>
             <tr>
                 <td class="text-center"><?php echo $tahun_n; ?></td>
-                <td class="text-center"><?php echo $data['sisa_cuti_n']; ?></td>
-                <td></td>
+                <td class="text-center"><?php echo $sisa_n_tampil; ?></td>
+                <td class="text-center small-text"><?php echo $ket_tahunan; ?></td>
+                
                 <td>6. CUTI DI LUAR TANGGUNGAN NEGARA</td>
-                <td></td> 
+                <td class="text-center small-text"><?php echo $ket_luar; ?></td> 
             </tr>
         </table>
 
@@ -295,14 +330,15 @@ function tgl_indo($tanggal){
                     <?php echo $data['alamat_cuti']; ?>
                 </td>
                 
-                <td class="bt-0 br-0 bb-0" style="width: 2cm;">Telp</td>
+                <td class="bt-0 bb-0" style="width: 2cm;">Telp</td>
                 
-                <td class="bt-0 bl-0 bb-0" style="width: 4cm;"><?php echo $data['no_telepon']; ?></td>
+                <td class="bt-0 bb-0" style="width: 4cm;"><?php echo $data['no_telepon']; ?></td>
             </tr>
             <tr>
                 <td colspan="2" class="col-right-fixed" style="padding: 0;">
                     <div class="box-ttd-fixed">
-                        <span style="position:absolute; top:2px; left:5px;">Hormat saya,</span>
+                        <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
+                        
                         <div class="nip-bottom">
                             NIP. <?php echo $data['nip']; ?>
                         </div>
