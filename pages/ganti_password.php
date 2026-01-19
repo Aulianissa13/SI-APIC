@@ -1,70 +1,102 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <?php
-// --- 2. LOGIKA PHP DENGAN SWEETALERT ---
+// --- 2. LOGIKA PHP LENGKAP (Sapu Jagat) ---
+
+// Pastikan session user ada
+if (!isset($_SESSION['id_user'])) {
+    echo "<script>window.location='login.php';</script>";
+    exit;
+}
+
 $id_user_login = $_SESSION['id_user'];
+
+// Ambil data user terbaru
 $query_profil = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user_login'");
 $data_profil  = mysqli_fetch_array($query_profil);
 
-// Variabel penampung script alert
+// Variabel untuk menampung script SweetAlert
 $swal_script = ""; 
 
 if (isset($_POST['simpan_password'])) {
-    $pass_lama  = md5($_POST['pass_lama']); 
-    $pass_baru  = md5($_POST['pass_baru']);
-    $konfirmasi = md5($_POST['konfirmasi']);
+    $pass_lama_input = $_POST['pass_lama'];
+    $pass_baru       = $_POST['pass_baru'];
+    $konfirmasi      = $_POST['konfirmasi'];
 
-    if ($pass_lama != $data_profil['password']) {
-        // GAGAL: Password Lama Salah
+    // Password di Database saat ini
+    $pass_db = $data_profil['password'];
+
+    // --- CEK 3 KEMUNGKINAN PASSWORD LAMA ---
+    // 1. Text Biasa (Jaga-jaga data dummy)
+    $cek_biasa = ($pass_lama_input == $pass_db);
+    // 2. MD5 (Format lama)
+    $cek_md5   = (md5($pass_lama_input) == $pass_db);
+    // 3. Hash BCRYPT (Format baru/aman)
+    $cek_hash  = password_verify($pass_lama_input, $pass_db);
+
+    // JIKA KETIGANYA SALAH
+    if (!$cek_biasa && !$cek_md5 && !$cek_hash) {
         $swal_script = "
             <script>
                 Swal.fire({
                     icon: 'error',
                     title: 'Gagal!',
                     text: 'Password lama yang Anda masukkan salah.',
-                    confirmButtonColor: '#d33',
-                    confirmButtonText: 'Coba Lagi'
+                    confirmButtonColor: '#d33'
                 });
             </script>";
             
     } else if ($pass_baru != $konfirmasi) {
-        // GAGAL: Konfirmasi Tidak Cocok
         $swal_script = "
             <script>
                 Swal.fire({
                     icon: 'warning',
                     title: 'Tidak Cocok',
                     text: 'Konfirmasi password baru tidak sama.',
-                    confirmButtonColor: '#f6c23e',
-                    confirmButtonText: 'Perbaiki'
+                    confirmButtonColor: '#f6c23e'
                 });
             </script>";
 
-    } else if (strlen($_POST['pass_baru']) < 6) {
-        // GAGAL: Kurang dari 6 karakter
+    } else if (strlen($pass_baru) < 6) {
          $swal_script = "
             <script>
                 Swal.fire({
                     icon: 'info',
                     title: 'Terlalu Pendek',
                     text: 'Password minimal harus 6 karakter.',
-                    confirmButtonColor: '#36b9cc',
-                    confirmButtonText: 'Oke'
+                    confirmButtonColor: '#36b9cc'
                 });
             </script>";
 
     } else {
-        // SUKSES
-        $update = mysqli_query($koneksi, "UPDATE users SET password='$pass_baru' WHERE id_user='$id_user_login'");
+        // SUKSES: Enkripsi jadi Hash BCRYPT
+        $pass_hash = password_hash($pass_baru, PASSWORD_DEFAULT);
+
+        $update = mysqli_query($koneksi, "UPDATE users SET password='$pass_hash' WHERE id_user='$id_user_login'");
+        
         if ($update) {
             $swal_script = "
                 <script>
                     Swal.fire({
                         icon: 'success',
                         title: 'Berhasil!',
-                        text: 'Password Anda telah diperbarui.',
-                        confirmButtonColor: '#1e5c3e', // Warna Logo
-                        confirmButtonText: 'Selesai'
+                        text: 'Password berhasil diperbarui. Silakan login ulang.',
+                        confirmButtonColor: '#1e5c3e',
+                        confirmButtonText: 'Logout Sekarang'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = 'logout.php';
+                        }
+                    });
+                </script>";
+        } else {
+            // Jika Query Gagal
+             $swal_script = "
+                <script>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error Sistem',
+                        text: 'Gagal mengupdate database: ".mysqli_error($koneksi)."',
                     });
                 </script>";
         }
@@ -196,11 +228,18 @@ if (isset($_POST['simpan_password'])) {
                 </div>
                 <h5 class="font-weight-bold text-gray-800 mb-0"><?php echo $data_profil['nama_lengkap']; ?></h5>
                 <p class="text-muted small mb-2 mt-1">NIP. <?php echo $data_profil['nip']; ?></p>
+                
                 <div class="text-xs font-weight-bold text-uppercase text-gray-500 mb-3">
-                    <?php echo $data_profil['jabatan']; ?> <br> <?php echo $data_profil['unit_kerja']; ?>
+                    <?php 
+                        if($data_profil['role'] == 'admin') echo "Administrator Sistem";
+                        else echo "Pegawai / Staff"; 
+                    ?> 
+                    <br> 
+                    <i class="fas fa-phone fa-fw mt-1"></i> <?php echo $data_profil['no_telepon']; ?>
                 </div>
+
                 <span class="badge badge-pill badge-light text-success px-3 py-2 border">
-                    <i class="fas fa-circle text-success mr-1" style="font-size: 8px;"></i> Pegawai Aktif
+                    <i class="fas fa-circle text-success mr-1" style="font-size: 8px;"></i> Akun Aktif
                 </span>
             </div>
         </div>
@@ -212,8 +251,8 @@ if (isset($_POST['simpan_password'])) {
                 </h6>
                 <ul class="list-unstyled small text-gray-600 mb-0">
                     <li class="mb-2"><i class="fas fa-check text-success mr-2"></i>Min. 6 Karakter</li>
-                    <li class="mb-2"><i class="fas fa-check text-success mr-2"></i>Gunakan Angka & Huruf</li>
-                    <li><i class="fas fa-check text-success mr-2"></i>Rahasiakan Password</li>
+                    <li class="mb-2"><i class="fas fa-check text-success mr-2"></i>Gunakan Kombinasi Unik</li>
+                    <li><i class="fas fa-check text-success mr-2"></i>Jangan Berikan ke Orang Lain</li>
                 </ul>
             </div>
         </div>
@@ -236,4 +275,7 @@ if (isset($_POST['simpan_password'])) {
     }
 </script>
 
-<?php if($swal_script != "") { echo $swal_script; } ?>
+<?php 
+// Cetak SweetAlert jika ada pesan
+if($swal_script != "") { echo $swal_script; } 
+?>

@@ -49,19 +49,32 @@
             </a>
         </li>
 
+    <li class="nav-item <?php echo ($page == 'input_cuti') ? 'active' : ''; ?>">
+        <a class="nav-link" href="index.php?page=input_cuti">
+            <i class="fas fa-fw fa-calendar-plus" style="<?php echo ($page == 'input_cuti') ? '' : 'color: #F9A825;'; ?>"></i>
+            <span>Input Cuti Pegawai</span>
+        </a>
+
     <li class="nav-item">
         <a class="nav-link" href="index.php?page=validasi_cuti">
             <i class="fas fa-fw fa-check-double"></i>
             <span>Persetujuan Cuti</span>
         </a>
     </li>
+
+     <hr class="sidebar-divider">
+
+        <div class="sidebar-heading">
+            Hari Libur
+        </div>
+
+        <li class="nav-item <?php echo ($page == 'manage_libur') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=manage_libur">
+                <i class="fas fa-fw fa-print"></i>
+                <span>Atur Libur Nasional</span>
+            </a>
+        </li>
     
-    <li class="nav-item">
-        <a class="nav-link" href="index.php?page=laporan_cuti">
-            <i class="fas fa-fw fa-file-export"></i>
-            <span>Rekap Laporan</span>
-        </a>
-    </li>
 
     <?php else: ?>
 

@@ -1,36 +1,52 @@
-<?php
-// Mengaktifkan session php
+<?php 
 session_start();
-
-// Menghubungkan dengan koneksi
 include 'config/database.php';
 
 // Menangkap data yang dikirim dari form
-$nip = $_POST['nip'];
-$password = md5($_POST['password']); // Password di-hash MD5 sesuai database
+$username = mysqli_real_escape_string($koneksi, $_POST['username']);
+$password = $_POST['password'];
 
-// Menyeleksi data user dengan nip dan password yang sesuai
-$data = mysqli_query($koneksi, "SELECT * FROM users WHERE nip='$nip' AND password='$password'");
-
-// Menghitung jumlah data yang ditemukan
-$cek = mysqli_num_rows($data);
+// 1. Cek apakah Username ada di database?
+// PENTING: Jangan cek password di query SQL (WHERE), cukup username saja
+$login = mysqli_query($koneksi, "SELECT * FROM users WHERE username='$username'");
+$cek = mysqli_num_rows($login);
 
 if($cek > 0){
-    // Ambil datanya
-    $row = mysqli_fetch_assoc($data);
+    // Ambil data user
+    $data = mysqli_fetch_assoc($login);
+    $password_db = $data['password'];
 
-    // Set SESSION (Menyimpan data user sementara di browser)
-    $_SESSION['status'] = "login";
-    $_SESSION['id_user'] = $row['id_user'];
-    $_SESSION['nip'] = $row['nip'];
-    $_SESSION['nama_lengkap'] = $row['nama_lengkap'];
-    $_SESSION['role'] = $row['role']; // Penting untuk membedakan Admin/User
-    $_SESSION['unit_kerja'] = $row['unit_kerja'];
+    // 2. Cek Password (SAPU JAGAT: Support MD5, Hash Baru, dan Text Biasa)
+    
+    // Cek Hash Modern (Ganti Password Baru)
+    $verify_hash = password_verify($password, $password_db);
+    
+    // Cek MD5 (Password Lama)
+    $verify_md5 = (md5($password) == $password_db);
+    
+    // Cek Plain Text (Data Dummy Awal)
+    $verify_plain = ($password == $password_db);
 
-    // Alihkan ke halaman index (Dashboard)
-    header("location:index.php");
+    // Jika SALAH SATU benar, maka Login Sukses
+    if($verify_hash || $verify_md5 || $verify_plain) {
+        
+        // Buat Session
+        $_SESSION['username'] = $username;
+        $_SESSION['status']   = "login";
+        $_SESSION['role']     = $data['role'];
+        $_SESSION['id_user']  = $data['id_user'];
+        $_SESSION['nama']     = $data['nama_lengkap']; // Tambahan biar enak dipanggil
+
+        // Redirect ke dashboard
+        header("location:index.php");
+    
+    } else {
+        // Password Salah
+        header("location:login.php?pesan=gagal");
+    }
+
 } else {
-    // Jika gagal, alihkan kembali ke login dengan pesan error
+    // Username Tidak Ditemukan
     header("location:login.php?pesan=gagal");
 }
 ?>

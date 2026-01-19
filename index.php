@@ -115,6 +115,12 @@ else if($page == "form_pegawai" && $_SESSION['role'] == 'admin') {
 else if($page == "proses_pegawai" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/proses_pegawai.php';
 }
+else if($page == "input_cuti" && $_SESSION['role'] == 'admin') {
+    include 'pages/admin/input_cuti.php';
+}
+else if($page == "manage_libur" && $_SESSION['role'] == 'admin') {
+    include 'pages/admin/manage_libur.php';
+}
 // --- [END TAMBAHAN] ---
 
 else if($page == "laporan_cuti" && $_SESSION['role'] == 'admin') {

@@ -5,36 +5,61 @@ include 'config/database.php';
 // Jika sudah login, lempar ke index
 if(isset($_SESSION['status']) && $_SESSION['status'] == "login"){
     header("location:index.php");
+    exit;
 }
 
-if(isset($_POST['login'])){
-    // 1. Tangkap inputan NIP
-    $nip = $_POST['nip'];
-    $password = md5($_POST['password']); 
+$error_msg = null; // Inisialisasi variabel error
 
-    // 2. Query cek ke database menggunakan kolom 'nip'
-    // Pastikan di database tabel 'users' nama kolomnya benar-benar 'nip'
-    $login = mysqli_query($koneksi, "SELECT * FROM users WHERE nip='$nip' AND password='$password'");
+if(isset($_POST['login'])){
+    // 1. Tangkap inputan (Amankan NIP dari SQL Injection)
+    $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
+    $password_input = $_POST['password']; // Password mentah
+
+    // 2. Query cek ke database HANYA menggunakan NIP
+    // Kita ambil dulu datanya, baru cek password belakangan
+    $login = mysqli_query($koneksi, "SELECT * FROM users WHERE nip='$nip'");
     $cek = mysqli_num_rows($login);
 
     if($cek > 0){
         $data = mysqli_fetch_assoc($login);
-        
-        // 3. Simpan NIP ke session
-        $_SESSION['nip'] = $nip;
-        $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
-        $_SESSION['role'] = $data['role'];
-        $_SESSION['id_user'] = $data['id_user'];
-        $_SESSION['status'] = "login";
+        $password_db = $data['password'];
 
-        // Redirect sesuai role
-        if($data['role'] == "admin"){
-            header("location:index.php?page=dashboard_admin");
-        }else{
-            header("location:index.php?page=dashboard_user");
+        // 3. CEK PASSWORD "SAPU JAGAT" (Support Hash Baru, MD5 Lama, & Teks Biasa)
+        
+        // Cek 1: Apakah password Hash (Format Baru)?
+        $cek_hash = password_verify($password_input, $password_db);
+        
+        // Cek 2: Apakah password MD5 (Format Lama)?
+        $cek_md5  = (md5($password_input) == $password_db);
+        
+        // Cek 3: Apakah Teks Biasa (Data Dummy)?
+        $cek_plain = ($password_input == $password_db);
+
+        // Jika SALAH SATU benar, maka Login Sukses
+        if($cek_hash || $cek_md5 || $cek_plain) {
+            
+            // Simpan data ke session
+            $_SESSION['nip'] = $nip;
+            $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
+            $_SESSION['role'] = $data['role'];
+            $_SESSION['id_user'] = $data['id_user'];
+            $_SESSION['status'] = "login";
+
+            // Redirect sesuai role
+            if($data['role'] == "admin"){
+                header("location:index.php?page=dashboard_admin");
+            }else{
+                header("location:index.php?page=dashboard_user");
+            }
+            exit; // Penting agar script berhenti di sini
+
+        } else {
+            // Password Salah
+            $error_msg = "Password yang Anda masukkan salah.";
         }
-    }else{
-        $error_msg = "NIP atau Password salah / tidak terdaftar.";
+    } else {
+        // NIP Tidak Ditemukan
+        $error_msg = "NIP tidak terdaftar dalam sistem.";
     }
 }
 ?>
@@ -50,7 +75,7 @@ if(isset($_POST['login'])){
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CSS TETAP SAMA SEPERTI SEBELUMNYA (MODERN & INKLUSIF) --- */
+        /* --- CSS TETAP SAMA SEPERTI SEBELUMNYA --- */
         :root {
             --pn-green: #006837;
             --pn-green-dark: #004d29;
@@ -250,7 +275,7 @@ if(isset($_POST['login'])){
         <h1 class="app-name">SI-APIC</h1>
         <p class="app-desc">Administrasi Pelayanan Izin Cuti<br>Pengadilan Negeri Yogyakarta</p>
 
-        <?php if(isset($error_msg)): ?>
+        <?php if($error_msg != null): ?>
             <div class="alert-box">
                 <i class="fas fa-exclamation-circle"></i>
                 <span><?php echo $error_msg; ?></span>
@@ -261,6 +286,13 @@ if(isset($_POST['login'])){
             <div class="alert-box" style="background-color: #fffbeb; color: #b45309; border-color: #fcd34d;">
                 <i class="fas fa-info-circle"></i>
                 <span>Silakan login terlebih dahulu.</span>
+            </div>
+        <?php endif; ?>
+        
+        <?php if(isset($_GET['pesan']) && $_GET['pesan'] == "logout"): ?>
+            <div class="alert-box" style="background-color: #ecfdf5; color: #047857; border-color: #6ee7b7;">
+                <i class="fas fa-check-circle"></i>
+                <span>Anda telah berhasil logout.</span>
             </div>
         <?php endif; ?>
 
