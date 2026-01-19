@@ -1,16 +1,43 @@
 <?php
+session_start();
+// Matikan error reporting agar warning kecil tidak merusak tampilan cetak
+error_reporting(0); 
+
 include '../../config/database.php';
 
-// Ambil ID dari URL
-$id_pengajuan = $_GET['id'];
+// --- 1. KEAMANAN: CEK LOGIN & AKSES ---
+if (!isset($_SESSION['id_user'])) {
+    echo "<script>alert('Anda harus login terlebih dahulu!'); window.location='../../index.php';</script>";
+    exit;
+}
 
-// Ambil Data Lengkap (Pastikan kolom kuota_cuti_sakit terpanggil di SELECT *)
+// Ambil ID dari URL
+$id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_user_login = $_SESSION['id_user'];
+// Ambil level user (jika sistem Anda menyimpan level di session, misal 'admin' atau 'pegawai')
+// Jika tidak ada session level, default dianggap pegawai biasa
+$level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
+
+// Ambil Data Lengkap
 $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
     WHERE id_pengajuan='$id_pengajuan'");
 
 $data = mysqli_fetch_array($query);
+
+// Validasi 1: Data tidak ditemukan
+if (!$data) {
+    echo "<script>alert('Data pengajuan tidak ditemukan!'); window.close();</script>";
+    exit;
+}
+
+// Validasi 2: Cek Kepemilikan (Hanya Pemilik ATAU Admin yang boleh cetak)
+// Jika user BUKAN admin DAN ID pemilik surat BEDA dengan ID yang login -> TOLAK
+if ($level_login != 'admin' && $data['id_user'] != $id_user_login) {
+    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak dokumen ini.'); window.close();</script>";
+    exit;
+}
 
 // ============================================================
 // --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
@@ -33,30 +60,26 @@ $ket_luar    = "";
 // LOGIKA PENEMPATAN KETERANGAN
 switch ($id_jenis) {
     case '1': // Cuti Tahunan
-        // Hitung mundur sisa
+        // Hitung mundur sisa (karena di DB sudah terpotong saat diajukan)
         $sisa_awal     = $data['sisa_cuti_n'] + $lama_ambil;
-        $sisa_n_tampil = $sisa_awal; // Tampilkan sisa awal di kolom angka
+        $sisa_n_tampil = $sisa_awal; // Tampilkan sisa sebelum diambil
         
         $ket_tahunan   = "Diambil " . $lama_ambil . " hari, sisa " . $data['sisa_cuti_n'] . " hari";
         break;
 
     case '2': // Cuti Sakit
-        // Ambil kuota sakit dari database
         $sisa_sakit_db   = $data['kuota_cuti_sakit'];
-        // Hitung sisa sakit sebelum diambil (Logic Matematika Balik)
         $sisa_sakit_awal = $sisa_sakit_db + $lama_ambil;
         
-        // Isi keterangan di kolom Cuti Sakit
         $ket_sakit       = "Diambil " . $lama_ambil . " hari, sisa " . $sisa_sakit_db . " hari";
         break;
 
     case '4': // Cuti Besar
-        // Karena biasanya Cuti Besar itu Hak (tanpa kuota di DB), cukup tampilkan diambilnya
         $ket_besar       = "Diambil " . $lama_ambil . " hari";
         break;
 
     case '5': // Cuti Melahirkan
-        $ket_lahir       = "Diambil " . $lama_ambil . " hari"; // Atau 3 Bulan
+        $ket_lahir       = "Diambil " . $lama_ambil . " hari"; 
         break;
 
     case '3': // Alasan Penting
@@ -85,13 +108,15 @@ $tahun_n  = date('Y');
 $tahun_n1 = $tahun_n - 1;
 $tahun_n2 = $tahun_n - 2;
 
-function tgl_indo($tanggal){
-    $bulan = array (
-        1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-        'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-    );
-    $pecahkan = explode('-', $tanggal);
-    return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+if (!function_exists('tgl_indo')) {
+    function tgl_indo($tanggal){
+        $bulan = array (
+            1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        );
+        $pecahkan = explode('-', $tanggal);
+        return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+    }
 }
 ?>
 
@@ -104,7 +129,7 @@ function tgl_indo($tanggal){
         /* --- SETUP KERTAS F4 (FOLIO) --- */
         @page {
             size: 215mm 330mm;
-            margin: 0.5cm 1.5cm 1cm 1.5cm; 
+            margin: 1cm 1.5cm 1cm 1.5cm; 
         }
 
         body {
@@ -193,8 +218,8 @@ function tgl_indo($tanggal){
 <body>
 
     <div class="no-print" style="position:fixed; top:10px; right:10px; z-index:9999;">
-        <button onclick="window.print()" style="padding:5px 15px; font-weight:bold; cursor:pointer;">CETAK</button>
-        <button onclick="window.history.back()" style="padding:5px 15px; cursor:pointer;">KEMBALI</button>
+        <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#006B3F; color:white; border:none; border-radius:4px;">CETAK</button>
+        <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#d33; color:white; border:none; border-radius:4px;">TUTUP</button>
     </div>
 
     <div class="container">

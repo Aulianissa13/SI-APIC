@@ -8,6 +8,7 @@ $user = mysqli_fetch_array($query_user);
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 ?>
 
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
 
 <style>
@@ -224,6 +225,20 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
             </div>
         </div>
     </div>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <?php if (isset($_SESSION['alert'])) : ?>
+        <script>
+            Swal.fire({
+                icon: '<?php echo $_SESSION['alert']['icon']; ?>',
+                title: '<?php echo $_SESSION['alert']['title']; ?>',
+                text: '<?php echo $_SESSION['alert']['text']; ?>',
+                confirmButtonColor: '#d33',
+                confirmButtonText: 'Perbaiki'
+            });
+        </script>
+        <?php unset($_SESSION['alert']); // Hapus pesan agar tidak muncul lagi ?>
+    <?php endif; ?>
 </div>
 
 <script>
@@ -232,21 +247,43 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
     document.getElementById("tgl_selesai").addEventListener("change", updateKalkulasi);
     document.getElementById("jenis_cuti").addEventListener("change", updateKalkulasi);
 
-    // 2. FUNGSI UTAMA (Menghitung hari & Cek Kuota)
+    // 2. INTERCEPT SUBMIT DENGAN SWEETALERT (Baru)
+    document.getElementById('formCuti').addEventListener('submit', function(e) {
+        e.preventDefault(); // Mencegah kirim langsung
+        
+        // Ambil data untuk pesan konfirmasi
+        var tglMulai = document.getElementById("tgl_mulai").value;
+        var lama = document.getElementById("lama_hari").value;
+
+        Swal.fire({
+            title: 'Konfirmasi Pengajuan',
+            html: "Anda akan mengajukan cuti selama <b>" + lama + " Hari</b><br>mulai tanggal <b>" + tglMulai + "</b>.<br>Apakah data sudah benar?",
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#006B3F', // Warna Hijau Brand
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Ya, Ajukan!',
+            cancelButtonText: 'Cek Lagi'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Jika user klik Ya, baru kirim form secara manual
+                e.target.submit(); 
+            }
+        });
+    });
+
+    // 3. FUNGSI UTAMA (Menghitung hari & Cek Kuota)
     function updateKalkulasi() {
         var tglMulai = document.getElementById("tgl_mulai").value;
         var tglSelesai = document.getElementById("tgl_selesai").value;
         var outputHari = document.getElementById("lama_hari");
         
-        // Ambil Jenis Cuti
         var selectBox = document.getElementById("jenis_cuti");
         var selectedOption = selectBox.options[selectBox.selectedIndex];
-        var namaJenis = selectedOption.getAttribute('data-nama') || ""; // "cuti tahunan", "cuti sakit", dll
+        var namaJenis = selectedOption.getAttribute('data-nama') || ""; 
 
-        // UI: Highlight Box Kuota yang Relevan
         highlightBox(namaJenis);
 
-        // Jika tanggal belum lengkap, stop
         if (tglMulai == "" || tglSelesai == "") {
             outputHari.value = "";
             return;
@@ -255,36 +292,25 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
         var date1 = new Date(tglMulai);
         var date2 = new Date(tglSelesai);
 
-        // Validasi Mundur
         if (date2 < date1) {
-            alert("Tanggal Selesai tidak boleh mundur dari Tanggal Mulai!");
+            Swal.fire({ icon: 'error', title: 'Tanggal Salah', text: 'Tanggal Selesai tidak boleh mundur dari Tanggal Mulai!' });
             document.getElementById("tgl_selesai").value = "";
             outputHari.value = "";
             return;
         }
 
-        // HITUNG HARI (LOGIKA KERJA)
-        // Catatan: Cuti Melahirkan biasanya kalender (termasuk sabtu minggu), 
-        // tapi Cuti Tahunan hanya hari kerja. 
-        // Agar aman & standar, sistem default hitung HARI KERJA (Senin-Jumat).
-        // Jika Cuti Melahirkan, Admin bisa maklum jika hitungannya beda, atau manual adjust.
-        
         var count = 0;
         var curDate = new Date(date1.getTime());
 
         while (curDate <= date2) {
             var dayOfWeek = curDate.getDay();
-            // 0=Minggu, 6=Sabtu (Skip Sabtu Minggu)
             if(dayOfWeek !== 0 && dayOfWeek !== 6) {
                 count++;
             }
             curDate.setDate(curDate.getDate() + 1);
         }
 
-        // Tampilkan Hasil Hari
         outputHari.value = count;
-
-        // 3. VALIDASI KUOTA (CRITICAL PART)
         validasiStok(namaJenis, count);
     }
 
@@ -294,7 +320,6 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
         var boxSakit = document.getElementById("box-sakit");
         var boxUnlimited = document.getElementById("box-unlimited");
 
-        // Reset semua ke redup dulu
         boxTahunan.classList.remove("quota-active");
         boxSakit.classList.remove("quota-active");
         boxUnlimited.style.display = "none";
@@ -304,7 +329,6 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
         } else if (jenis.includes("sakit")) {
             boxSakit.classList.add("quota-active");
         } else if (jenis !== "") {
-            // Jenis lain (Melahirkan, Besar, dll) -> Tampilkan pesan Unlimited
             boxUnlimited.style.display = "block";
         }
     }
@@ -314,27 +338,20 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
         var btnSubmit = document.getElementById("btnSubmit");
         var alertKuota = document.getElementById("alert-kuota");
         
-        var maxStok = 999; // Default unlimited
+        var maxStok = 999; 
         
-        // Tentukan batas stok berdasarkan jenis
         if (jenis.includes("tahunan")) {
             maxStok = parseInt(document.getElementById("max_tahunan").value);
         } else if (jenis.includes("sakit")) {
             maxStok = parseInt(document.getElementById("max_sakit").value);
-        } else {
-            // Cuti Melahirkan / Besar -> Tidak ada limit
-            maxStok = 999;
         }
 
-        // Cek Logika
         if (lamaHari > maxStok) {
-            // Jika lebih besar dari stok
-            alertKuota.style.display = "block"; // Munculkan pesan error
-            btnSubmit.disabled = true;          // Matikan tombol submit
+            alertKuota.style.display = "block"; 
+            btnSubmit.disabled = true;          
             btnSubmit.classList.add("btn-secondary");
             btnSubmit.classList.remove("btn-success");
         } else {
-            // Aman
             alertKuota.style.display = "none";
             btnSubmit.disabled = false;
             btnSubmit.classList.add("btn-success");
