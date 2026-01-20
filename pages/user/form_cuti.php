@@ -1,12 +1,15 @@
 <?php
-// 1. Ambil Data User Terbaru
+// 1. Ambil Data User yang sedang login
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
 $user = mysqli_fetch_array($query_user);
 
 // 2. Ambil Daftar Jenis Cuti
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
-?>
+
+// 3. (BARU) Ambil Daftar User Lain untuk dijadikan Opsi Atasan Langsung
+// Kita ambil semua user KECUALI user yang sedang login saat ini
+$query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_pejabat='1' AND status_akun='aktif' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -164,18 +167,47 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
                         </div>
                     </div>
 
+                    <div class="form-group">
+                        <label class="form-label-pro">Atasan Langsung (Penandatangan)</label>
+                        <select name="id_atasan" class="form-control form-control-pro" required>
+                            <option value="">-- Pilih Nama Atasan Langsung --</option>
+                            <?php while($atasan = mysqli_fetch_array($query_atasan)) { ?>
+                                <option value="<?php echo $atasan['id_user']; ?>">
+                                    <?php echo $atasan['nama_lengkap']; ?> (NIP. <?php echo $atasan['nip']; ?>)
+                                </option>
+                            <?php } ?>
+                        </select>
+                        <small class="text-muted font-italic">*Pilih pejabat yang berwenang menyetujui cuti Anda.</small>
+                    </div>
+
                     <div class="section-title mt-4">B. DETAIL CUTI</div>
 
                     <div class="form-group">
                         <label class="form-label-pro">Jenis Cuti yang Diambil</label>
                         <select name="id_jenis" id="jenis_cuti" class="form-control form-control-pro" required onchange="cekJenisCuti()">
                             <option value="" data-nama="">-- Silakan Pilih --</option>
-                            <?php while($j = mysqli_fetch_array($query_jenis)) { ?>
+                            <?php 
+                            // Reset pointer data jenis cuti karena sudah dipakai di atas (jika perlu) atau query ulang
+                            // Tapi karena query_jenis masih ada cursornya, kita pakai ulang
+                            mysqli_data_seek($query_jenis, 0); 
+                            while($j = mysqli_fetch_array($query_jenis)) { 
+                            ?>
                                 <option value="<?php echo $j['id_jenis']; ?>" data-nama="<?php echo strtolower($j['nama_jenis']); ?>">
                                     <?php echo $j['nama_jenis']; ?>
                                 </option>
                             <?php } ?>
                         </select>
+
+                        <div id="alert-sakit-reminder" class="alert alert-warning mt-2 mb-0" style="display:none; font-size: 0.85rem; border-left: 4px solid #f6c23e;">
+                            <div class="d-flex align-items-center">
+                                <i class="fas fa-file-medical fa-2x mr-3 text-warning"></i>
+                                <div>
+                                    <b>PERHATIAN:</b><br>
+                                    Untuk pengajuan <b>Cuti Sakit</b>, Anda wajib menyerahkan <u>Surat Keterangan Dokter</u> kepada Bagian Kepegawaian.
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
 
                     <div class="form-row">
@@ -314,20 +346,24 @@ $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jeni
         validasiStok(namaJenis, count);
     }
 
-    // Fungsi Mengatur Tampilan Box Kuota
+    // Fungsi Mengatur Tampilan Box Kuota & ALERT SAKIT (Updated)
     function highlightBox(jenis) {
         var boxTahunan = document.getElementById("box-tahunan");
         var boxSakit = document.getElementById("box-sakit");
         var boxUnlimited = document.getElementById("box-unlimited");
+        var alertSakit = document.getElementById("alert-sakit-reminder"); // ID baru
 
+        // Reset semua
         boxTahunan.classList.remove("quota-active");
         boxSakit.classList.remove("quota-active");
         boxUnlimited.style.display = "none";
+        alertSakit.style.display = "none"; // Default hidden
 
         if (jenis.includes("tahunan")) {
             boxTahunan.classList.add("quota-active");
         } else if (jenis.includes("sakit")) {
             boxSakit.classList.add("quota-active");
+            alertSakit.style.display = "block"; // (BARU) Tampilkan alert jika pilih sakit
         } else if (jenis !== "") {
             boxUnlimited.style.display = "block";
         }

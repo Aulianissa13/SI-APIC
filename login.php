@@ -8,15 +8,12 @@ if(isset($_SESSION['status']) && $_SESSION['status'] == "login"){
     exit;
 }
 
-$error_msg = null; // Inisialisasi variabel error
+$error_msg = null; 
 
 if(isset($_POST['login'])){
-    // 1. Tangkap inputan (Amankan NIP dari SQL Injection)
     $nip = mysqli_real_escape_string($koneksi, $_POST['nip']);
-    $password_input = $_POST['password']; // Password mentah
+    $password_input = $_POST['password'];
 
-    // 2. Query cek ke database HANYA menggunakan NIP
-    // Kita ambil dulu datanya, baru cek password belakangan
     $login = mysqli_query($koneksi, "SELECT * FROM users WHERE nip='$nip'");
     $cek = mysqli_num_rows($login);
 
@@ -24,41 +21,39 @@ if(isset($_POST['login'])){
         $data = mysqli_fetch_assoc($login);
         $password_db = $data['password'];
 
-        // 3. CEK PASSWORD "SAPU JAGAT" (Support Hash Baru, MD5 Lama, & Teks Biasa)
-        
-        // Cek 1: Apakah password Hash (Format Baru)?
-        $cek_hash = password_verify($password_input, $password_db);
-        
-        // Cek 2: Apakah password MD5 (Format Lama)?
-        $cek_md5  = (md5($password_input) == $password_db);
-        
-        // Cek 3: Apakah Teks Biasa (Data Dummy)?
+        // 1. Cek Password (Support: Hash PHP, MD5, & Plain Text)
+        $cek_hash  = password_verify($password_input, $password_db);
+        $cek_md5   = (md5($password_input) == $password_db);
         $cek_plain = ($password_input == $password_db);
 
-        // Jika SALAH SATU benar, maka Login Sukses
         if($cek_hash || $cek_md5 || $cek_plain) {
             
-            // Simpan data ke session
-            $_SESSION['nip'] = $nip;
-            $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
-            $_SESSION['role'] = $data['role'];
-            $_SESSION['id_user'] = $data['id_user'];
-            $_SESSION['status'] = "login";
+            // 2. CEK STATUS AKUN (FITUR BARU)
+            // Jika status bukan 'aktif', tolak login
+            if($data['status_akun'] != 'aktif') {
+                $error_msg = "Akun Anda telah dinonaktifkan/diblokir. Silakan hubungi Administrator.";
+            } else {
+                // Jika Aktif, buat Session
+                $_SESSION['nip']          = $nip;
+                $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
+                $_SESSION['role']         = $data['role'];
+                $_SESSION['id_user']      = $data['id_user'];
+                $_SESSION['is_pejabat']   = $data['is_pejabat']; // Simpan status pejabat di session
+                $_SESSION['status']       = "login";
 
-            // Redirect sesuai role
-            if($data['role'] == "admin"){
-                header("location:index.php?page=dashboard_admin");
-            }else{
-                header("location:index.php?page=dashboard_user");
+                // Redirect sesuai role
+                if($data['role'] == "admin"){
+                    header("location:index.php?page=dashboard_admin");
+                }else{
+                    header("location:index.php?page=dashboard_user");
+                }
+                exit; 
             }
-            exit; // Penting agar script berhenti di sini
 
         } else {
-            // Password Salah
             $error_msg = "Password yang Anda masukkan salah.";
         }
     } else {
-        // NIP Tidak Ditemukan
         $error_msg = "NIP tidak terdaftar dalam sistem.";
     }
 }
@@ -72,10 +67,12 @@ if(isset($_POST['login'])){
     <title>Login - SI-APIC Pengadilan Negeri Yogyakarta</title>
     
     <link href="assets/vendor/fontawesome-free/css/all.min.css" rel="stylesheet" type="text/css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     
     <style>
-        /* --- CSS TETAP SAMA SEPERTI SEBELUMNYA --- */
+        /* --- RESET --- */
+        * { box-sizing: border-box; }
+
         :root {
             --pn-green: #006837;
             --pn-green-dark: #004d29;
@@ -90,95 +87,98 @@ if(isset($_POST['login'])){
             background-image: radial-gradient(#e0e7e4 1px, transparent 1px);
             background-size: 20px 20px;
             font-family: 'Poppins', sans-serif;
-            height: 100vh;
+            height: 100vh; 
+            width: 100vw;
+            overflow: hidden; /* No Scroll */
             display: flex;
             align-items: center;
             justify-content: center;
             margin: 0;
-            padding: 20px;
         }
 
+        /* --- CARD LOGIN --- */
         .login-container {
             background: #ffffff;
-            width: 100%;
+            width: 90%;
             max-width: 500px;
-            border-radius: 24px;
-            box-shadow: 
-                0 4px 6px -1px rgba(0, 0, 0, 0.05),
-                0 10px 15px -3px rgba(0, 0, 0, 0.05),
-                0 0 0 1px rgba(0, 0, 0, 0.02); 
-            overflow: hidden;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
             position: relative;
-            padding: 50px 40px;
-            text-align: center;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            padding: 30px 45px;
+            max-height: 98vh;
         }
 
-        .login-container::before {
-            content: '';
+        /* --- GRADASI BAR --- */
+        .top-bar {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 8px;
+            top: 0; left: 0; width: 100%; height: 8px;
             background: linear-gradient(90deg, var(--pn-green) 0%, var(--pn-gold) 100%);
         }
 
-        .logo-wrapper {
-            margin-bottom: 25px;
-            transition: transform 0.3s ease;
+        /* --- HEADER AREA --- */
+        .header-area {
+            text-align: center;
+            margin-bottom: 2vh; 
         }
-        .logo-wrapper:hover { transform: scale(1.05); }
-        
+
+        /* LOGO BESAR */
         .logo-img {
-            width: 140px;
-            height: auto;
+            height: 12vh;
+            max-height: 130px;
+            width: auto;
+            margin-bottom: 10px;
             filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
         }
 
+        /* JUDUL */
         .app-name {
-            font-size: 2rem;
+            font-size: 2.8rem;
             font-weight: 800;
             color: var(--pn-green);
-            letter-spacing: -0.5px;
+            line-height: 1;
             margin: 0;
-            line-height: 1.2;
+            letter-spacing: -1px;
         }
         
+        /* DESKRIPSI */
         .app-desc {
-            font-size: 1rem;
+            font-size: 1.1rem;
             color: var(--text-dark);
-            margin-top: 5px;
-            margin-bottom: 35px;
+            margin-top: 8px;
             font-weight: 500;
+            line-height: 1.4;
         }
 
-        .form-group {
-            margin-bottom: 25px;
-            text-align: left;
+        /* --- FORM AREA --- */
+        .form-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
         }
 
         .form-label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 5px;
             color: var(--text-dark);
             font-weight: 600;
-            font-size: 0.95rem;
-            padding-left: 5px;
+            font-size: 1rem;
         }
 
         .input-wrapper { position: relative; }
 
         .form-input {
             width: 100%;
-            height: 60px;
-            padding: 10px 20px 10px 55px;
+            height: 55px;
+            padding: 10px 50px;
             border: 2px solid #eaecf0;
-            border-radius: 16px;
+            border-radius: 14px;
             font-size: 1.1rem;
             color: #333;
-            background-color: #fcfcfd;
             transition: all 0.3s ease;
-            box-sizing: border-box;
         }
 
         .form-input:focus {
@@ -190,73 +190,81 @@ if(isset($_POST['login'])){
 
         .input-icon {
             position: absolute;
-            left: 20px;
+            left: 18px;
             top: 50%;
             transform: translateY(-50%);
-            font-size: 1.2rem;
             color: #98a2b3;
+            font-size: 1.3rem;
         }
         
         .toggle-password {
             position: absolute;
-            right: 20px;
+            right: 18px;
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
             color: #98a2b3;
             font-size: 1.2rem;
-            padding: 10px;
         }
         .toggle-password:hover { color: var(--pn-green); }
 
+        /* --- BUTTON --- */
         .btn-submit {
             width: 100%;
             height: 60px;
             background: var(--pn-green);
             color: white;
-            font-size: 1.1rem;
+            font-size: 1.2rem;
             font-weight: 700;
             border: none;
-            border-radius: 16px;
+            border-radius: 14px;
             cursor: pointer;
             transition: all 0.3s;
-            box-shadow: 0 4px 12px rgba(0, 104, 55, 0.2);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: 12px;
+            margin-top: 10px;
+            box-shadow: 0 6px 15px rgba(0, 104, 55, 0.25);
         }
 
         .btn-submit:hover {
             background: var(--pn-green-dark);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(0, 104, 55, 0.3);
+            box-shadow: 0 8px 25px rgba(0, 104, 55, 0.35);
         }
 
+        /* --- ALERTS --- */
         .alert-box {
             background-color: #fef2f2;
             color: #b91c1c;
             border: 1px solid #fca5a5;
-            padding: 15px;
-            border-radius: 12px;
+            padding: 12px;
+            border-radius: 10px;
             font-size: 0.95rem;
-            margin-bottom: 25px;
+            margin-bottom: 15px;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
         .footer {
-            margin-top: 30px;
-            font-size: 0.85rem;
+            margin-top: 20px;
+            font-size: 0.9rem;
             color: var(--text-muted);
+            text-align: center;
         }
 
-        @media (max-width: 480px) {
-            .login-container { padding: 30px 20px; }
-            .app-name { font-size: 1.7rem; }
-            .logo-img { width: 110px; }
-            .form-input, .btn-submit { height: 55px; }
+        /* RESPONSIF */
+        @media screen and (max-height: 720px) {
+            .login-container { padding: 20px 30px; }
+            .logo-img { height: 70px; margin-bottom: 5px; }
+            .app-name { font-size: 2rem; }
+            .app-desc { font-size: 0.95rem; margin-top: 5px; }
+            .form-input { height: 48px; font-size: 1rem; }
+            .btn-submit { height: 50px; font-size: 1.1rem; }
+            .form-content { gap: 10px; }
+            .footer { margin-top: 10px; font-size: 0.8rem; }
         }
     </style>
 </head>
@@ -264,49 +272,48 @@ if(isset($_POST['login'])){
 
     <div class="login-container">
         
-        <div class="logo-wrapper">
+        <div class="top-bar"></div>
+        
+        <div class="header-area">
             <?php if(file_exists("assets/img/logo.png")): ?>
                 <img src="assets/img/logo.png" alt="Logo PNYK" class="logo-img">
             <?php else: ?>
-                <i class="fas fa-balance-scale" style="font-size: 80px; color: var(--pn-gold);"></i>
+                <i class="fas fa-balance-scale" style="font-size: 80px; color: var(--pn-gold); margin-bottom:10px;"></i>
             <?php endif; ?>
-        </div>
 
-        <h1 class="app-name">SI-APIC</h1>
-        <p class="app-desc">Administrasi Pelayanan Izin Cuti<br>Pengadilan Negeri Yogyakarta</p>
+            <h1 class="app-name">SI-APIC</h1>
+            <p class="app-desc">Administrasi Pelayanan Izin Cuti<br>Pengadilan Negeri Yogyakarta</p>
+        </div>
 
         <?php if($error_msg != null): ?>
             <div class="alert-box">
-                <i class="fas fa-exclamation-circle"></i>
-                <span><?php echo $error_msg; ?></span>
+                <i class="fas fa-exclamation-triangle"></i> <span><?php echo $error_msg; ?></span>
             </div>
         <?php endif; ?>
 
         <?php if(isset($_GET['pesan']) && $_GET['pesan'] == "belum_login"): ?>
             <div class="alert-box" style="background-color: #fffbeb; color: #b45309; border-color: #fcd34d;">
-                <i class="fas fa-info-circle"></i>
-                <span>Silakan login terlebih dahulu.</span>
-            </div>
-        <?php endif; ?>
-        
-        <?php if(isset($_GET['pesan']) && $_GET['pesan'] == "logout"): ?>
-            <div class="alert-box" style="background-color: #ecfdf5; color: #047857; border-color: #6ee7b7;">
-                <i class="fas fa-check-circle"></i>
-                <span>Anda telah berhasil logout.</span>
+                <i class="fas fa-info-circle"></i> <span>Silakan login terlebih dahulu.</span>
             </div>
         <?php endif; ?>
 
-        <form action="" method="post">
+        <?php if(isset($_GET['pesan']) && $_GET['pesan'] == "logout"): ?>
+            <div class="alert-box" style="background-color: #ecfdf5; color: #047857; border-color: #6ee7b7;">
+                <i class="fas fa-check-circle"></i> <span>Anda telah berhasil logout.</span>
+            </div>
+        <?php endif; ?>
+
+        <form action="" method="post" class="form-content">
             
-            <div class="form-group">
+            <div>
                 <label class="form-label" for="nip">NIP</label>
                 <div class="input-wrapper">
                     <i class="fas fa-id-card input-icon"></i>
-                    <input type="text" id="nip" name="nip" class="form-input" placeholder="Masukkan NIP Anda" inputmode="numeric" required autocomplete="off">
+                    <input type="text" id="nip" name="nip" class="form-input" placeholder="Masukkan NIP" inputmode="numeric" required autocomplete="off">
                 </div>
             </div>
 
-            <div class="form-group">
+            <div>
                 <label class="form-label" for="password">Password</label>
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
@@ -331,7 +338,6 @@ if(isset($_POST['login'])){
         function togglePass() {
             var passInput = document.getElementById("password");
             var icon = document.getElementById("eye-icon");
-            
             if (passInput.type === "password") {
                 passInput.type = "text";
                 icon.classList.remove("fa-eye");
