@@ -104,7 +104,7 @@ $jml_setuju = mysqli_num_rows($query_setuju);
                             <?php echo $sisa_sakit; ?><span style="font-size:1rem"> Hari</span>
                         </div>
                         <div class="mt-2 text-xs text-muted">
-                            Saldo saat ini
+                            Sisa saat ini
                         </div>
                     </div>
                     <div class="col-auto">
