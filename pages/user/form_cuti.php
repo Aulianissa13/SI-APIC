@@ -7,9 +7,10 @@ $user = mysqli_fetch_array($query_user);
 // 2. Ambil Daftar Jenis Cuti
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 
-// 3. (BARU) Ambil Daftar User Lain untuk dijadikan Opsi Atasan Langsung
-// Kita ambil semua user KECUALI user yang sedang login saat ini
-$query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_pejabat='1' AND status_akun='aktif' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");?>
+// 3. (FIX) Ambil Daftar User Lain untuk dijadikan Opsi Atasan Langsung
+// Menggunakan 'id_pejabat' agar sesuai dengan database yang sudah diperbaiki
+$query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1' AND status_akun='aktif' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
+?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
@@ -82,7 +83,7 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_pejabat='1'
                             <small class="text-uppercase font-weight-bold" style="color: #006B3F; font-size: 0.65rem;">Sisa Cuti Tahunan (N)</small>
                             <h2 class="font-weight-bold mb-0 mt-1" style="color: #006B3F;"><?php echo $user['sisa_cuti_n']; ?></h2>
                             <small class="text-muted" style="font-size: 0.7rem;">Hari</small>
-                            <input type="hidden" id="max_tahunan" value="<?php echo $user['sisa_cuti_n']; ?>">
+                            <input type="hidden" id="max_tahunan" value="<?php echo (int)$user['sisa_cuti_n']; ?>">
                         </div>
                     </div>
                 </div>
@@ -100,7 +101,7 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_pejabat='1'
                     </div>
                     <div class="text-right">
                         <span class="h4 font-weight-bold mb-0"><?php echo $user['kuota_cuti_sakit']; ?></span>
-                        <input type="hidden" id="max_sakit" value="<?php echo $user['kuota_cuti_sakit']; ?>">
+                        <input type="hidden" id="max_sakit" value="<?php echo (int)$user['kuota_cuti_sakit']; ?>">
                     </div>
                 </div>
 

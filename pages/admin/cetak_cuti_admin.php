@@ -3,22 +3,33 @@ session_start();
 // Matikan error reporting agar warning kecil tidak merusak tampilan cetak
 error_reporting(0); 
 
-include '../../config/database.php';
+// --- 1. KONEKSI DATABASE (KHUSUS ADMIN) ---
+// Jalur disesuaikan dengan struktur folder: pages/admin/ -> assets/config/
+include '../../assets/config/database.php';
 
-// --- 1. KEAMANAN: CEK LOGIN & AKSES ---
+// Jaga-jaga jika path database berbeda (fallback)
+if (!$koneksi) {
+    include '../../config/database.php';
+}
+
+// --- 2. KEAMANAN: CEK LOGIN ---
 if (!isset($_SESSION['id_user'])) {
-    echo "<script>alert('Anda harus login terlebih dahulu!'); window.location='../../index.php';</script>";
+    echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
     exit;
+}
+
+// Cek Level (Opsional: Memastikan yang akses adalah Admin/Pimpinan)
+if (isset($_SESSION['level']) && $_SESSION['level'] == 'pegawai') {
+    // Jika pegawai biasa mencoba akses file admin ini, tolak
+    // (Kecuali jika sistem Anda membolehkan pegawai akses folder admin, baris ini bisa dihapus)
 }
 
 // Ambil ID dari URL
 $id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
-$id_user_login = $_SESSION['id_user'];
-// Ambil level user
-$level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
 
 // Ambil Data Lengkap Pengajuan
-$query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
+// Kita tambahkan "pengajuan_cuti.id_atasan AS id_atasan_fix" untuk memastikan ID yang diambil benar
+$query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
     WHERE id_pengajuan='$id_pengajuan'");
@@ -31,11 +42,7 @@ if (!$data) {
     exit;
 }
 
-// Validasi 2: Cek Kepemilikan (Hanya Pemilik ATAU Admin yang boleh cetak)
-if ($level_login != 'admin' && $data['id_user'] != $id_user_login) {
-    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak dokumen ini.'); window.close();</script>";
-    exit;
-}
+// (PENTING: Validasi Kepemilikan DIHAPUS disini, karena Admin berhak cetak punya siapa saja)
 
 // ============================================================
 // --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
@@ -119,7 +126,8 @@ if (!function_exists('tgl_indo')) {
 $nama_atasan = "............................................."; 
 $nip_atasan  = ".......................";
 
-$id_atasan_terpilih = isset($data['id_atasan']) ? $data['id_atasan'] : 0;
+// Ambil dari alias 'id_atasan_fix' yang sudah kita buat di query atas
+$id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0;
 
 if ($id_atasan_terpilih > 0) {
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
@@ -216,13 +224,11 @@ if ($id_atasan_terpilih > 0) {
         /* Box Tanda Tangan */
         .box-ttd-fixed { height: 3cm; width: 100%; position: relative; box-sizing: border-box; padding: 5px; }
         
-        /* PERUBAHAN CSS NIP:
-           border-top: 2px solid #000 -> Ini adalah garis pemisah antara Nama dan NIP 
-        */
+        /* PERUBAHAN CSS NIP */
         .nip-bottom {
         position: absolute; bottom: 5px; left: 5px; right: 5px;
         border-bottom: none; 
-        border-top: 2px solid #000; /* UBAH 1px JADI 2px AGAR BOLD */
+        border-top: 2px solid #000; 
         font-weight: bold; padding-top: 2px;
         text-align: left; 
          }

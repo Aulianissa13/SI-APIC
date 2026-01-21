@@ -1,394 +1,465 @@
 <?php
-// --- 1. PROSES PHP: TAMBAH / EDIT / HAPUS ---
+session_start();
+// Matikan error reporting agar warning kecil tidak merusak tampilan cetak
+error_reporting(0); 
 
-// A. TAMBAH PEGAWAI BARU
-if (isset($_POST['simpan_user'])) {
-    // 1. Ambil data dari form dan amankan input
-    $nip        = htmlspecialchars($_POST['nip']);
-    $nama       = htmlspecialchars($_POST['nama']);
-    $username   = htmlspecialchars($_POST['username']);
-    $password   = password_hash($_POST['password'], PASSWORD_DEFAULT); // Enkripsi Password
-    
-    // Data Kepegawaian
-    $jabatan    = htmlspecialchars($_POST['jabatan']);
-    $pangkat    = htmlspecialchars($_POST['pangkat']);
-    $unit_kerja = htmlspecialchars($_POST['unit_kerja']);
-    
-    // Pengaturan Akun & Status (FITUR BARU)
-    $role           = $_POST['role'];
-    $status_akun    = $_POST['status_akun']; // aktif / nonaktif
-    $is_pejabat     = $_POST['is_pejabat'];  // 0 / 1
+include '../../config/database.php';
 
-    // 2. Cek duplikasi Username atau NIP
-    $cek = mysqli_query($koneksi, "SELECT * FROM users WHERE username='$username' OR nip='$nip'");
-    if (mysqli_num_rows($cek) > 0) {
-        echo "<script>alert('Gagal! Username atau NIP sudah terdaftar di sistem.');</script>";
-    } else {
-        // 3. Query Insert Data Lengkap
-        $query = "INSERT INTO users (nip, nama_lengkap, username, password, jabatan, pangkat, unit_kerja, role, status_akun, is_pejabat) 
-                  VALUES ('$nip', '$nama', '$username', '$password', '$jabatan', '$pangkat', '$unit_kerja', '$role', '$status_akun', '$is_pejabat')";
-        
-        if (mysqli_query($koneksi, $query)) {
-            echo "<script>alert('Berhasil menambah pegawai baru!'); window.location='index.php?page=data_pegawai';</script>";
-        } else {
-            echo "<script>alert('Gagal menyimpan database: " . mysqli_error($koneksi) . "');</script>";
-        }
+// --- 1. KEAMANAN: CEK LOGIN & AKSES ---
+if (!isset($_SESSION['id_user'])) {
+    echo "<script>alert('Anda harus login terlebih dahulu!'); window.location='../../index.php';</script>";
+    exit;
+}
+
+// Ambil ID dari URL
+$id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_user_login = $_SESSION['id_user'];
+// Ambil level user
+$level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
+
+// Ambil Data Lengkap Pengajuan
+$query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
+    JOIN users ON pengajuan_cuti.id_user = users.id_user 
+    JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
+    WHERE id_pengajuan='$id_pengajuan'");
+
+$data = mysqli_fetch_array($query);
+
+// Validasi 1: Data tidak ditemukan
+if (!$data) {
+    echo "<script>alert('Data pengajuan tidak ditemukan!'); window.close();</script>";
+    exit;
+}
+
+// Validasi 2: Cek Kepemilikan (Hanya Pemilik ATAU Admin yang boleh cetak)
+if ($level_login != 'admin' && $data['id_user'] != $id_user_login) {
+    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak dokumen ini.'); window.close();</script>";
+    exit;
+}
+
+// ============================================================
+// --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
+// ============================================================
+
+$id_jenis   = $data['id_jenis']; 
+$lama_ambil = $data['lama_hari'];
+
+// Variabel default
+$sisa_n_tampil = $data['sisa_cuti_n']; 
+
+// Siapkan variabel kosong untuk setiap kolom keterangan di Tabel V
+$ket_tahunan = "";
+$ket_besar   = "";
+$ket_sakit   = "";
+$ket_lahir   = "";
+$ket_penting = "";
+$ket_luar    = "";
+
+// LOGIKA PENEMPATAN KETERANGAN
+switch ($id_jenis) {
+    case '1': // Cuti Tahunan
+        $sisa_awal     = $data['sisa_cuti_n'] + $lama_ambil;
+        $sisa_n_tampil = $sisa_awal; 
+        $ket_tahunan   = "Diambil " . $lama_ambil . " hari, sisa " . $data['sisa_cuti_n'] . " hari";
+        break;
+
+    case '2': // Cuti Sakit
+        $sisa_sakit_db   = $data['kuota_cuti_sakit'];
+        $ket_sakit       = "Diambil " . $lama_ambil . " hari, sisa " . $sisa_sakit_db . " hari";
+        break;
+
+    case '4': // Cuti Besar
+        $ket_besar       = "Diambil " . $lama_ambil . " hari";
+        break;
+
+    case '5': // Cuti Melahirkan
+        $ket_lahir       = "Diambil " . $lama_ambil . " hari"; 
+        break;
+
+    case '3': // Alasan Penting
+        $ket_penting     = "Diambil " . $lama_ambil . " hari";
+        break;
+
+    case '6': // Luar Tanggungan Negara
+        $ket_luar        = "Diambil " . $lama_ambil . " hari";
+        break;
+}
+
+// ============================================================
+// --- LOGIC CHECKLIST (CENTANG) ---
+// ============================================================
+$c1 = ($id_jenis == '1') ? '&#10003;' : ''; // Tahunan
+$c2 = ($id_jenis == '4') ? '&#10003;' : ''; // Besar
+$c3 = ($id_jenis == '2') ? '&#10003;' : ''; // Sakit
+$c4 = ($id_jenis == '5') ? '&#10003;' : ''; // Melahirkan
+$c5 = ($id_jenis == '3') ? '&#10003;' : ''; // Penting
+$c6 = ($id_jenis == '6') ? '&#10003;' : ''; // Luar Tanggungan
+
+// ============================================================
+// --- LOGIC TAHUN ---
+// ============================================================
+$tahun_n  = date('Y');
+$tahun_n1 = $tahun_n - 1;
+$tahun_n2 = $tahun_n - 2;
+
+if (!function_exists('tgl_indo')) {
+    function tgl_indo($tanggal){
+        $bulan = array (
+            1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+        );
+        $pecahkan = explode('-', $tanggal);
+        return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
     }
 }
 
-// B. EDIT DATA PEGAWAI
-if (isset($_POST['edit_user'])) {
-    $id_user    = $_POST['id_user'];
-    $nip        = htmlspecialchars($_POST['nip']);
-    $nama       = htmlspecialchars($_POST['nama']);
-    $jabatan    = htmlspecialchars($_POST['jabatan']);
-    $pangkat    = htmlspecialchars($_POST['pangkat']);
-    $unit_kerja = htmlspecialchars($_POST['unit_kerja']);
-    
-    // Update Status (FITUR BARU)
-    $role           = $_POST['role'];
-    $status_akun    = $_POST['status_akun'];
-    $is_pejabat     = $_POST['is_pejabat'];
+// ============================================================
+// --- LOGIC AMBIL DATA ATASAN LANGSUNG (BARU) ---
+// ============================================================
+// Kita ambil ID atasan dari data user yang sedang mengajukan cuti
+$id_atasan = isset($data['id_atasan']) ? $data['id_atasan'] : 0; 
 
-    // Cek apakah Admin mengubah password user?
-    if (!empty($_POST['password_baru'])) {
-        // Jika password diisi, enkripsi password baru
-        $pass_baru = password_hash($_POST['password_baru'], PASSWORD_DEFAULT);
-        $query = "UPDATE users SET 
-                    nip='$nip', 
-                    nama_lengkap='$nama', 
-                    jabatan='$jabatan', 
-                    pangkat='$pangkat', 
-                    unit_kerja='$unit_kerja', 
-                    role='$role', 
-                    status_akun='$status_akun', 
-                    is_pejabat='$is_pejabat', 
-                    password='$pass_baru' 
-                  WHERE id_user='$id_user'";
-    } else {
-        // Jika password kosong, jangan update kolom password
-        $query = "UPDATE users SET 
-                    nip='$nip', 
-                    nama_lengkap='$nama', 
-                    jabatan='$jabatan', 
-                    pangkat='$pangkat', 
-                    unit_kerja='$unit_kerja', 
-                    role='$role', 
-                    status_akun='$status_akun', 
-                    is_pejabat='$is_pejabat' 
-                  WHERE id_user='$id_user'";
-    }
+// Default jika atasan belum diset/tidak ditemukan
+$nama_atasan = ""; 
+$nip_atasan  = "";
 
-    if (mysqli_query($koneksi, $query)) {
-        echo "<script>alert('Data pegawai berhasil diperbarui!'); window.location='index.php?page=data_pegawai';</script>";
-    } else {
-        echo "<script>alert('Gagal update: " . mysqli_error($koneksi) . "');</script>";
-    }
-}
-
-// C. HAPUS PEGAWAI
-if (isset($_GET['hapus'])) {
-    $id_hapus = $_GET['hapus'];
-    // Mencegah Admin menghapus akunnya sendiri saat sedang login
-    if ($id_hapus == $_SESSION['id_user']) {
-        echo "<script>alert('Anda tidak bisa menghapus akun yang sedang digunakan!'); window.location='index.php?page=data_pegawai';</script>";
-    } else {
-        mysqli_query($koneksi, "DELETE FROM users WHERE id_user='$id_hapus'");
-        echo "<script>alert('Data pegawai berhasil dihapus.'); window.location='index.php?page=data_pegawai';</script>";
+if (!empty($id_atasan)) {
+    // Query data atasan
+    $query_atasan = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan'");
+    if ($data_atasan = mysqli_fetch_array($query_atasan)) {
+        $nama_atasan = $data_atasan['nama_lengkap'];
+        $nip_atasan  = $data_atasan['nip'];
     }
 }
 ?>
 
-<div class="container-fluid">
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Cetak Cuti F4 - <?php echo $data['nomor_surat']; ?></title>
+    <style>
+        /* --- SETUP KERTAS F4 (FOLIO) --- */
+        @page {
+            size: 215mm 330mm;
+            margin: 1cm 1.5cm 1cm 1.5cm; 
+        }
 
-    <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800" style="font-weight: 700; color: var(--pn-green);">Kelola Data Pegawai</h1>
-        <button type="button" class="btn btn-primary shadow-sm" data-toggle="modal" data-target="#modalTambah">
-            <i class="fas fa-user-plus fa-sm text-white-50 mr-2"></i>Tambah Pegawai
-        </button>
+        body {
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 10pt; 
+            color: #000;
+            margin: 0;
+            padding: 0;
+            line-height: 1;
+        }
+
+        .container { width: 100%; }
+
+        /* Header */
+        .header-lampiran {
+            text-align: right;
+            font-size: 8pt;
+            margin-bottom: 5px;
+            margin-top: 5px;
+        }
+
+        .tgl-lokasi { text-align: right; margin-bottom: 5px; font-size: 10pt; }
+        .tujuan-surat { margin-bottom: 5px; font-size: 10pt; }
+
+        .judul-utama {
+            text-align: center;
+            font-weight: bold;
+            font-size: 11pt;
+            margin-top: 5px;
+            margin-bottom: 2px;
+        }
+        
+        .nomor-surat {
+            text-align: center;
+            font-size: 11pt;
+            font-weight: bold; 
+            margin-bottom: 5px;
+        }
+
+        /* --- TABEL GLOBAL --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 3px;
+        }
+
+        /* --- ATURAN SEL (CELL) --- */
+        th, td {
+            border: 1px solid #000;
+            padding: 0 4px;
+            vertical-align: middle;
+            height: 0.5cm; /* Default Tinggi */
+            font-size: 9pt; 
+        }
+
+        .font-bold { font-weight: bold; }
+        .text-center { text-align: center; }
+        .valign-top { vertical-align: top; }
+        
+        /* Helper Border */
+        .bt-0 { border-top: none !important; }
+        .bl-0 { border-left: none !important; }
+        .br-0 { border-right: none !important; }
+        .bb-0 { border-bottom: none !important; }
+        .no-border { border: none !important; }
+
+        .check-col { text-align: center; font-size: 11pt; font-weight: bold; }
+
+        /* --- CSS KHUSUS --- */
+        .cell-alasan { height: 25px !important; padding: 5px !important; vertical-align: top; }
+        .cell-alamat { height: auto !important; padding: 5px !important; vertical-align: top; }
+        .col-right-fixed { width: 6cm !important; min-width: 6cm !important; max-width: 6cm !important; }
+        
+        /* Box Tanda Tangan */
+        .box-ttd-fixed { height: 3cm; width: 100%; position: relative; box-sizing: border-box; padding: 5px; }
+        
+        .nip-bottom {
+            position: absolute; bottom: 5px; left: 5px; right: 5px;
+            border-bottom: none; border-top: 2px solid #000;
+            font-weight: bold; padding-top: 2px;
+            /* text-align: left; dihapus biar default atau bisa dicenter */
+        }
+        
+        /* Utility font kecil untuk keterangan */
+        .small-text { font-size: 8pt; }
+
+        @media print { .no-print { display: none !important; } }
+    </style>
+</head>
+<body>
+
+    <div class="no-print" style="position:fixed; top:10px; right:10px; z-index:9999;">
+        <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#006B3F; color:white; border:none; border-radius:4px;">CETAK</button>
+        <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#d33; color:white; border:none; border-radius:4px;">TUTUP</button>
     </div>
 
-    <div class="card shadow mb-4" style="border-radius: 15px; border:none;">
-        <div class="card-header py-3" style="background:white; border-radius: 15px 15px 0 0;">
-            <h6 class="m-0 font-weight-bold" style="color: var(--pn-green);">Daftar Pengguna Sistem & Status</h6>
+    <div class="container">
+        
+        <div class="header-lampiran">
+            LAMPIRAN II : SURAT EDARAN SEKRETARIS MAHKAMAH AGUNG <br>
+            REPUBLIK INDONESIA <br>
+            NOMOR 13 TAHUN 2019
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover" id="dataTableUser" width="100%" cellspacing="0">
-                    <thead style="background: #f8f9fc;">
-                        <tr>
-                            <th width="5%">No</th>
-                            <th>Identitas Pegawai</th>
-                            <th>Jabatan & Status</th> <th>Unit Kerja</th>
-                            <th>Role Akses</th>
-                            <th class="text-center">Aksi</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php
-                        $no = 1;
-                        $tampil = mysqli_query($koneksi, "SELECT * FROM users ORDER BY role ASC, nama_lengkap ASC");
-                        while ($data = mysqli_fetch_array($tampil)) :
-                        ?>
-                        <tr class="<?= ($data['status_akun'] == 'nonaktif') ? 'bg-light text-muted' : '' ?>"> 
-                            <td><?= $no++ ?></td>
-                            <td>
-                                <div class="font-weight-bold text-dark"><?= $data['nama_lengkap'] ?></div>
-                                <small class="text-muted">NIP: <?= $data['nip'] ?></small>
-                                <div class="small text-primary font-italic mt-1">
-                                    <i class="fas fa-user-circle"></i> <?= $data['nip'] ?>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="text-dark font-weight-bold"><?= $data['jabatan'] ?></div>
-                                <small class="d-block"><?= isset($data['pangkat']) ? $data['pangkat'] : '-' ?></small>
-                                
-                                <div class="mt-2">
-                                    <?php if($data['is_pejabat'] == '1'): ?>
-                                        <span class="badge badge-success px-2 mb-1"><i class="fas fa-pen-nib"></i> Penandatangan</span>
-                                    <?php endif; ?>
 
-                                    <?php if($data['status_akun'] == 'aktif'): ?>
-                                        <span class="badge badge-info px-2 mb-1">Aktif</span>
-                                    <?php else: ?>
-                                        <span class="badge badge-danger px-2 mb-1">Non-Aktif / Blokir</span>
-                                    <?php endif; ?>
-                                </div>
-                            </td>
-                            <td><small><?= isset($data['unit_kerja']) ? $data['unit_kerja'] : '-' ?></small></td>
-                            <td>
-                                <?php if($data['role']=='admin'): ?>
-                                    <span class="badge badge-warning text-dark">Administrator</span>
-                                <?php else: ?>
-                                    <span class="badge badge-secondary">User / Pegawai</span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="text-center">
-                                <button type="button" class="btn btn-warning btn-sm btn-circle mb-1" 
-                                        data-toggle="modal" data-target="#modalEdit<?= $data['id_user'] ?>" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <a href="index.php?page=data_pegawai&hapus=<?= $data['id_user'] ?>" 
-                                   class="btn btn-danger btn-sm btn-circle mb-1" 
-                                   onclick="return confirm('Yakin ingin menghapus data pegawai ini?')" title="Hapus">
-                                    <i class="fas fa-trash"></i>
-                                </a>
-                            </td>
-                        </tr>
+        <div class="tgl-lokasi">
+            Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?>
+        </div>
 
-                        <div class="modal fade" id="modalEdit<?= $data['id_user'] ?>" tabindex="-1" role="dialog">
-                            <div class="modal-dialog modal-lg" role="document">
-                                <div class="modal-content">
-                                    <div class="modal-header bg-warning text-white">
-                                        <h5 class="modal-title">Edit Data Pegawai</h5>
-                                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                                            <span aria-hidden="true">&times;</span>
-                                        </button>
-                                    </div>
-                                    <form method="POST">
-                                        <div class="modal-body">
-                                            <input type="hidden" name="id_user" value="<?= $data['id_user'] ?>">
-                                            
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label>NIP</label>
-                                                        <input type="text" name="nip" class="form-control" value="<?= $data['nip'] ?>" required>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label>Nama Lengkap</label>
-                                                        <input type="text" name="nama" class="form-control" value="<?= $data['nama_lengkap'] ?>" required>
-                                                    </div>
-                                                </div>
-                                            </div>
+        <div class="tujuan-surat">
+            Kepada :<br>
+            Yth. Ketua Pengadilan Negeri, HI dan Tipikor Yogyakarta Kelas IA<br>
+            di - <br>
+            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;YOGYAKARTA.
+        </div>
 
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label>Jabatan</label>
-                                                        <input type="text" name="jabatan" class="form-control" value="<?= $data['jabatan'] ?>" required>
-                                                    </div>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <div class="form-group">
-                                                        <label>Pangkat / Golongan</label>
-                                                        <input type="text" name="pangkat" class="form-control" value="<?= isset($data['pangkat']) ? $data['pangkat'] : '' ?>" placeholder="Contoh: III/a">
-                                                    </div>
-                                                </div>
-                                            </div>
+        <div class="judul-utama">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
+        <div class="nomor-surat">Nomor : <?php echo $data['nomor_surat']; ?></div>
 
-                                            <div class="form-group">
-                                                <label>Unit Kerja</label>
-                                                <input type="text" name="unit_kerja" class="form-control" value="<?= isset($data['unit_kerja']) ? $data['unit_kerja'] : 'Pengadilan Negeri Yogyakarta' ?>" required>
-                                            </div>
+        <table>
+            <tr><td colspan="4" class="font-bold">I. DATA PEGAWAI</td></tr>
+            <tr>
+                <td style="width: 3cm;">Nama</td>
+                <td style="width: 6.5cm;"><?php echo $data['nama_lengkap']; ?></td>
+                <td style="width: 3cm;">NIP</td>
+                <td style="width: 6.5cm;"><?php echo $data['nip']; ?></td>
+            </tr>
+            <tr>
+                <td>Jabatan</td>
+                <td><?php echo $data['jabatan']; ?></td>
+                <td>Gol.Ruang</td>
+                <td>-</td>
+            </tr>
+            <tr>
+                <td>Unit Kerja</td>
+                <td>Pengadilan Negeri Yogyakarta</td>
+                <td>Masa Kerja</td>
+                <td>-</td>
+            </tr>
+        </table>
 
-                                            <hr>
-                                            <div class="alert alert-secondary">
-                                                <h6 class="font-weight-bold text-dark mb-3"><i class="fas fa-cogs"></i> Pengaturan Akun & Status</h6>
-                                                <div class="row">
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="font-weight-bold" style="font-size: 13px;">Status Akun (Login)</label>
-                                                            <select name="status_akun" class="form-control">
-                                                                <option value="aktif" <?= ($data['status_akun']=='aktif')?'selected':'' ?>>Aktif (Bisa Login)</option>
-                                                                <option value="nonaktif" <?= ($data['status_akun']=='nonaktif')?'selected':'' ?>>Non-Aktif (Blokir)</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="font-weight-bold" style="font-size: 13px;">Hak Tanda Tangan</label>
-                                                            <select name="is_pejabat" class="form-control">
-                                                                <option value="0" <?= ($data['is_pejabat']=='0')?'selected':'' ?>>Tidak (Pegawai Biasa)</option>
-                                                                <option value="1" <?= ($data['is_pejabat']=='1')?'selected':'' ?>>YA (Pejabat)</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                    <div class="col-md-4">
-                                                        <div class="form-group">
-                                                            <label class="font-weight-bold" style="font-size: 13px;">Role Admin</label>
-                                                            <select name="role" class="form-control">
-                                                                <option value="user" <?= ($data['role']=='user')?'selected':'' ?>>User</option>
-                                                                <option value="admin" <?= ($data['role']=='admin')?'selected':'' ?>>Administrator</option>
-                                                            </select>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
+        <table>
+            <tr><td colspan="4" class="font-bold">II. JENIS CUTI YANG DIAMBIL**</td></tr>
+            <tr>
+                <td width="40%">1. Cuti Tahunan</td>
+                <td width="10%" class="check-col"><?php echo $c1; ?></td>
+                <td width="40%">4. Cuti Besar</td>
+                <td width="10%" class="check-col"><?php echo $c2; ?></td>
+            </tr>
+            <tr>
+                <td>2. Cuti Sakit</td>
+                <td class="check-col"><?php echo $c3; ?></td>
+                <td>5. Cuti Melahirkan</td>
+                <td class="check-col"><?php echo $c4; ?></td>
+            </tr>
+            <tr>
+                <td>3. Cuti Karena Alasan Penting</td>
+                <td class="check-col"><?php echo $c5; ?></td>
+                <td>6. Cuti di Luar Tanggungan Negara</td>
+                <td class="check-col"><?php echo $c6; ?></td>
+            </tr>
+        </table>
 
-                                            <div class="form-group">
-                                                <label class="text-danger font-weight-bold">Reset Password</label>
-                                                <input type="password" name="password_baru" class="form-control" placeholder="Isi hanya jika ingin mengganti password">
-                                                <small class="text-muted">Biarkan kosong jika tidak ingin mengubah password.</small>
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                            <button type="submit" name="edit_user" class="btn btn-warning">Update Data</button>
-                                        </div>
-                                    </form>
-                                </div>
-                            </div>
+        <table>
+            <tr><td class="font-bold">III. ALASAN CUTI</td></tr>
+            <tr><td class="cell-alasan"><?php echo $data['alasan']; ?></td></tr>
+        </table>
+
+        <table>
+            <tr><td colspan="6" class="font-bold">IV. LAMANYA CUTI</td></tr>
+            <tr>
+                <td width="15%">Selama</td>
+                <td width="20%"><?php echo $data['lama_hari']; ?> (Hari/Bulan/Tahun)*</td>
+                <td width="15%">mulai tanggal</td>
+                <td width="20%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_mulai'])); ?></td>
+                <td width="5%" class="text-center">s/d</td>
+                <td width="25%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_selesai'])); ?></td>
+            </tr>
+        </table>
+
+        <table>
+            <tr><td colspan="6" class="font-bold">V. CATATAN CUTI***</td></tr>
+            <tr>
+                <td colspan="3" width="40%">1. CUTI TAHUNAN</td>
+                <td width="15%" class="text-center">PARAF PETUGAS CUTI</td>
+                <td width="35%">2. CUTI BESAR</td>
+                <td width="10%"></td> 
+            </tr>
+            <tr>
+                <td width="10%" class="text-center">Tahun</td>
+                <td width="10%" class="text-center">Sisa</td>
+                <td width="20%" class="text-center">Keterangan</td>
+                <td rowspan="4" class="valign-top" style="height: auto;"></td> 
+                
+                <td>3. CUTI SAKIT</td>
+                <td class="text-center small-text"><?php echo $ket_sakit; ?></td> 
+            </tr>
+            <tr>
+                <td class="text-center"><?php echo $tahun_n2; ?></td>
+                <td class="text-center">-</td>
+                <td></td>
+                
+                <td>4. CUTI MELAHIRKAN</td>
+                <td class="text-center small-text"><?php echo $ket_lahir; ?></td> 
+            </tr>
+            <tr>
+                <td class="text-center"><?php echo $tahun_n1; ?></td>
+                <td class="text-center"><?php echo $data['sisa_cuti_n1']; ?></td>
+                <td></td>
+                
+                <td>5. CUTI KARENA ALASAN PENTING</td>
+                <td class="text-center small-text"><?php echo $ket_penting; ?></td> 
+            </tr>
+            <tr>
+                <td class="text-center"><?php echo $tahun_n; ?></td>
+                <td class="text-center"><?php echo $sisa_n_tampil; ?></td>
+                <td class="text-center small-text"><?php echo $ket_tahunan; ?></td>
+                
+                <td>6. CUTI DI LUAR TANGGUNGAN NEGARA</td>
+                <td class="text-center small-text"><?php echo $ket_luar; ?></td> 
+            </tr>
+        </table>
+
+        <table>
+            <tr><td colspan="3" class="font-bold">VI. ALAMAT SELAMA MENJALANKAN CUTI</td></tr>
+            <tr>
+                <td rowspan="2" class="valign-top cell-alamat" style="width: auto;">
+                    <?php echo $data['alamat_cuti']; ?>
+                </td>
+                
+                <td class="bt-0 bb-0" style="width: 2cm;">Telp</td>
+                
+                <td class="bt-0 bb-0" style="width: 4cm;"><?php echo $data['no_telepon']; ?></td>
+            </tr>
+            <tr>
+                <td colspan="2" class="col-right-fixed" style="padding: 0;">
+                    <div class="box-ttd-fixed">
+                        <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
+                        
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: underline;">
+                            <?php echo $data['nama_lengkap']; ?>
                         </div>
-                        <?php endwhile; ?>
-                    </tbody>
-                </table>
-            </div>
+
+                        <div class="nip-bottom">
+                            NIP. <?php echo $data['nip']; ?>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        </table>    
+
+        <table>
+            <tr><td colspan="4" class="font-bold">VII. PERTIMBANGAN ATASAN LANGSUNG**</td></tr>
+            <tr>
+                <td class="text-center">DISETUJUI</td>
+                <td class="text-center">PERUBAHAN***</td>
+                <td class="text-center">DITANGGUHKAN***</td>
+                <td class="text-center col-right-fixed">TIDAK DISETUJUI****</td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td colspan="3" class="no-border"></td>
+                
+                <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
+                    <div class="box-ttd-fixed">
+                        <div style="text-align: center; margin-top: 40px; font-weight: bold; text-decoration: underline;">
+                            <?php echo $nama_atasan; ?>
+                        </div>
+
+                        <div class="nip-bottom">NIP. <?php echo $nip_atasan; ?></div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <table>
+            <tr><td colspan="4" class="font-bold">VIII. KEPUTUSAN PEJABAT YANG BERWENANG MEMBERIKAN CUTI**</td></tr>
+            <tr>
+                <td class="text-center">DISETUJUI</td>
+                <td class="text-center">PERUBAHAN***</td>
+                <td class="text-center">DITANGGUHKAN****</td>
+                <td class="text-center col-right-fixed">TIDAK DISETUJUI****</td>
+            </tr>
+            <tr>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+                <td>&nbsp;</td>
+            </tr>
+            
+            <tr>
+                <td colspan="3" class="no-border"></td>
+                
+                <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
+                    <div class="box-ttd-fixed">
+                        <div style="text-align: center; margin-top: 40px; font-weight: bold; text-decoration: underline;">
+                            &nbsp;
+                        </div>
+                        <div class="nip-bottom">NIP. </div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <div style="font-size: 8pt; margin-top: 2px;">
+            Catatan :<br>
+            * Coret yang tidak perlu<br>
+            ** Pilih salah satu dengan memberi tanda centang (&#10003;)<br>
+            *** Diisi oleh pejabat yang menangani bidang kepegawaian sebelum PNS mengajukan cuti<br>
+            **** Diberi tanda centang dan alasannya
         </div>
+
     </div>
-</div>
-
-<div class="modal fade" id="modalTambah" tabindex="-1" role="dialog">
-    <div class="modal-dialog modal-lg" role="document">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title"><i class="fas fa-user-plus mr-2"></i>Tambah Pegawai Baru</h5>
-                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <form method="POST">
-                <div class="modal-body">
-                    
-                    <h6 class="font-weight-bold text-primary mb-3">Data Diri & Jabatan</h6>
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>NIP</label>
-                                <input type="number" name="nip" class="form-control" placeholder="NIP Tanpa Spasi" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Nama Lengkap</label>
-                                <input type="text" name="nama" class="form-control" placeholder="Nama + Gelar" required>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Jabatan</label>
-                                <input type="text" name="jabatan" class="form-control" placeholder="Contoh: Panitera Pengganti" required>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label>Pangkat / Golongan</label>
-                                <input type="text" name="pangkat" class="form-control" placeholder="Contoh: Penata Muda (III/a)">
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <label>Unit Kerja</label>
-                        <input type="text" name="unit_kerja" class="form-control" value="Pengadilan Negeri Yogyakarta" readonly>
-                    </div>
-
-                    <hr>
-                    <div class="alert alert-light border">
-                        <h6 class="font-weight-bold text-primary mb-3">Akun & Status Login</h6>
-                        <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Username</label>
-                                    <input type="text" name="username" class="form-control" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label>Password Awal</label>
-                                    <input type="password" name="password" class="form-control" required>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mt-2">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold">Role Akses</label>
-                                    <select name="role" class="form-control">
-                                        <option value="user">User (Pegawai)</option>
-                                        <option value="admin">Administrator</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold">Status Akun</label>
-                                    <select name="status_akun" class="form-control">
-                                        <option value="aktif">Aktif</option>
-                                        <option value="nonaktif">Non-Aktif (Blokir)</option>
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label class="font-weight-bold">Hak Tanda Tangan</label>
-                                    <select name="is_pejabat" class="form-control">
-                                        <option value="0">Tidak (Pegawai Biasa)</option>
-                                        <option value="1">YA (Pejabat)</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" name="simpan_user" class="btn btn-primary">Simpan Pegawai</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-<script>
-    $(document).ready(function() {
-        $('#dataTableUser').DataTable();
-    });
-</script>
+</body>
+</html>

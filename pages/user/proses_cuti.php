@@ -1,5 +1,5 @@
 <?php
-session_start(); // Wajib ada untuk kirim pesan antar halaman
+session_start();
 include '../../config/database.php';
 
 // ============================================================
@@ -13,6 +13,7 @@ $lama_hari     = (int) $_POST['lama_hari'];
 $alasan        = $_POST['alasan'];
 $alamat_cuti   = $_POST['alamat_cuti'];
 $no_telepon    = $_POST['no_telepon'];
+$id_atasan     = $_POST['id_atasan']; // <--- (BARU) Menangkap ID Atasan dari Form
 $status        = 'Diajukan'; 
 $tgl_pengajuan = date('Y-m-d');
 
@@ -28,7 +29,6 @@ if ($tgl_selesai < $tgl_mulai) {
 }
 
 // --- VALIDASI 2: CEK BENTROK TANGGAL (ANTI DOUBLE BOOKING) ---
-// Mencari apakah ada pengajuan lain (kecuali yang ditolak) yang beririsan dengan tanggal ini
 $cek_bentrok = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
     WHERE id_user = '$id_user' 
     AND status != 'ditolak' 
@@ -111,8 +111,6 @@ if ($id_jenis == '1') { // Cuti Tahunan
         $perlu_update_user = true;
     }
 }
-// Jenis lain (Cuti Besar, Melahirkan, dll) biasanya tidak memotong kuota tahunan
-// Logic bisa ditambahkan di sini jika ada kuota khusus lainnya.
 
 // ============================================================
 // 4. EKSEKUSI DATABASE
@@ -130,11 +128,12 @@ if ($boleh_cuti) {
     $query_update_user .= " WHERE id_user='$id_user'";
     mysqli_query($koneksi, $query_update_user);
 
-    // B. Insert Pengajuan Baru
+    // B. Insert Pengajuan Baru (SUDAH DIPERBAIKI)
+    // Menambahkan kolom id_atasan
     $simpan = mysqli_query($koneksi, "INSERT INTO pengajuan_cuti 
-        (nomor_surat, id_user, id_jenis, tgl_mulai, tgl_selesai, lama_hari, alasan, alamat_cuti, status, tgl_pengajuan) 
+        (nomor_surat, id_user, id_jenis, tgl_mulai, tgl_selesai, lama_hari, alasan, alamat_cuti, status, tgl_pengajuan, id_atasan) 
         VALUES 
-        ('$no_surat_final', '$id_user', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$lama_hari', '$alasan', '$alamat_cuti', '$status', '$tgl_pengajuan')
+        ('$no_surat_final', '$id_user', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$lama_hari', '$alasan', '$alamat_cuti', '$status', '$tgl_pengajuan', '$id_atasan')
     ");
 
     if($simpan) {

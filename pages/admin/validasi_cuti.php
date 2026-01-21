@@ -199,11 +199,10 @@ $query = mysqli_query($koneksi, "SELECT pengajuan_cuti.*,
                             <td class="text-center"><?php echo $badge; ?></td>
                             
                             <td class="text-center">
-                                <a href="../user/cetak_cuti.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-circle btn-sm" title="Cetak Surat">
+                                <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-circle btn-sm" title="Cetak Surat">
                                     <i class="fas fa-print"></i>
                                 </a>
-
-                                <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
+                                    <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
                                     
                                     <span class="mx-1">|</span>
                                     
