@@ -58,9 +58,12 @@ if (isset($_GET['hapus_semua'])) {
     <div class="row">
         <div class="col-lg-4">
             <div class="card shadow mb-4" style="border-radius: 15px;">
-                <div class="card-header py-3 bg-primary text-white" style="border-radius: 15px 15px 0 0;">
-                    <h6 class="m-0 font-weight-bold"><i class="fas fa-calendar-plus mr-2"></i>Tambah Hari Libur</h6>
+                <div class="card-header py-3" style="border-radius: 15px 15px 0 0;">
+                    <h6 class="m-0 font-weight-bold text-primary">
+                        <i class="fas fa-calendar-plus mr-2"></i>Tambah Hari Libur
+                    </h6>
                 </div>
+                
                 <div class="card-body">
                     <form method="POST">
                         <div class="form-group">
@@ -90,7 +93,7 @@ if (isset($_GET['hapus_semua'])) {
         <div class="col-lg-8">
             <div class="card shadow mb-4" style="border-radius: 15px;">
                 <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="border-radius: 15px 15px 0 0;">
-                    <h6 class="m-0 font-weight-bold" style="color: var(--pn-green);">Daftar Hari Libur (Urut Tanggal)</h6>
+                    <h6 class="m-0 font-weight-bold" style="color: var(--pn-green);">Daftar Hari Libur</h6>
                     
                     <?php 
                     $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM libur_nasional"));
@@ -109,7 +112,7 @@ if (isset($_GET['hapus_semua'])) {
                             <thead class="bg-light">
                                 <tr>
                                     <th>No</th>
-                                    <th>Tanggal (Indonesia)</th>
+                                    <th>Tanggal</th>
                                     <th>Jenis</th>
                                     <th>Keterangan</th>
                                     <th class="text-center">Aksi</th>
@@ -118,10 +121,10 @@ if (isset($_GET['hapus_semua'])) {
                             <tbody>
                                 <?php 
                                 $no = 1;
-                                // ORDER BY tanggal ASC (Dari awal tahun ke akhir tahun)
+                                // ORDER BY tanggal ASC
                                 $qry = mysqli_query($koneksi, "SELECT * FROM libur_nasional ORDER BY tanggal ASC");
                                 
-                                // Array Konversi Hari & Bulan ke Indonesia
+                                // Array Konversi
                                 $hari_indo = [
                                     'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
                                     'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
@@ -133,22 +136,11 @@ if (isset($_GET['hapus_semua'])) {
                                 ];
 
                                 while($d = mysqli_fetch_array($qry)):
-                                    // 1. Ambil Nama Hari Inggris
                                     $day_en = date('l', strtotime($d['tanggal']));
-                                    // 2. Translate ke Indo
                                     $nama_hari = $hari_indo[$day_en];
-
-                                    // 3. Pecah Tanggal (Y-m-d)
-                                    $tgl_split = explode('-', $d['tanggal']); // [0]=Tahun, [1]=Bulan, [2]=Tanggal
-                                    $tgl_angka = $tgl_split[2];
-                                    $bln_angka = $tgl_split[1];
-                                    $thn_angka = $tgl_split[0];
-
-                                    // 4. Translate Bulan
-                                    $nama_bulan = $bulan_indo[$bln_angka];
-
-                                    // 5. Gabungkan Jadi String
-                                    $tanggal_full_indo = $tgl_angka . " " . $nama_bulan . " " . $thn_angka;
+                                    $tgl_split = explode('-', $d['tanggal']);
+                                    $nama_bulan = $bulan_indo[$tgl_split[1]];
+                                    $tanggal_full_indo = $tgl_split[2] . " " . $nama_bulan . " " . $tgl_split[0];
                                 ?>
                                 <tr>
                                     <td><?= $no++ ?></td>
@@ -184,7 +176,6 @@ if (isset($_GET['hapus_semua'])) {
 
 <script>
     $(document).ready(function() {
-        // Menonaktifkan sorting otomatis DataTables agar mengikuti urutan SQL (ASC)
         $('#dataTableLibur').DataTable({
             "ordering": false 
         });
