@@ -1,55 +1,50 @@
 <?php
-// 1. Ambil Data User yang sedang login
+// 1. Ambil Data User
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
 $user = mysqli_fetch_array($query_user);
 
+// --- (BARU) HITUNG TOTAL KUOTA GABUNGAN (FIFO) ---
+// Kita jumlahkan sisa N dan sisa N-1 agar validasi form mengizinkan pemakaian total
+$total_kuota_tahunan = $user['sisa_cuti_n'] + $user['sisa_cuti_n1'];
+
 // 2. Ambil Daftar Jenis Cuti
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 
-// 3. (FIX) Ambil Daftar User Lain untuk dijadikan Opsi Atasan Langsung
-// Menggunakan 'id_pejabat' agar sesuai dengan database yang sudah diperbaiki
+// 3. Ambil Atasan
 $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1' AND status_akun='aktif' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
+
+// 4. Ambil Libur Nasional untuk JavaScript
+$libur_nasional = [];
+$q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
+while ($row = mysqli_fetch_assoc($q_libur)) {
+    $libur_nasional[] = $row['tanggal'];
+}
+
+// 5. Generate Nomor Surat
+$tahun_ini = date('Y');
+$bulan_ini = date('n');
+$romawi = [ 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", 10 => "X", 11 => "XI", 12 => "XII" ];
+$bulan_romawi = $romawi[$bulan_ini];
+
+$q_cek_no = mysqli_query($koneksi, "SELECT id_pengajuan FROM pengajuan_cuti ORDER BY id_pengajuan DESC LIMIT 1");
+$row_no = mysqli_fetch_array($q_cek_no);
+$urut = isset($row_no['id_pengajuan']) ? ($row_no['id_pengajuan'] + 1) : 1;
+$no_urut_format = sprintf("%03d", $urut);
+
+$no_surat_auto = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-
 <style>
-    /* Override Font Bawaan */
     body, .h1, .h2, .h3, .h4, .h5, .h6 { font-family: 'Roboto', sans-serif !important; }
-
-    /* Styling Label Form */
-    .form-label-pro {
-        font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-        letter-spacing: 0.05em; color: #5a5c69; margin-bottom: 5px;
-    }
-
-    /* Input Field */
-    .form-control-pro {
-        border-radius: 4px; border: 1px solid #d1d3e2; padding: 10px 15px;
-        height: auto; font-size: 0.95rem; color: #333;
-    }
-    .form-control-pro:focus {
-        border-color: #006B3F; box-shadow: 0 0 0 0.2rem rgba(0, 107, 63, 0.25);
-    }
-
-    /* Readonly */
-    .bg-readonly {
-        background-color: #f8f9fc !important; color: #6e707e;
-        border: 1px solid #e3e6f0; cursor: not-allowed;
-    }
-
-    /* Card Header Hijau PN */
+    .form-label-pro { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #5a5c69; margin-bottom: 5px; }
+    .form-control-pro { border-radius: 4px; border: 1px solid #d1d3e2; padding: 10px 15px; height: auto; font-size: 0.95rem; color: #333; }
+    .form-control-pro:focus { border-color: #006B3F; box-shadow: 0 0 0 0.2rem rgba(0, 107, 63, 0.25); }
+    .bg-readonly { background-color: #f8f9fc !important; color: #6e707e; border: 1px solid #e3e6f0; cursor: not-allowed; }
     .card-header-pro { background-color: #006B3F; color: white; padding: 15px 20px; }
-
-    /* Divider Section */
-    .section-title {
-        border-bottom: 2px solid #006B3F; padding-bottom: 5px; margin-bottom: 20px;
-        margin-top: 10px; color: #006B3F; font-weight: 700; font-size: 1.1rem;
-    }
-
-    /* Efek Transparan untuk Box Kuota yang tidak aktif */
+    .section-title { border-bottom: 2px solid #006B3F; padding-bottom: 5px; margin-bottom: 20px; margin-top: 10px; color: #006B3F; font-weight: 700; font-size: 1.1rem; }
     .quota-box { transition: all 0.3s; opacity: 0.5; filter: grayscale(100%); }
     .quota-active { opacity: 1 !important; filter: grayscale(0%) !important; transform: scale(1.02); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important; }
 </style>
@@ -60,7 +55,6 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
 </div>
 
 <div class="row">
-
     <div class="col-lg-4 mb-4">
         <div class="card shadow-sm mb-4" style="border-top: 5px solid #d4af37;">
             <div class="card-body text-center pb-2">
@@ -70,26 +64,26 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                 <h5 class="font-weight-bold text-dark mb-1"><?php echo $user['nama_lengkap']; ?></h5>
                 <span class="badge badge-light border px-3 py-1 text-muted">NIP. <?php echo $user['nip']; ?></span>
             </div>
-
             <hr class="mx-4 my-2">
-
             <div class="card-body pt-1">
                 <h6 class="font-weight-bold text-center mb-3" style="color: #006B3F; font-size: 0.8rem; letter-spacing: 1px;">STATUS KUOTA CUTI</h6>
                 
                 <div class="row no-gutters mb-3">
                     <div class="col-12">
-                        <div id="box-tahunan" class="quota-box p-3 rounded text-center d-flex flex-column justify-content-center" 
-                             style="background-color: #f0fdf4; border: 1px solid #006B3F;">
-                            <small class="text-uppercase font-weight-bold" style="color: #006B3F; font-size: 0.65rem;">Sisa Cuti Tahunan (N)</small>
-                            <h2 class="font-weight-bold mb-0 mt-1" style="color: #006B3F;"><?php echo $user['sisa_cuti_n']; ?></h2>
-                            <small class="text-muted" style="font-size: 0.7rem;">Hari</small>
-                            <input type="hidden" id="max_tahunan" value="<?php echo (int)$user['sisa_cuti_n']; ?>">
+                        <div id="box-tahunan" class="quota-box p-3 rounded text-center d-flex flex-column justify-content-center" style="background-color: #f0fdf4; border: 1px solid #006B3F;">
+                            <small class="text-uppercase font-weight-bold" style="color: #006B3F; font-size: 0.65rem;">Total Sisa Cuti (N + N-1)</small>
+                            <h2 class="font-weight-bold mb-0 mt-1" style="color: #006B3F;"><?php echo $total_kuota_tahunan; ?></h2>
+                            
+                            <div style="font-size: 0.65rem; color: #006B3F;" class="mt-1">
+                                (Tahun Ini: <b><?php echo $user['sisa_cuti_n']; ?></b> | Tahun Lalu: <b><?php echo $user['sisa_cuti_n1']; ?></b>)
+                            </div>
+                            
+                            <input type="hidden" id="max_tahunan" value="<?php echo (int)$total_kuota_tahunan; ?>">
                         </div>
                     </div>
                 </div>
 
-                <div id="box-sakit" class="quota-box rounded p-3 d-flex align-items-center justify-content-between shadow-sm" 
-                     style="background: rgb(0,107,63); background: linear-gradient(135deg, rgba(0,107,63,1) 0%, rgba(0,77,45,1) 100%); color: white;">
+                <div id="box-sakit" class="quota-box rounded p-3 d-flex align-items-center justify-content-between shadow-sm" style="background: rgb(0,107,63); background: linear-gradient(135deg, rgba(0,107,63,1) 0%, rgba(0,77,45,1) 100%); color: white;">
                     <div class="d-flex align-items-center">
                         <div class="bg-white rounded-circle d-flex align-items-center justify-content-center mr-3" style="width: 40px; height: 40px; color: #006B3F;">
                             <i class="fas fa-briefcase-medical"></i>
@@ -108,9 +102,7 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                 <div id="box-unlimited" class="mt-3 text-center alert alert-info" style="display: none; font-size: 0.8rem;">
                     <i class="fas fa-info-circle"></i> Jenis cuti ini <b>TIDAK</b> memotong kuota tahunan.
                 </div>
-
             </div>
-            
             <div class="card-footer bg-white text-center py-2">
                 <small class="text-muted" style="font-size: 10px;">Update Terakhir: <?php echo date('d-m-Y H:i'); ?></small>
             </div>
@@ -130,6 +122,13 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
 
                     <div class="section-title">A. DATA PEGAWAI</div>
                     
+                    <div class="form-row">
+                        <div class="form-group col-12">
+                            <label class="form-label-pro">Nomor Surat (Otomatis Sistem)</label>
+                            <input type="text" name="no_surat" class="form-control form-control-pro bg-readonly font-weight-bold" value="<?php echo $no_surat_auto; ?>" readonly>
+                        </div>
+                    </div>
+
                     <div class="form-row">
                         <div class="form-group col-md-6">
                             <label class="form-label-pro">Nama Lengkap</label>
@@ -188,8 +187,6 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                         <select name="id_jenis" id="jenis_cuti" class="form-control form-control-pro" required onchange="cekJenisCuti()">
                             <option value="" data-nama="">-- Silakan Pilih --</option>
                             <?php 
-                            // Reset pointer data jenis cuti karena sudah dipakai di atas (jika perlu) atau query ulang
-                            // Tapi karena query_jenis masih ada cursornya, kita pakai ulang
                             mysqli_data_seek($query_jenis, 0); 
                             while($j = mysqli_fetch_array($query_jenis)) { 
                             ?>
@@ -198,7 +195,6 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                                 </option>
                             <?php } ?>
                         </select>
-
                         <div id="alert-sakit-reminder" class="alert alert-warning mt-2 mb-0" style="display:none; font-size: 0.85rem; border-left: 4px solid #f6c23e;">
                             <div class="d-flex align-items-center">
                                 <i class="fas fa-file-medical fa-2x mr-3 text-warning"></i>
@@ -208,7 +204,6 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                                 </div>
                             </div>
                         </div>
-
                     </div>
 
                     <div class="form-row">
@@ -225,9 +220,9 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
                             <input type="text" name="lama_hari" id="lama_hari" class="form-control form-control-pro bg-readonly" readonly placeholder="0 Hari">
                         </div>
                     </div>
-                    
+
                     <div id="alert-kuota" class="alert alert-danger text-center font-weight-bold" style="display:none; font-size: 0.85rem;">
-                        <i class="fas fa-exclamation-triangle"></i> Durasi pengajuan melebihi sisa kuota Anda!
+                        <i class="fas fa-exclamation-triangle"></i> Durasi pengajuan melebihi Total Sisa Kuota (Tahun Ini + Tahun Lalu) Anda!
                     </div>
 
                     <div class="form-group">
@@ -258,33 +253,31 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
+    
     <?php if (isset($_SESSION['alert'])) : ?>
         <script>
             Swal.fire({
                 icon: '<?php echo $_SESSION['alert']['icon']; ?>',
                 title: '<?php echo $_SESSION['alert']['title']; ?>',
                 text: '<?php echo $_SESSION['alert']['text']; ?>',
-                confirmButtonColor: '#d33',
-                confirmButtonText: 'Perbaiki'
+                confirmButtonColor: '#006B3F'
             });
         </script>
-        <?php unset($_SESSION['alert']); // Hapus pesan agar tidak muncul lagi ?>
+        <?php unset($_SESSION['alert']); ?>
     <?php endif; ?>
 </div>
 
 <script>
-    // 1. EVENT LISTENER
+    // 1. DATA LIBUR DARI PHP
+    const holidays = <?php echo json_encode($libur_nasional); ?>;
+    
     document.getElementById("tgl_mulai").addEventListener("change", updateKalkulasi);
     document.getElementById("tgl_selesai").addEventListener("change", updateKalkulasi);
     document.getElementById("jenis_cuti").addEventListener("change", updateKalkulasi);
 
-    // 2. INTERCEPT SUBMIT DENGAN SWEETALERT (Baru)
+    // SweetAlert Submit Intercept
     document.getElementById('formCuti').addEventListener('submit', function(e) {
-        e.preventDefault(); // Mencegah kirim langsung
-        
-        // Ambil data untuk pesan konfirmasi
+        e.preventDefault(); 
         var tglMulai = document.getElementById("tgl_mulai").value;
         var lama = document.getElementById("lama_hari").value;
 
@@ -293,19 +286,17 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
             html: "Anda akan mengajukan cuti selama <b>" + lama + " Hari</b><br>mulai tanggal <b>" + tglMulai + "</b>.<br>Apakah data sudah benar?",
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#006B3F', // Warna Hijau Brand
+            confirmButtonColor: '#006B3F',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Ya, Ajukan!',
-            cancelButtonText: 'Cek Lagi'
+            confirmButtonText: 'Ya, Ajukan!'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Jika user klik Ya, baru kirim form secara manual
                 e.target.submit(); 
             }
         });
     });
 
-    // 3. FUNGSI UTAMA (Menghitung hari & Cek Kuota)
+    // FUNGSI UTAMA (HITUNG HARI KERJA DENGAN DATABASE)
     function updateKalkulasi() {
         var tglMulai = document.getElementById("tgl_mulai").value;
         var tglSelesai = document.getElementById("tgl_selesai").value;
@@ -332,52 +323,58 @@ $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1'
             return;
         }
 
+        // --- LOGIC HITUNG LIBUR & WEEKEND ---
         var count = 0;
         var curDate = new Date(date1.getTime());
 
         while (curDate <= date2) {
             var dayOfWeek = curDate.getDay();
-            if(dayOfWeek !== 0 && dayOfWeek !== 6) {
+            // Format YYYY-MM-DD untuk cek array holidays
+            var year = curDate.getFullYear();
+            var month = String(curDate.getMonth() + 1).padStart(2, '0');
+            var day = String(curDate.getDate()).padStart(2, '0');
+            var dateString = `${year}-${month}-${day}`;
+
+            // Jika bukan Minggu(0) DAN bukan Sabtu(6) DAN bukan Libur Nasional
+            if(dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays.includes(dateString)) {
                 count++;
             }
             curDate.setDate(curDate.getDate() + 1);
         }
+        // ------------------------------------
 
         outputHari.value = count;
         validasiStok(namaJenis, count);
     }
 
-    // Fungsi Mengatur Tampilan Box Kuota & ALERT SAKIT (Updated)
     function highlightBox(jenis) {
         var boxTahunan = document.getElementById("box-tahunan");
         var boxSakit = document.getElementById("box-sakit");
         var boxUnlimited = document.getElementById("box-unlimited");
-        var alertSakit = document.getElementById("alert-sakit-reminder"); // ID baru
+        var alertSakit = document.getElementById("alert-sakit-reminder");
 
-        // Reset semua
         boxTahunan.classList.remove("quota-active");
         boxSakit.classList.remove("quota-active");
         boxUnlimited.style.display = "none";
-        alertSakit.style.display = "none"; // Default hidden
+        alertSakit.style.display = "none";
 
         if (jenis.includes("tahunan")) {
             boxTahunan.classList.add("quota-active");
         } else if (jenis.includes("sakit")) {
             boxSakit.classList.add("quota-active");
-            alertSakit.style.display = "block"; // (BARU) Tampilkan alert jika pilih sakit
+            alertSakit.style.display = "block";
         } else if (jenis !== "") {
             boxUnlimited.style.display = "block";
         }
     }
 
-    // Fungsi Cek Stok vs Input
     function validasiStok(jenis, lamaHari) {
         var btnSubmit = document.getElementById("btnSubmit");
         var alertKuota = document.getElementById("alert-kuota");
-        
         var maxStok = 999; 
         
         if (jenis.includes("tahunan")) {
+            // Ini akan mengambil value dari input hidden yang sudah berisi TOTAL (N + N-1)
             maxStok = parseInt(document.getElementById("max_tahunan").value);
         } else if (jenis.includes("sakit")) {
             maxStok = parseInt(document.getElementById("max_sakit").value);

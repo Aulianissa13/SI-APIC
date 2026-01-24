@@ -1,23 +1,21 @@
 <?php
 session_start();
-// Matikan error reporting agar warning kecil tidak merusak tampilan cetak
+// Matikan error reporting agar warning tidak muncul di cetakan
 error_reporting(0); 
 
 include '../../config/database.php';
 
-// --- 1. KEAMANAN: CEK LOGIN & AKSES ---
+// --- 1. KEAMANAN ---
 if (!isset($_SESSION['id_user'])) {
     echo "<script>alert('Anda harus login terlebih dahulu!'); window.location='../../index.php';</script>";
     exit;
 }
 
-// Ambil ID dari URL
 $id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_user_login = $_SESSION['id_user'];
-// Ambil level user
 $level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
 
-// Ambil Data Lengkap Pengajuan
+// --- 2. AMBIL DATA ---
 $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
@@ -25,107 +23,110 @@ $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti
 
 $data = mysqli_fetch_array($query);
 
-// Validasi 1: Data tidak ditemukan
-if (!$data) {
-    echo "<script>alert('Data pengajuan tidak ditemukan!'); window.close();</script>";
-    exit;
-}
-
-// Validasi 2: Cek Kepemilikan (Hanya Pemilik ATAU Admin yang boleh cetak)
-if ($level_login != 'admin' && $data['id_user'] != $id_user_login) {
-    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak dokumen ini.'); window.close();</script>";
-    exit;
-}
+if (!$data) { echo "<script>alert('Data tidak ditemukan!'); window.close();</script>"; exit; }
+if ($level_login != 'admin' && $data['id_user'] != $id_user_login) { echo "<script>alert('Akses Ditolak!'); window.close();</script>"; exit; }
 
 // ============================================================
-// --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
+// --- KONFIGURASI KETUA (PEJABAT BERWENANG - KOLOM VIII) ---
 // ============================================================
-
-$id_jenis   = $data['id_jenis']; 
-$lama_ambil = $data['lama_hari'];
-
-// Variabel default
-$sisa_n_tampil = $data['sisa_cuti_n']; 
-
-// Siapkan variabel kosong untuk setiap kolom keterangan di Tabel V
-$ket_tahunan = "";
-$ket_besar   = "";
-$ket_sakit   = "";
-$ket_lahir   = "";
-$ket_penting = "";
-$ket_luar    = "";
-
-// LOGIKA PENEMPATAN KETERANGAN
-switch ($id_jenis) {
-    case '1': // Cuti Tahunan
-        $sisa_awal     = $data['sisa_cuti_n'] + $lama_ambil;
-        $sisa_n_tampil = $sisa_awal; 
-        $ket_tahunan   = "Diambil " . $lama_ambil . " hari, sisa " . $data['sisa_cuti_n'] . " hari";
-        break;
-
-    case '2': // Cuti Sakit
-        $sisa_sakit_db   = $data['kuota_cuti_sakit'];
-        $ket_sakit       = "Diambil " . $lama_ambil . " hari, sisa " . $sisa_sakit_db . " hari";
-        break;
-
-    case '4': // Cuti Besar
-        $ket_besar       = "Diambil " . $lama_ambil . " hari";
-        break;
-
-    case '5': // Cuti Melahirkan
-        $ket_lahir       = "Diambil " . $lama_ambil . " hari"; 
-        break;
-
-    case '3': // Alasan Penting
-        $ket_penting     = "Diambil " . $lama_ambil . " hari";
-        break;
-
-    case '6': // Luar Tanggungan Negara
-        $ket_luar        = "Diambil " . $lama_ambil . " hari";
-        break;
-}
+// Data ini dikunci (Hardcode) agar selalu muncul di paling bawah
+$nama_ketua = "SYAFRIZAL, S.H."; 
+$nip_ketua  = "19680414 199603 1 002"; 
 
 // ============================================================
-// --- LOGIC CHECKLIST (CENTANG) ---
+// --- LOGIC ATASAN LANGSUNG (KOLOM VII) ---
 // ============================================================
-$c1 = ($id_jenis == '1') ? '&#10003;' : ''; // Tahunan
-$c2 = ($id_jenis == '4') ? '&#10003;' : ''; // Besar
-$c3 = ($id_jenis == '2') ? '&#10003;' : ''; // Sakit
-$c4 = ($id_jenis == '5') ? '&#10003;' : ''; // Melahirkan
-$c5 = ($id_jenis == '3') ? '&#10003;' : ''; // Penting
-$c6 = ($id_jenis == '6') ? '&#10003;' : ''; // Luar Tanggungan
+// Data ini dinamis, sesuai pilihan saat pegawai mengajukan cuti
+$nama_atasan_langsung = "............................................."; 
+$nip_atasan_langsung  = ".......................";
+$id_atasan_terpilih   = isset($data['id_pejabat']) ? $data['id_pejabat'] : 0;
 
-// ============================================================
-// --- LOGIC TAHUN ---
-// ============================================================
-$tahun_n  = date('Y');
-$tahun_n1 = $tahun_n - 1;
-$tahun_n2 = $tahun_n - 2;
-
-if (!function_exists('tgl_indo')) {
-    function tgl_indo($tanggal){
-        $bulan = array (
-            1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-            'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-        );
-        $pecahkan = explode('-', $tanggal);
-        return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+if ($id_atasan_terpilih > 0) {
+    // Ambil data atasan dari tabel users berdasarkan ID yang dipilih
+    $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
+    if ($bos = mysqli_fetch_array($cari_bos)) {
+        $nama_atasan_langsung = $bos['nama_lengkap'];
+        $nip_atasan_langsung  = $bos['nip'];
     }
 }
 
 // ============================================================
-// --- LOGIC AMBIL DATA ATASAN LANGSUNG ---
+// --- LOGIC PERHITUNGAN CUTI (SAMA SEPERTI ASLINYA) ---
 // ============================================================
-$nama_atasan = "............................................."; 
-$nip_atasan  = ".......................";
+$id_jenis   = $data['id_jenis']; 
+$lama_ambil = $data['lama_hari'];
+$sisa_n_tampil  = $data['sisa_cuti_n']; 
+$sisa_n1_tampil = $data['sisa_cuti_n1']; 
 
-$id_atasan_terpilih = isset($data['id_atasan']) ? $data['id_atasan'] : 0;
+$ket_tahunan_n = "-"; $ket_tahunan_n1 = "-";
+$ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
-if ($id_atasan_terpilih > 0) {
-    $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
-    if ($bos = mysqli_fetch_array($cari_bos)) {
-        $nama_atasan = $bos['nama_lengkap'];
-        $nip_atasan  = $bos['nip'];
+switch ($id_jenis) {
+    case '1': // Tahunan
+        // Saldo yang tersimpan di database (Sisa Akhir setelah dipotong)
+        $sisa_akhir_n  = $data['sisa_cuti_n']; 
+        $sisa_akhir_n1 = $data['sisa_cuti_n1'];
+        
+        // Jumlah yang dipotong pada pengajuan ini
+        $ambil_n  = (int) $data['dipotong_n'];
+        $ambil_n1 = (int) $data['dipotong_n1'];
+
+        // --- 1. KOLOM "SISA" (Tampilkan Kuota Awal Sebelum Dipotong) ---
+        // Rumus: Sisa Akhir + Yang Diambil
+        $sisa_n_tampil  = $sisa_akhir_n + $ambil_n;
+        $sisa_n1_tampil = $sisa_akhir_n1 + $ambil_n1;
+
+        // --- 2. KOLOM "KETERANGAN" (Tampilkan Detail Potongan & Sisa Akhir) ---
+        
+        // Untuk Tahun N-1 (Tahun Lalu)
+        if ($ambil_n1 > 0) {
+            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
+        }
+        
+        // Untuk Tahun N (Tahun Ini)
+        if ($ambil_n > 0) {
+            $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
+        }
+        
+        break;
+
+    case '2': // Cuti Sakit
+        // Ambil kuota sakit saat ini
+        $sisa_sakit = isset($data['kuota_cuti_sakit']) ? $data['kuota_cuti_sakit'] : 0;
+        $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
+        break;
+
+    case '4': // Cuti Besar
+        $ket_besar = "Diambil " . $lama_ambil . " hari"; 
+        break;
+        
+    case '5': // Melahirkan
+        $ket_lahir = "Diambil " . $lama_ambil . " hari"; 
+        break;
+        
+    case '3': // Alasan Penting
+        $ket_penting = "Diambil " . $lama_ambil . " hari"; 
+        break;
+        
+    case '6': // Luar Tanggungan
+        $ket_luar = "Diambil " . $lama_ambil . " hari"; 
+        break;
+}
+
+$c1 = ($id_jenis == '1') ? '&#10003;' : '';
+$c2 = ($id_jenis == '4') ? '&#10003;' : '';
+$c3 = ($id_jenis == '2') ? '&#10003;' : '';
+$c4 = ($id_jenis == '5') ? '&#10003;' : '';
+$c5 = ($id_jenis == '3') ? '&#10003;' : '';
+$c6 = ($id_jenis == '6') ? '&#10003;' : '';
+
+$tahun_n  = date('Y'); $tahun_n1 = $tahun_n - 1; $tahun_n2 = $tahun_n - 2;
+
+if (!function_exists('tgl_indo')) {
+    function tgl_indo($tanggal){
+        $bulan = array (1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
+        $pecahkan = explode('-', $tanggal);
+        return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
     }
 }
 ?>
@@ -136,99 +137,34 @@ if ($id_atasan_terpilih > 0) {
     <meta charset="UTF-8">
     <title>Cetak Cuti F4 - <?php echo $data['nomor_surat']; ?></title>
     <style>
-        /* --- SETUP KERTAS F4 (FOLIO) --- */
-        @page {
-            size: 215mm 330mm;
-            margin: 1cm 1.5cm 1cm 1.5cm; 
-        }
-
-        body {
-            font-family: 'Times New Roman', Times, serif;
-            font-size: 10pt; 
-            color: #000;
-            margin: 0;
-            padding: 0;
-            line-height: 1;
-        }
-
+        @page { size: 215mm 330mm; margin: 1cm 1.5cm 1cm 1.5cm; }
+        body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; margin: 0; padding: 0; line-height: 1; }
         .container { width: 100%; }
-
-        /* Header */
-        .header-lampiran {
-            text-align: right;
-            font-size: 8pt;
-            margin-bottom: 5px;
-            margin-top: 5px;
-        }
-
+        .header-lampiran { text-align: right; font-size: 8pt; margin-bottom: 5px; margin-top: 5px; }
         .tgl-lokasi { text-align: right; margin-bottom: 5px; font-size: 10pt; }
         .tujuan-surat { margin-bottom: 5px; font-size: 10pt; }
-
-        .judul-utama {
-            text-align: center;
-            font-weight: bold;
-            font-size: 11pt;
-            margin-top: 5px;
-            margin-bottom: 2px;
-        }
+        .judul-utama { text-align: center; font-weight: bold; font-size: 11pt; margin-top: 5px; margin-bottom: 2px; }
+        .nomor-surat { text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 5px; }
         
-        .nomor-surat {
-            text-align: center;
-            font-size: 11pt;
-            font-weight: bold; 
-            margin-bottom: 5px;
-        }
-
-        /* --- TABEL GLOBAL --- */
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 3px;
-        }
-
-        /* --- ATURAN SEL (CELL) --- */
-        th, td {
-            border: 1px solid #000;
-            padding: 0 4px;
-            vertical-align: middle;
-            height: 0.5cm; /* Default Tinggi */
-            font-size: 9pt; 
-        }
-
+        table { width: 100%; border-collapse: collapse; margin-bottom: 3px; }
+        th, td { border: 1px solid #000; padding: 0 4px; vertical-align: middle; height: 0.5cm; font-size: 9pt; }
+        
         .font-bold { font-weight: bold; }
         .text-center { text-align: center; }
         .valign-top { vertical-align: top; }
         
-        /* Helper Border */
-        .bt-0 { border-top: none !important; }
-        .bl-0 { border-left: none !important; }
-        .br-0 { border-right: none !important; }
-        .bb-0 { border-bottom: none !important; }
+        .bt-0 { border-top: none !important; } .bl-0 { border-left: none !important; }
+        .br-0 { border-right: none !important; } .bb-0 { border-bottom: none !important; }
         .no-border { border: none !important; }
-
         .check-col { text-align: center; font-size: 11pt; font-weight: bold; }
 
-        /* --- CSS KHUSUS --- */
         .cell-alasan { height: 25px !important; padding: 5px !important; vertical-align: top; }
         .cell-alamat { height: auto !important; padding: 5px !important; vertical-align: top; }
         .col-right-fixed { width: 6cm !important; min-width: 6cm !important; max-width: 6cm !important; }
         
-        /* Box Tanda Tangan */
         .box-ttd-fixed { height: 3cm; width: 100%; position: relative; box-sizing: border-box; padding: 5px; }
-        
-        /* PERUBAHAN CSS NIP:
-           border-top: 2px solid #000 -> Ini adalah garis pemisah antara Nama dan NIP 
-        */
-        .nip-bottom {
-        position: absolute; bottom: 5px; left: 5px; right: 5px;
-        border-bottom: none; 
-        border-top: 2px solid #000; /* UBAH 1px JADI 2px AGAR BOLD */
-        font-weight: bold; padding-top: 2px;
-        text-align: left; 
-         }
-        
+        .nip-bottom { position: absolute; bottom: 5px; left: 5px; right: 5px; border-top: 2px solid #000; font-weight: bold; padding-top: 2px; text-align: left; }
         .small-text { font-size: 8pt; }
-
         @media print { .no-print { display: none !important; } }
     </style>
 </head>
@@ -273,35 +209,29 @@ if ($id_atasan_terpilih > 0) {
                 <td>Jabatan</td>
                 <td><?php echo $data['jabatan']; ?></td>
                 <td>Gol.Ruang</td>
-                <td>-</td>
+                <td><?php echo isset($data['pangkat']) ? $data['pangkat'] : ''; ?> / <?php echo isset($data['golongan']) ? $data['golongan'] : ''; ?></td>
             </tr>
             <tr>
                 <td>Unit Kerja</td>
                 <td>Pengadilan Negeri Yogyakarta</td>
                 <td>Masa Kerja</td>
-                <td>-</td>
+                <td><?php echo isset($data['masa_kerja']) ? $data['masa_kerja'] : '-'; ?></td>
             </tr>
         </table>
 
         <table>
             <tr><td colspan="4" class="font-bold">II. JENIS CUTI YANG DIAMBIL**</td></tr>
             <tr>
-                <td width="40%">1. Cuti Tahunan</td>
-                <td width="10%" class="check-col"><?php echo $c1; ?></td>
-                <td width="40%">4. Cuti Besar</td>
-                <td width="10%" class="check-col"><?php echo $c2; ?></td>
+                <td width="40%">1. Cuti Tahunan</td><td width="10%" class="check-col"><?php echo $c1; ?></td>
+                <td width="40%">4. Cuti Besar</td><td width="10%" class="check-col"><?php echo $c2; ?></td>
             </tr>
             <tr>
-                <td>2. Cuti Sakit</td>
-                <td class="check-col"><?php echo $c3; ?></td>
-                <td>5. Cuti Melahirkan</td>
-                <td class="check-col"><?php echo $c4; ?></td>
+                <td>2. Cuti Sakit</td><td class="check-col"><?php echo $c3; ?></td>
+                <td>5. Cuti Melahirkan</td><td class="check-col"><?php echo $c4; ?></td>
             </tr>
             <tr>
-                <td>3. Cuti Karena Alasan Penting</td>
-                <td class="check-col"><?php echo $c5; ?></td>
-                <td>6. Cuti di Luar Tanggungan Negara</td>
-                <td class="check-col"><?php echo $c6; ?></td>
+                <td>3. Cuti Karena Alasan Penting</td><td class="check-col"><?php echo $c5; ?></td>
+                <td>6. Cuti di Luar Tanggungan Negara</td><td class="check-col"><?php echo $c6; ?></td>
             </tr>
         </table>
 
@@ -315,7 +245,7 @@ if ($id_atasan_terpilih > 0) {
             <tr>
                 <td width="15%">Selama</td>
                 <td width="20%"><?php echo $data['lama_hari']; ?> (Hari/Bulan/Tahun)*</td>
-                <td width="15%">mulai tanggal</td>
+                <td width="15%" class="text-center">mulai tanggal</td>
                 <td width="20%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_mulai'])); ?></td>
                 <td width="5%" class="text-center">s/d</td>
                 <td width="25%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_selesai'])); ?></td>
@@ -327,39 +257,30 @@ if ($id_atasan_terpilih > 0) {
             <tr>
                 <td colspan="3" width="40%">1. CUTI TAHUNAN</td>
                 <td width="15%" class="text-center">PARAF PETUGAS CUTI</td>
-                <td width="35%">2. CUTI BESAR</td>
-                <td width="10%"></td> 
+                <td width="35%">2. CUTI BESAR</td><td width="10%"></td> 
             </tr>
             <tr>
                 <td width="10%" class="text-center">Tahun</td>
                 <td width="10%" class="text-center">Sisa</td>
                 <td width="20%" class="text-center">Keterangan</td>
                 <td rowspan="4" class="valign-top" style="height: auto;"></td> 
-                
                 <td>3. CUTI SAKIT</td>
                 <td class="text-center small-text"><?php echo $ket_sakit; ?></td> 
             </tr>
             <tr>
-                <td class="text-center"><?php echo $tahun_n2; ?></td>
-                <td class="text-center">-</td>
-                <td></td>
-                
+                <td class="text-center"><?php echo $tahun_n2; ?></td><td class="text-center">-</td><td></td>
                 <td>4. CUTI MELAHIRKAN</td>
                 <td class="text-center small-text"><?php echo $ket_lahir; ?></td> 
             </tr>
             <tr>
-                <td class="text-center"><?php echo $tahun_n1; ?></td>
-                <td class="text-center"><?php echo $data['sisa_cuti_n1']; ?></td>
-                <td></td>
-                
+                <td class="text-center"><?php echo $tahun_n1; ?></td><td class="text-center"><?php echo $sisa_n1_tampil; ?></td>
+                <td class="text-center small-text"><?php echo $ket_tahunan_n1; ?></td>
                 <td>5. CUTI KARENA ALASAN PENTING</td>
                 <td class="text-center small-text"><?php echo $ket_penting; ?></td> 
             </tr>
             <tr>
-                <td class="text-center"><?php echo $tahun_n; ?></td>
-                <td class="text-center"><?php echo $sisa_n_tampil; ?></td>
-                <td class="text-center small-text"><?php echo $ket_tahunan; ?></td>
-                
+                <td class="text-center"><?php echo $tahun_n; ?></td><td class="text-center"><?php echo $sisa_n_tampil; ?></td>
+                <td class="text-center small-text"><?php echo $ket_tahunan_n; ?></td>
                 <td>6. CUTI DI LUAR TANGGUNGAN NEGARA</td>
                 <td class="text-center small-text"><?php echo $ket_luar; ?></td> 
             </tr>
@@ -371,23 +292,17 @@ if ($id_atasan_terpilih > 0) {
                 <td rowspan="2" class="valign-top cell-alamat" style="width: auto;">
                     <?php echo $data['alamat_cuti']; ?>
                 </td>
-                
                 <td class="bt-0 bb-0" style="width: 2cm;">Telp</td>
-                
                 <td class="bt-0 bb-0" style="width: 4cm;"><?php echo $data['no_telepon']; ?></td>
             </tr>
             <tr>
                 <td colspan="2" class="col-right-fixed" style="padding: 0;">
                     <div class="box-ttd-fixed">
                         <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
-                        
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
+                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;">
                             <?php echo $data['nama_lengkap']; ?>
                         </div>
-
-                        <div class="nip-bottom">
-                            NIP. <?php echo $data['nip']; ?>
-                        </div>
+                        <div class="nip-bottom">NIP. <?php echo $data['nip']; ?></div>
                     </div>
                 </td>
             </tr>
@@ -401,23 +316,15 @@ if ($id_atasan_terpilih > 0) {
                 <td class="text-center">DITANGGUHKAN***</td>
                 <td class="text-center col-right-fixed">TIDAK DISETUJUI****</td>
             </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-            </tr>
-            
+            <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
             <tr>
                 <td colspan="3" class="no-border"></td>
-                
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
-                            <?php echo $nama_atasan; ?>
+                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;">
+                            <?php echo $nama_atasan_langsung; ?>
                         </div>
-
-                        <div class="nip-bottom">NIP. <?php echo $nip_atasan; ?></div>
+                        <div class="nip-bottom">NIP. <?php echo $nip_atasan_langsung; ?></div>
                     </div>
                 </td>
             </tr>
@@ -431,22 +338,15 @@ if ($id_atasan_terpilih > 0) {
                 <td class="text-center">DITANGGUHKAN****</td>
                 <td class="text-center col-right-fixed">TIDAK DISETUJUI****</td>
             </tr>
-            <tr>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-                <td>&nbsp;</td>
-            </tr>
-            
+            <tr><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td><td>&nbsp;</td></tr>
             <tr>
                 <td colspan="3" class="no-border"></td>
-                
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
-                            &nbsp;
+                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;">
+                            <?php echo $nama_ketua; ?>
                         </div>
-                        <div class="nip-bottom">NIP. </div>
+                        <div class="nip-bottom">NIP. <?php echo $nip_ketua; ?></div>
                     </div>
                 </td>
             </tr>
