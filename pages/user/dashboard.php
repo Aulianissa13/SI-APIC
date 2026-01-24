@@ -80,8 +80,8 @@ $jml_setuju = mysqli_num_rows($query_setuju);
                         </div>
                         <div class="mt-2 text-xs font-weight-bold text-muted" style="background: #f8f9fc; padding: 5px; border-radius: 5px;">
                             <i class="fas fa-history mr-1"></i> Rincian: <br>
-                            <?php echo $thn_skrg; ?>: <b><?php echo $n; ?></b> | 
-                            <?php echo $thn_min1; ?>: <b><?php echo $n1; ?></b> | 
+                            <?php echo $thn_skrg; ?>: <b><?php echo $n; ?></b> |
+                            <?php echo $thn_min1; ?>: <b><?php echo $n1; ?></b> |
                             <?php echo $thn_min2; ?>: <b><?php echo $n2; ?></b>
                         </div>
                     </div>
@@ -158,7 +158,7 @@ $jml_setuju = mysqli_num_rows($query_setuju);
 </div>
 
 <div class="row">
-    <div class="col-lg-12">
+    <div class="col-xl-8 col-lg-7">
         <div class="card mb-4 shadow-sm">
             <div class="card-header py-3 bg-white d-flex align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary" style="color: #006837 !important;">
@@ -174,4 +174,7 @@ $jml_setuju = mysqli_num_rows($query_setuju);
             </div>
         </div>
     </div>
+
 </div>
+
+
