@@ -22,27 +22,36 @@ if(isset($_POST['login'])){
         $password_db = $data['password'];
 
         // 1. Cek Password (Support: Hash PHP, MD5, & Plain Text)
-        $cek_hash  = password_verify($password_input, $password_db);
-        $cek_md5   = (md5($password_input) == $password_db);
-        $cek_plain = ($password_input == $password_db);
+        $cek_hash   = password_verify($password_input, $password_db);
+        $cek_md5    = (md5($password_input) == $password_db);
+        $cek_plain  = ($password_input == $password_db);
 
         if($cek_hash || $cek_md5 || $cek_plain) {
             
-            // 2. CEK STATUS AKUN (FITUR BARU)
-            // Jika status bukan 'aktif', tolak login
+            // 2. CEK STATUS AKUN
             if($data['status_akun'] != 'aktif') {
                 $error_msg = "Akun Anda telah dinonaktifkan/diblokir. Silakan hubungi Administrator.";
             } else {
-                // Jika Aktif, buat Session
+                // --- PERBAIKAN UTAMA DI SINI ---
+                
+                // Ambil role dari database dan ubah jadi huruf kecil semua
+                // Misal DB isinya "Admin", "ADMIN", "Administrator" -> jadi "admin"
+                $level_user = strtolower($data['role']); 
+
+                // Buat Session
                 $_SESSION['nip']          = $nip;
                 $_SESSION['nama_lengkap'] = $data['nama_lengkap'];
-                $_SESSION['role']         = $data['role'];
                 $_SESSION['id_user']      = $data['id_user'];
-                $_SESSION['is_pejabat']   = $data['is_pejabat']; // Simpan status pejabat di session
+                $_SESSION['is_pejabat']   = $data['is_pejabat'];
                 $_SESSION['status']       = "login";
 
-                // Redirect sesuai role
-                if($data['role'] == "admin"){
+                // PENTING: Simpan sebagai 'level' agar terbaca di cetak_cuti.php
+                $_SESSION['level']        = $level_user; 
+                // Simpan juga sebagai 'role' untuk jaga-jaga jika file lain butuh
+                $_SESSION['role']         = $level_user; 
+
+                // Redirect sesuai role (pakai variabel yang sudah dikecilkan hurufnya)
+                if($level_user == "admin" || $level_user == "administrator"){
                     header("location:index.php?page=dashboard_admin");
                 }else{
                     header("location:index.php?page=dashboard_user");

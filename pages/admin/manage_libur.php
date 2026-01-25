@@ -1,7 +1,7 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <?php
-// --- A. PROSES PHP ---
+// --- A. PROSES PHP (LOGIKA TIDAK DIUBAH) ---
 
 // 1. Tambah Libur
 if (isset($_POST['tambah_libur'])) {
@@ -50,90 +50,147 @@ if (isset($_GET['hapus_semua'])) {
 }
 ?>
 
+<style>
+    :root {
+        --pn-green: #004d00;
+        --pn-gold: #FFD700;
+    }
+    .card-pn {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .card-header-pn {
+        background: linear-gradient(135deg, var(--pn-green) 0%, #006400 100%);
+        color: white;
+        border-bottom: 4px solid var(--pn-gold);
+        padding: 15px 20px;
+    }
+    .btn-pn {
+        background-color: var(--pn-green);
+        color: white;
+        border-radius: 8px;
+    }
+    .btn-pn:hover {
+        background-color: #003300;
+        color: var(--pn-gold);
+    }
+    
+    /* Custom Search Bar Styling */
+    .search-container {
+        position: relative;
+    }
+    .search-input {
+        width: 100%;
+        padding: 10px 15px 10px 40px;
+        border-radius: 20px;
+        border: 2px solid #e3e6f0;
+        transition: all 0.3s;
+    }
+    .search-input:focus {
+        border-color: var(--pn-green);
+        box-shadow: 0 0 8px rgba(0, 77, 0, 0.2);
+        outline: none;
+    }
+    .search-icon {
+        position: absolute;
+        left: 15px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #aaa;
+    }
+
+    /* Sembunyikan Search Bawaan DataTables agar tidak double */
+    .dataTables_filter {
+        display: none !important;
+    }
+</style>
+
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800" style="font-weight: 700; color: var(--pn-green);">Kelola Hari Libur & Cuti Bersama</h1>
+        <h1 class="h3 mb-0 text-gray-800" style="font-weight: 700; border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green) !important;">
+            Kelola Hari Libur & Cuti Bersama
+        </h1>
     </div>
 
     <div class="row">
         <div class="col-lg-4">
-            <div class="card shadow mb-4" style="border-radius: 15px;">
-                <div class="card-header py-3" style="border-radius: 15px 15px 0 0;">
-                    <h6 class="m-0 font-weight-bold text-primary">
-                        <i class="fas fa-calendar-plus mr-2"></i>Tambah Hari Libur
-                    </h6>
+            <div class="card card-pn mb-4">
+                <div class="card-header-pn">
+                    <h6 class="m-0 font-weight-bold text-white"><i class="fas fa-calendar-plus mr-2"></i>Tambah Hari Libur</h6>
                 </div>
-                
                 <div class="card-body">
                     <form method="POST">
                         <div class="form-group">
-                            <label class="font-weight-bold">Tanggal</label>
-                            <input type="date" name="tanggal" class="form-control" required>
+                            <label class="font-weight-bold text-dark">Tanggal</label>
+                            <input type="date" name="tanggal" class="form-control" style="border-radius: 8px;" required>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold">Jenis Libur</label>
-                            <select name="jenis_libur" class="form-control" required>
+                            <label class="font-weight-bold text-dark">Jenis Libur</label>
+                            <select name="jenis_libur" class="form-control" style="border-radius: 8px;" required>
                                 <option value="nasional">🔴 Libur Nasional</option>
                                 <option value="cuti_bersama">🟢 Cuti Bersama</option>
                             </select>
                         </div>
                         <div class="form-group">
-                            <label class="font-weight-bold">Keterangan</label>
-                            <input type="text" name="keterangan" class="form-control" placeholder="Contoh: Tahun Baru Imlek" required>
+                            <label class="font-weight-bold text-dark">Keterangan</label>
+                            <input type="text" name="keterangan" class="form-control" style="border-radius: 8px;" placeholder="Contoh: Tahun Baru Imlek" required>
                         </div>
-                        <button type="submit" name="tambah_libur" class="btn btn-primary btn-block shadow-sm">
-                            <i class="fas fa-save mr-2"></i>Simpan ke Database
+                        <button type="submit" name="tambah_libur" class="btn btn-pn btn-block py-2 font-weight-bold">
+                            <i class="fas fa-save mr-2"></i>Simpan Data
                         </button>
                     </form>
                 </div>
             </div>
-            <div class="alert alert-warning shadow-sm"><small><b>Info:</b> Tanggal ini tidak memotong kuota cuti.</small></div>
+            <div class="alert alert-warning shadow-sm" style="border-left: 4px solid #f6c23e; border-radius: 10px;">
+                <small><b>Info:</b> Tanggal ini tidak memotong kuota cuti.</small>
+            </div>
         </div>
 
         <div class="col-lg-8">
-            <div class="card shadow mb-4" style="border-radius: 15px;">
-                <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between" style="border-radius: 15px 15px 0 0;">
-                    <h6 class="m-0 font-weight-bold" style="color: var(--pn-green);">Daftar Hari Libur</h6>
-                    
+            <div class="card card-pn mb-4">
+                <div class="card-header-pn d-flex flex-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-white"><i class="fas fa-list mr-2"></i>Daftar Hari Libur</h6>
                     <?php 
                     $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM libur_nasional"));
                     if($cek_data > 0): 
                     ?>
                         <button onclick="konfirmasiHapusSemua('index.php?page=manage_libur&hapus_semua=true')" 
-                                class="btn btn-danger btn-sm shadow-sm">
-                            <i class="fas fa-trash-alt mr-2"></i>Hapus Semua Data
+                                class="btn btn-danger btn-sm shadow-sm" style="border-radius: 20px;">
+                            <i class="fas fa-trash-alt mr-2"></i>Reset
                         </button>
                     <?php endif; ?>
                 </div>
 
                 <div class="card-body">
+                    <div class="row mb-3">
+                        <div class="col-md-6 ml-auto">
+                            <div class="search-container">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" id="customSearchBox" class="search-input" placeholder="Cari tanggal atau keterangan...">
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="table-responsive">
-                        <table class="table table-hover table-bordered" id="dataTableLibur" width="100%" cellspacing="0">
-                            <thead class="bg-light">
+                        <table class="table table-bordered table-striped" id="dataTableLibur" width="100%" cellspacing="0">
+                            <thead style="background-color: var(--pn-green); color: white;">
                                 <tr>
-                                    <th>No</th>
+                                    <th width="5%">No</th>
                                     <th>Tanggal</th>
                                     <th>Jenis</th>
                                     <th>Keterangan</th>
-                                    <th class="text-center">Aksi</th>
+                                    <th width="10%" class="text-center">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 <?php 
                                 $no = 1;
-                                // ORDER BY tanggal ASC
                                 $qry = mysqli_query($koneksi, "SELECT * FROM libur_nasional ORDER BY tanggal ASC");
                                 
-                                // Array Konversi
-                                $hari_indo = [
-                                    'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
-                                    'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
-                                ];
-                                $bulan_indo = [
-                                    '01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', 
-                                    '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', 
-                                    '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'
-                                ];
+                                $hari_indo = ['Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa', 'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'];
+                                $bulan_indo = ['01' => 'Januari', '02' => 'Februari', '03' => 'Maret', '04' => 'April', '05' => 'Mei', '06' => 'Juni', '07' => 'Juli', '08' => 'Agustus', '09' => 'September', '10' => 'Oktober', '11' => 'November', '12' => 'Desember'];
 
                                 while($d = mysqli_fetch_array($qry)):
                                     $day_en = date('l', strtotime($d['tanggal']));
@@ -159,7 +216,7 @@ if (isset($_GET['hapus_semua'])) {
                                     <td class="text-center">
                                         <a href="javascript:void(0);" 
                                            onclick="konfirmasiHapus('index.php?page=manage_libur&hapus=<?= $d['id_libur'] ?>')"
-                                           class="btn btn-danger btn-sm btn-circle shadow-sm">
+                                           class="btn btn-danger btn-sm btn-circle" title="Hapus">
                                             <i class="fas fa-trash"></i>
                                         </a>
                                     </td>
@@ -175,12 +232,46 @@ if (isset($_GET['hapus_semua'])) {
 </div>
 
 <script>
-    $(document).ready(function() {
-        $('#dataTableLibur').DataTable({
-            "ordering": false 
+    // Pastikan script dijalankan setelah semua halaman termuat
+    document.addEventListener("DOMContentLoaded", function(event) { 
+        
+        // Cek apakah jQuery sudah terload dari template
+        if (typeof jQuery == 'undefined') {
+            console.error('jQuery belum diload oleh template!');
+            alert('Error: jQuery tidak ditemukan. Pastikan template admin sudah meload jQuery di header/footer.');
+            return;
+        }
+
+        $(document).ready(function() {
+            // Hancurkan datatable lama jika ada (agar tidak double init)
+            if ($.fn.DataTable.isDataTable('#dataTableLibur')) {
+                $('#dataTableLibur').DataTable().destroy();
+            }
+
+            // Inisialisasi DataTable Baru
+            var table = $('#dataTableLibur').DataTable({
+                "bDestroy": true, // Penting! Reset table jika sudah ada
+                "ordering": false,
+                "dom": 'rtip', // Sembunyikan 'f' (filter default) agar pakai custom search
+                "pageLength": 10,
+                "language": {
+                    "emptyTable": "Belum ada data hari libur",
+                    "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+                    "paginate": {
+                        "next": ">",
+                        "previous": "<"
+                    }
+                }
+            });
+
+            // Hubungkan Custom Search Input ke DataTables
+            $('#customSearchBox').on('keyup change', function() {
+                table.search(this.value).draw();
+            });
         });
     });
 
+    // Alert Hapus Satu
     function konfirmasiHapus(url) {
         Swal.fire({
             title: 'Hapus data ini?',
@@ -198,9 +289,10 @@ if (isset($_GET['hapus_semua'])) {
         })
     }
 
+    // Alert Hapus Semua
     function konfirmasiHapusSemua(url) {
         Swal.fire({
-            title: 'AWAS! Hapus SEMUA Data?',
+            title: 'Hapus SEMUA Data?',
             text: "Tabel akan dikosongkan total!",
             icon: 'warning',
             showCancelButton: true,

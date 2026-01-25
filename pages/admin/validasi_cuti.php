@@ -1,6 +1,6 @@
 <?php
 // =========================================================
-// 1. KONEKSI & SESSION (SMART LOCATOR)
+// 1. KONEKSI & SESSION (SMART LOCATOR) - TIDAK DIUBAH
 // =========================================================
 if (session_status() == PHP_SESSION_NONE) { session_start(); }
 
@@ -26,7 +26,7 @@ if (!$db_found) {
 }
 
 // =========================================================
-// 2. LOGIC PROSES APPROVAL
+// 2. LOGIC PROSES APPROVAL - TIDAK DIUBAH
 // =========================================================
 if (isset($_GET['aksi']) && isset($_GET['id'])) {
     
@@ -45,11 +45,11 @@ if (isset($_GET['aksi']) && isset($_GET['id'])) {
     if(mysqli_num_rows($cek_data) > 0) {
         $data       = mysqli_fetch_array($cek_data);
         $id_user    = $data['id_user'];
-        $id_jenis   = $data['id_jenis']; // Kita pakai ID biar konsisten
+        $id_jenis   = $data['id_jenis']; 
         $lama       = $data['lama_hari'];
         $status_now = $data['status'];
 
-        // Cek dulu, jangan sampai memproses yang sudah diproses (Mencegah Double Klik)
+        // Cek dulu, jangan sampai memproses yang sudah diproses
         if($status_now == 'Disetujui' || $status_now == 'Ditolak') {
             echo "<script>alert('Data ini sudah diproses sebelumnya!'); window.history.back();</script>";
             exit();
@@ -72,7 +72,7 @@ if (isset($_GET['aksi']) && isset($_GET['id'])) {
             // 1. Update Status jadi Ditolak
             $up_tolak = mysqli_query($koneksi, "UPDATE pengajuan_cuti SET status='Ditolak' WHERE id_pengajuan='$id_pengajuan'");
             
-            // 2. LOGIKA REFUND BERDASARKAN ID (Lebih Aman)
+            // 2. LOGIKA REFUND BERDASARKAN ID
             $kolom_target = ''; 
             $nama_target  = '';
 
@@ -87,7 +87,6 @@ if (isset($_GET['aksi']) && isset($_GET['id'])) {
                     $nama_target  = 'Kuota Cuti Sakit';
                     break;
 
-                // Kasus Lain (Besar, Melahirkan, Penting, dll) -> Tidak ada Refund Kuota
                 default:
                     $kolom_target = ''; 
                     $nama_target  = 'Tidak ada kuota';
@@ -116,7 +115,6 @@ if (isset($_GET['aksi']) && isset($_GET['id'])) {
 // =========================================================
 // 3. QUERY DATA UNTUK TABEL
 // =========================================================
-// Kita ambil semua data, urutkan yang terbaru di atas
 $query = mysqli_query($koneksi, "SELECT pengajuan_cuti.*, 
                                         users.nama_lengkap, 
                                         users.nip, 
@@ -127,36 +125,73 @@ $query = mysqli_query($koneksi, "SELECT pengajuan_cuti.*,
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
     ORDER BY CASE WHEN status='Menunggu' OR status='Diajukan' THEN 0 ELSE 1 END, tgl_pengajuan DESC");
-    // Trik ORDER BY di atas: Menampilkan status 'Menunggu' paling atas, sisanya di bawah berdasarkan tanggal
 ?>
+
+<style>
+    :root {
+        --pn-green: #004d00;
+        --pn-gold: #FFD700;
+    }
+    .card-pn {
+        border: none;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        overflow: hidden;
+    }
+    .card-header-pn {
+        background: linear-gradient(135deg, var(--pn-green) 0%, #006400 100%);
+        color: white;
+        border-bottom: 4px solid var(--pn-gold);
+        padding: 15px 20px;
+    }
+    .badge-status {
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-weight: 600;
+    }
+    /* Style Table Head */
+    .thead-pn {
+        background-color: var(--pn-green);
+        color: white;
+    }
+    .page-title-pn {
+        font-weight: 700;
+        border-left: 5px solid var(--pn-gold);
+        padding-left: 15px;
+        color: var(--pn-green) !important;
+    }
+</style>
 
 <div class="container-fluid">
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="h3 mb-0 text-gray-800">Validasi Permohonan Cuti</h1>
+        <h1 class="h3 mb-0 text-gray-800 page-title-pn">Validasi Permohonan Cuti</h1>
     </div>
 
-    <div class="card shadow mb-4">
-        <div class="card-header py-3">
-            <h6 class="m-0 font-weight-bold text-primary">Daftar Pengajuan Masuk</h6>
+    <div class="card card-pn mb-4">
+        <div class="card-header-pn d-flex align-items-center">
+            <i class="fas fa-check-double mr-2"></i>
+            <h6 class="m-0 font-weight-bold text-white">Daftar Pengajuan Masuk</h6>
         </div>
         <div class="card-body">
             
             <?php if(mysqli_num_rows($query) == 0) { ?>
-                <div class="alert alert-info text-center">Belum ada data pengajuan cuti.</div>
+                <div class="alert alert-info text-center" style="border-radius: 15px; border-left: 5px solid #36b9cc;">
+                    <i class="fas fa-info-circle mr-2"></i>Belum ada data pengajuan cuti.
+                </div>
             <?php } else { ?>
 
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                    <thead class="thead-light">
+                    <thead class="thead-pn">
                         <tr class="text-center">
-                            <th>No</th>
+                            <th width="5%">No</th>
                             <th>Pegawai</th>
                             <th>Jenis Cuti</th>
                             <th>Detail Pengajuan</th>
-                            <th>Sisa<br>Thn</th>
-                            <th>Sisa<br>Skt</th>
+                            <th width="5%">Sisa<br>Thn</th>
+                            <th width="5%">Sisa<br>Skt</th>
                             <th>Status</th>
-                            <th>Aksi</th>
+                            <th width="15%">Aksi</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -169,37 +204,39 @@ $query = mysqli_query($koneksi, "SELECT pengajuan_cuti.*,
 
                             // Logic Badge & Warna Baris
                             if ($raw_status == 'disetujui') {
-                                $badge = '<span class="badge badge-success">Disetujui</span>';
+                                $badge = '<span class="badge badge-success badge-status"><i class="fas fa-check-circle mr-1"></i>Disetujui</span>';
                             } elseif ($raw_status == 'ditolak') {
-                                $badge = '<span class="badge badge-danger">Ditolak</span>';
+                                $badge = '<span class="badge badge-danger badge-status"><i class="fas fa-times-circle mr-1"></i>Ditolak</span>';
                                 $bg_row = "style='background-color: #ffecec;'"; // Merah muda tipis
                             } else {
-                                $badge = '<span class="badge badge-warning">Menunggu</span>';
-                                $bg_row = "style='background-color: #fffnot 8e1;'"; // Kuning tipis
+                                $badge = '<span class="badge badge-warning badge-status"><i class="fas fa-clock mr-1"></i>Menunggu</span>';
+                                // REVISI TYPO KODE WARNA ASLI
+                                $bg_row = "style='background-color: #fff3cd;'"; // Kuning tipis (Warning Light)
                             }
                         ?>
                         <tr <?php echo $bg_row; ?>>
-                            <td class="text-center"><?php echo $no++; ?></td>
-                            <td>
-                                <b><?php echo $row['nama_lengkap']; ?></b><br>
-                                <small class="text-muted">NIP: <?php echo $row['nip']; ?></small>
+                            <td class="text-center font-weight-bold" style="vertical-align: middle;"><?php echo $no++; ?></td>
+                            <td style="vertical-align: middle;">
+                                <div class="font-weight-bold text-dark" style="font-size: 1.05rem;"><?php echo $row['nama_lengkap']; ?></div>
+                                <small class="text-muted"><i class="fas fa-id-badge mr-1"></i>NIP: <?php echo $row['nip']; ?></small>
                             </td>
-                            <td><?php echo $row['nama_jenis']; ?></td>
-                            <td>
-                                <b><?php echo $row['lama_hari']; ?> Hari</b><br>
-                                <small>
+                            <td style="vertical-align: middle;"><?php echo $row['nama_jenis']; ?></td>
+                            <td style="vertical-align: middle;">
+                                <div class="font-weight-bold text-primary"><?php echo $row['lama_hari']; ?> Hari</div>
+                                <small class="text-dark">
+                                    <i class="far fa-calendar-alt mr-1"></i>
                                     <?php echo date('d M', strtotime($row['tgl_mulai'])); ?> s/d 
                                     <?php echo date('d M Y', strtotime($row['tgl_selesai'])); ?>
                                 </small>
                             </td>
                             
-                            <td class="text-center font-weight-bold text-primary"><?php echo $row['sisa_cuti_n']; ?></td>
-                            <td class="text-center font-weight-bold text-danger"><?php echo $row['kuota_cuti_sakit']; ?></td>
+                            <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;"><?php echo $row['sisa_cuti_n']; ?></td>
+                            <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;"><?php echo $row['kuota_cuti_sakit']; ?></td>
 
-                            <td class="text-center"><?php echo $badge; ?></td>
+                            <td class="text-center" style="vertical-align: middle;"><?php echo $badge; ?></td>
                             
-                            <td class="text-center">
-                                <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-circle btn-sm" title="Cetak Surat">
+                            <td class="text-center" style="vertical-align: middle;">
+                                <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-circle btn-sm shadow-sm" title="Cetak Surat">
                                     <i class="fas fa-print"></i>
                                 </a>
                                     <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
@@ -207,14 +244,14 @@ $query = mysqli_query($koneksi, "SELECT pengajuan_cuti.*,
                                     <span class="mx-1">|</span>
                                     
                                     <a href="?page=validasi_cuti&aksi=setuju&id=<?php echo $row['id_pengajuan']; ?>" 
-                                       class="btn btn-success btn-circle btn-sm" 
+                                       class="btn btn-success btn-circle btn-sm shadow-sm" 
                                        onclick="return confirm('Yakin ingin MENYETUJUI pengajuan ini? Stok tidak akan berubah (sudah dipotong diawal).')" 
                                        title="Setujui">
                                        <i class="fas fa-check"></i>
                                     </a>
                                     
                                     <a href="?page=validasi_cuti&aksi=tolak&id=<?php echo $row['id_pengajuan']; ?>" 
-                                       class="btn btn-danger btn-circle btn-sm" 
+                                       class="btn btn-danger btn-circle btn-sm shadow-sm" 
                                        onclick="return confirm('Yakin ingin MENOLAK? Stok cuti akan DIKEMBALIKAN (Refund) ke pegawai.')" 
                                        title="Tolak">
                                        <i class="fas fa-times"></i>

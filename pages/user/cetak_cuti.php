@@ -63,36 +63,52 @@ $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar 
 
 switch ($id_jenis) {
     case '1': // Tahunan
-        // Saldo yang tersimpan di database (Sisa Akhir setelah dipotong)
-        $sisa_akhir_n  = $data['sisa_cuti_n']; 
-        $sisa_akhir_n1 = $data['sisa_cuti_n1'];
+        // 1. Ambil Sisa Cuti SAAT INI dari Database (Pastikan tidak minus)
+        // Fungsi max(0, nilai) memastikan kalau di database ada -1, akan dianggap 0.
+        $sisa_akhir_n  = max(0, (int)$data['sisa_cuti_n']); 
+        $sisa_akhir_n1 = max(0, (int)$data['sisa_cuti_n1']);
         
-        // Jumlah yang dipotong pada pengajuan ini
+        // 2. Ambil Jumlah yang DIPOTONG pada pengajuan ini
         $ambil_n  = (int) $data['dipotong_n'];
         $ambil_n1 = (int) $data['dipotong_n1'];
 
-        // --- 1. KOLOM "SISA" (Tampilkan Kuota Awal Sebelum Dipotong) ---
-        // Rumus: Sisa Akhir + Yang Diambil
+        // 3. Hitung Tampilan Kolom "SISA" (Seolah-olah Kuota Awal Sebelum Dipotong)
+        // Rumus: Sisa Sekarang + Yang Diambil Barusan
         $sisa_n_tampil  = $sisa_akhir_n + $ambil_n;
         $sisa_n1_tampil = $sisa_akhir_n1 + $ambil_n1;
 
-        // --- 2. KOLOM "KETERANGAN" (Tampilkan Detail Potongan & Sisa Akhir) ---
+        // 4. Susun Kalimat Keterangan
+        // Format: "Diambil X hari, Sisa Y hari"
         
-        // Untuk Tahun N-1 (Tahun Lalu)
-        if ($ambil_n1 > 0) {
-            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
+        // --- Logic Tahun N-1 (Tahun Lalu) ---
+        // Jika ada potongan N-1 ATAU (sisa tampil masih ada isinya, perlu ditampilkan saldonya)
+        if ($ambil_n1 > 0 || $sisa_n1_tampil > 0) {
+            if ($ambil_n1 > 0) {
+                $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
+            } else {
+                // Kalau tidak diambil, biarkan kosong atau strip, tapi saldonya tampil di kolom sisa
+                $ket_tahunan_n1 = "-"; 
+            }
+        } else {
+            // Kalau sisa 0 dan tidak diambil, tampilkan strip atau 0
+             $sisa_n1_tampil = 0; 
+             $ket_tahunan_n1 = "-";
         }
-        
-        // Untuk Tahun N (Tahun Ini)
+
+        // --- Logic Tahun N (Tahun Ini) ---
         if ($ambil_n > 0) {
             $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
+        } else {
+            // Jika cuti tahunan tapi cuma ambil jatah tahun lalu (N-1), 
+            // maka keterangan tahun ini kosong, tapi sisa cutinya tetap tampil.
+            $ket_tahunan_n = "-"; 
         }
         
         break;
 
     case '2': // Cuti Sakit
-        // Ambil kuota sakit saat ini
-        $sisa_sakit = isset($data['kuota_cuti_sakit']) ? $data['kuota_cuti_sakit'] : 0;
+        // Pastikan tidak minus
+        $sisa_sakit = max(0, (isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0));
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
         break;
 
@@ -112,6 +128,7 @@ switch ($id_jenis) {
         $ket_luar = "Diambil " . $lama_ambil . " hari"; 
         break;
 }
+
 
 $c1 = ($id_jenis == '1') ? '&#10003;' : '';
 $c2 = ($id_jenis == '4') ? '&#10003;' : '';

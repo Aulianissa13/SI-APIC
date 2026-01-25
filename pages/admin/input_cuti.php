@@ -1,9 +1,7 @@
 <?php
 // --- FILE: pages/admin/input_cuti.php ---
 
-// ==========================================
-// 1. AMBIL DATA LIBUR DARI DATABASE
-// ==========================================
+// 1. AMBIL DATA LIBUR
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 if ($q_libur) {
@@ -12,9 +10,7 @@ if ($q_libur) {
     }
 }
 
-// ==========================================
 // 2. FUNGSI HITUNG HARI KERJA
-// ==========================================
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
@@ -40,7 +36,7 @@ $swal_script = "";
 // --- PROSES SIMPAN DATA ---
 if (isset($_POST['simpan_cuti'])) {
     $id_user      = $_POST['id_user'];
-    $id_jenis     = $_POST['id_jenis']; // Mengambil ID (Angka/Kode), bukan Nama
+    $id_jenis     = $_POST['id_jenis']; 
     $tgl_mulai    = $_POST['tgl_mulai'];
     $tgl_selesai  = $_POST['tgl_selesai'];
     $alasan       = htmlspecialchars($_POST['alasan']);
@@ -57,23 +53,41 @@ if (isset($_POST['simpan_cuti'])) {
              $swal_script = "Swal.fire({ title: 'Gagal!', text: 'Durasi cuti 0 hari kerja (terdeteksi libur/weekend).', icon: 'warning', confirmButtonColor: '#006837' });";
         } else {
             
-            // CEK APAKAH INI CUTI TAHUNAN?
-            // Kita perlu ambil nama jenis cuti berdasarkan ID yang dipilih untuk validasi kuota
+            // CEK JENIS CUTI & KUOTA
             $q_cek_jenis = mysqli_query($koneksi, "SELECT nama_jenis FROM jenis_cuti WHERE id_jenis = '$id_jenis'");
             $d_jenis = mysqli_fetch_assoc($q_cek_jenis);
-            $nama_jenis_cuti = $d_jenis['nama_jenis']; // Misal: "Cuti Tahunan"
+            $nama_jenis_cuti = $d_jenis['nama_jenis']; 
 
-            // Cek Saldo Cuti
             $lanjut_simpan = true;
             
-            // Logika: Jika nama mengandung kata "Tahunan", cek kuota
+            // Variabel default untuk kolom dipotong (biar tidak error SQL jika bukan cuti tahunan)
+            $potong_n1 = 0;
+            $potong_n  = 0;
+
+            // --- LOGIKA BARU: PENGECEKAN KUOTA TAHUNAN (SPLIT N-1 & N) ---
             if (stripos($nama_jenis_cuti, 'Tahunan') !== false) {
-                $cek_user = mysqli_query($koneksi, "SELECT sisa_cuti_n FROM users WHERE id_user = '$id_user'");
+                // Ambil sisa cuti N dan N-1 user
+                $cek_user = mysqli_query($koneksi, "SELECT sisa_cuti_n, sisa_cuti_n1 FROM users WHERE id_user = '$id_user'");
                 $data_user = mysqli_fetch_assoc($cek_user);
                 
-                if ($data_user['sisa_cuti_n'] < $durasi) {
+                $sisa_n  = $data_user['sisa_cuti_n'];
+                $sisa_n1 = $data_user['sisa_cuti_n1'];
+                $total_kuota = $sisa_n + $sisa_n1;
+
+                if ($total_kuota < $durasi) {
                     $lanjut_simpan = false;
-                    $swal_script = "Swal.fire({ title: 'Gagal!', text: 'Sisa kuota cuti pegawai tidak mencukupi.', icon: 'error', confirmButtonColor: '#006837' });";
+                    $swal_script = "Swal.fire({ title: 'Gagal!', text: 'Total sisa kuota (N + N-1) tidak mencukupi.', icon: 'error', confirmButtonColor: '#006837' });";
+                } else {
+                    // --- ALGORITMA POTONG SALDO (FIFO: First In First Out) ---
+                    // 1. Habiskan N-1 dulu
+                    if ($durasi <= $sisa_n1) {
+                        $potong_n1 = $durasi;
+                        $potong_n  = 0;
+                    } else {
+                        // Kalau N-1 tidak cukup, ambil semua N-1, sisanya ambil N
+                        $potong_n1 = $sisa_n1; 
+                        $potong_n  = $durasi - $sisa_n1;
+                    }
                 }
             }
 
@@ -82,9 +96,9 @@ if (isset($_POST['simpan_cuti'])) {
                 $tgl_pengajuan = date('Y-m-d');
                 
                 // === QUERY INSERT UPDATE ===
-                // Kolom diganti menjadi `id_jenis` sesuai pesan error Foreign Key
-                $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_jenis, tgl_mulai, tgl_selesai, lama_hari, alasan, status, tgl_pengajuan) 
-                                 VALUES ('$id_user', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$alasan', '$status', '$tgl_pengajuan')";
+                // PENTING: Menambahkan kolom `dipotong_n` dan `dipotong_n1` agar cetak surat bisa baca datanya
+                $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, status, tgl_pengajuan) 
+                                 VALUES ('$id_user', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$status', '$tgl_pengajuan')";
 
                 if (mysqli_query($koneksi, $query_insert)) {
                     $swal_script = "Swal.fire({ title: 'Berhasil Input!', text: 'Data cuti tersimpan. Status: Menunggu TTD Basah.', icon: 'success', confirmButtonColor: '#006837' }).then(() => { window.location='index.php?page=input_cuti'; });";
@@ -134,7 +148,8 @@ if (isset($_POST['simpan_cuti'])) {
                                 <?php
                                 $q_user = mysqli_query($koneksi, "SELECT * FROM users WHERE role='user' ORDER BY nama_lengkap ASC");
                                 while ($u = mysqli_fetch_array($q_user)) {
-                                    echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip]) - Sisa: $u[sisa_cuti_n]</option>";
+                                    // Tampilkan info Sisa N dan N-1 agar Admin tahu
+                                    echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip]) - Sisa N: $u[sisa_cuti_n] | N-1: $u[sisa_cuti_n1]</option>";
                                 }
                                 ?>
                             </select>
@@ -147,7 +162,6 @@ if (isset($_POST['simpan_cuti'])) {
                                     <select name="id_jenis" id="id_jenis" class="form-control" required>
                                         <option value="">-- Pilih Jenis Cuti --</option>
                                         <?php
-                                        // Asumsi tabel master bernama 'jenis_cuti' dengan kolom 'id_jenis' dan 'nama_jenis'
                                         $q_jc = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY nama_jenis ASC");
                                         while ($j = mysqli_fetch_array($q_jc)) {
                                             echo "<option value='$j[id_jenis]'>$j[nama_jenis]</option>";
@@ -222,6 +236,7 @@ if (isset($_POST['simpan_cuti'])) {
                     </div>
                     <ul class="pl-3 text-secondary small mb-4">
                         <li><span class="text-danger font-weight-bold">Sabtu, Minggu & Libur Nasional</span> tidak dihitung.</li>
+                        <li>Sistem otomatis menghitung alokasi kuota N-1 dan N.</li>
                         <li>Kuota berkurang setelah Status <b>DISETUJUI</b>.</li>
                     </ul>
                 </div>
