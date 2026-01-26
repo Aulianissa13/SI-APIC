@@ -19,19 +19,19 @@ $sql_latest = mysqli_query($koneksi, $query_latest);
 // Ambil Data Hari Libur
 $query_libur = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
 $libur_data = [];
-$current_year = date('Y');
 while($row = mysqli_fetch_assoc($query_libur)) {
-    // FIX: Ganti tahun agar libur tampil setiap tahun
-    $tgl_db = $row['tanggal'];
-    $tgl_fix = str_replace('2026', $current_year, $tgl_db);
-
     $libur_data[] = [
-        'start' => $tgl_fix,
+        'start' => $row['tanggal'],
         'title' => $row['keterangan'],
         'jenis' => strtolower($row['jenis_libur']),
         'allDay' => true
     ];
 }
+// Filter hanya untuk tahun 2026
+$libur_data = array_filter($libur_data, function($item) {
+    $item_year = date('Y', strtotime($item['start']));
+    return $item_year == 2026;
+});
 ?>
 
 <style>
@@ -156,6 +156,11 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
 <script>
 const dataLibur = <?php echo json_encode($libur_data); ?>;
+const dataLiburFiltered = dataLibur.filter(item => {
+    const itemDate = new Date(item.start);
+    return itemDate.getFullYear() === 2026;
+});
+const currentYear = <?php echo date('Y'); ?>;
 
 new Chart(document.getElementById("myAreaChart"), {
     type: 'doughnut',
@@ -170,29 +175,22 @@ document.addEventListener('DOMContentLoaded', function() {
         locale: 'id',
         headerToolbar: { left: 'prev', center: 'title', right: 'next' },
         events: dataLibur,
-        dayCellDidMount: function(info) {
-            const d = info.date;
-
-            // Cari libur berdasarkan bulan dan tanggal saja (tahunan)
-            const holiday = dataLibur.find(item => {
-                const itemDate = new Date(item.start);
-                return itemDate.getMonth() === d.getMonth() && itemDate.getDate() === d.getDate();
-            });
-
-            if (holiday) {
-                if (holiday.jenis.includes('nasional')) {
-                    info.el.classList.add('holiday-nasional');
-                } else {
-                    info.el.classList.add('holiday-cuti-bersama');
-                }
-            }
-        },
         datesSet: function(info) {
             const listContainer = document.getElementById('libur-list-container');
             listContainer.innerHTML = '';
 
-            // Tampilkan semua libur, diurutkan berdasarkan tanggal
-            const filtered = dataLibur.sort((a,b) => new Date(a.start) - new Date(b.start));
+            // Ambil bulan dan tahun dari view kalender saat ini
+            const currentMonth = info.view.currentStart.getMonth();
+            const currentYearInView = info.view.currentStart.getFullYear();
+
+            // Hanya tampilkan list jika tahun di kalender adalah 2026
+            let filtered = [];
+            if (currentYearInView === 2026) {
+                filtered = dataLibur.filter(item => {
+                    const itemDate = new Date(item.start);
+                    return itemDate.getFullYear() === 2026 && itemDate.getMonth() === currentMonth;
+                }).sort((a,b) => new Date(a.start) - new Date(b.start));
+            }
 
             if(filtered.length === 0) {
                 listContainer.innerHTML = '<div class="text-center text-muted small py-2">Tidak ada libur</div>';
@@ -208,6 +206,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     listContainer.innerHTML += `<div class="libur-item" style="background:${bg}; color:${color}"><div class="dot" style="background:${color}"></div><strong>${day} ${month}</strong>&nbsp; ${item.title}</div>`;
                 });
             }
+
+            // Add classes to day cells for holidays (only for 2026)
+            document.querySelectorAll('.fc-daygrid-day').forEach(dayEl => {
+                const dateStr = dayEl.getAttribute('data-date');
+                if (dateStr) {
+                    const date = new Date(dateStr);
+                    const holiday = dataLibur.find(item => {
+                        const itemDate = new Date(item.start);
+                        return itemDate.getFullYear() === date.getFullYear() && itemDate.getMonth() === date.getMonth() && itemDate.getDate() === date.getDate();
+                    });
+                    if (holiday) {
+                        if (holiday.jenis.includes('nasional')) {
+                            dayEl.classList.add('holiday-nasional');
+                        } else {
+                            dayEl.classList.add('holiday-cuti-bersama');
+                        }
+                    }
+                }
+            });
         }
     });
     calendar.render();
