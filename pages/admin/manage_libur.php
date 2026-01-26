@@ -1,5 +1,3 @@
-<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-
 <?php
 // --- A. PROSES PHP (LOGIKA TIDAK DIUBAH) ---
 
@@ -11,17 +9,11 @@ if (isset($_POST['tambah_libur'])) {
 
     $cek = mysqli_query($koneksi, "SELECT * FROM libur_nasional WHERE tanggal='$tanggal'");
     if (mysqli_num_rows($cek) > 0) {
-        echo "<script>
-            Swal.fire({icon: 'error', title: 'Gagal!', text: 'Tanggal sudah ada!', confirmButtonColor: '#3085d6'});
-        </script>";
+        echo "<script>Swal.fire({icon: 'error', title: 'Gagal!', text: 'Tanggal sudah ada!', confirmButtonColor: '#3085d6'});</script>";
     } else {
         $simpan = mysqli_query($koneksi, "INSERT INTO libur_nasional (tanggal, jenis_libur, keterangan) VALUES ('$tanggal', '$jenis_libur', '$keterangan')");
         if ($simpan) {
-            echo "<script>
-                Swal.fire({
-                    icon: 'success', title: 'Berhasil!', text: 'Data tersimpan.', showConfirmButton: false, timer: 1500
-                }).then(() => { window.location='index.php?page=manage_libur'; });
-            </script>";
+            echo "<script>Swal.fire({icon: 'success', title: 'Berhasil!', text: 'Data tersimpan.', showConfirmButton: false, timer: 1500}).then(() => { window.location='index.php?page=manage_libur'; });</script>";
         }
     }
 }
@@ -31,10 +23,7 @@ if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $hapus = mysqli_query($koneksi, "DELETE FROM libur_nasional WHERE id_libur='$id'");
     if ($hapus) {
-        echo "<script>
-            Swal.fire({icon: 'success', title: 'Terhapus!', text: 'Data berhasil dihapus.', showConfirmButton: false, timer: 1000})
-            .then(() => { window.location='index.php?page=manage_libur'; });
-        </script>";
+        echo "<script>Swal.fire({icon: 'success', title: 'Terhapus!', text: 'Data berhasil dihapus.', showConfirmButton: false, timer: 1000}).then(() => { window.location='index.php?page=manage_libur'; });</script>";
     }
 }
 
@@ -42,10 +31,7 @@ if (isset($_GET['hapus'])) {
 if (isset($_GET['hapus_semua'])) {
     $reset = mysqli_query($koneksi, "TRUNCATE TABLE libur_nasional");
     if ($reset) {
-        echo "<script>
-            Swal.fire({icon: 'success', title: 'Bersih!', text: 'Semua data telah dihapus.', showConfirmButton: false, timer: 1000})
-            .then(() => { window.location='index.php?page=manage_libur'; });
-        </script>";
+        echo "<script>Swal.fire({icon: 'success', title: 'Bersih!', text: 'Semua data telah dihapus.', showConfirmButton: false, timer: 1000}).then(() => { window.location='index.php?page=manage_libur'; });</script>";
     }
 }
 ?>
@@ -77,32 +63,42 @@ if (isset($_GET['hapus_semua'])) {
         color: var(--pn-gold);
     }
     
-    /* Custom Search Bar Styling */
-    .search-container {
-        position: relative;
-    }
-    .search-input {
-        width: 100%;
-        padding: 10px 15px 10px 40px;
+    /* Styling Search Bar di Header */
+    .header-search {
         border-radius: 20px;
-        border: 2px solid #e3e6f0;
+        border: 1px solid rgba(255,255,255,0.3);
+        background: rgba(255,255,255,0.15);
+        color: white;
+        padding: 5px 15px;
+        font-size: 0.9rem;
         transition: all 0.3s;
     }
-    .search-input:focus {
-        border-color: var(--pn-green);
-        box-shadow: 0 0 8px rgba(0, 77, 0, 0.2);
+    .header-search:focus {
+        background: white;
+        color: #333;
         outline: none;
+        border-color: white;
+        box-shadow: 0 0 10px rgba(255,255,255,0.5);
     }
-    .search-icon {
-        position: absolute;
-        left: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #aaa;
+    .header-search::placeholder {
+        color: rgba(255,255,255,0.7);
     }
 
-    /* Sembunyikan Search Bawaan DataTables agar tidak double */
-    .dataTables_filter {
+    /* Pagination Styling agar rapi */
+    .dataTables_wrapper .dataTables_paginate .paginate_button {
+        padding: 0.3em 0.8em;
+        margin-left: 5px;
+        border-radius: 5px;
+        border: 1px solid #ddd;
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.current {
+        background: var(--pn-green) !important;
+        color: white !important;
+        border: 1px solid var(--pn-green);
+    }
+    
+    /* Sembunyikan Search & Length Bawaan DataTables */
+    .dataTables_filter, .dataTables_length {
         display: none !important;
     }
 </style>
@@ -150,29 +146,29 @@ if (isset($_GET['hapus_semua'])) {
 
         <div class="col-lg-8">
             <div class="card card-pn mb-4">
-                <div class="card-header-pn d-flex flex-row align-items-center justify-content-between">
-                    <h6 class="m-0 font-weight-bold text-white"><i class="fas fa-list mr-2"></i>Daftar Hari Libur</h6>
-                    <?php 
-                    $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM libur_nasional"));
-                    if($cek_data > 0): 
-                    ?>
-                        <button onclick="konfirmasiHapusSemua('index.php?page=manage_libur&hapus_semua=true')" 
-                                class="btn btn-danger btn-sm shadow-sm" style="border-radius: 20px;">
-                            <i class="fas fa-trash-alt mr-2"></i>Reset
-                        </button>
-                    <?php endif; ?>
+                <div class="card-header-pn d-flex flex-column flex-md-row align-items-center justify-content-between">
+                    <h6 class="m-0 font-weight-bold text-white mb-2 mb-md-0">
+                        <i class="fas fa-list mr-2"></i>Daftar Hari Libur
+                    </h6>
+                    
+                    <div class="d-flex align-items-center">
+                        <div class="mr-2 position-relative">
+                            <input type="text" id="customSearchBox" class="header-search" placeholder="Cari data..." style="width: 200px;">
+                        </div>
+
+                        <?php 
+                        $cek_data = mysqli_num_rows(mysqli_query($koneksi, "SELECT * FROM libur_nasional"));
+                        if($cek_data > 0): 
+                        ?>
+                            <button onclick="konfirmasiHapusSemua('index.php?page=manage_libur&hapus_semua=true')" 
+                                    class="btn btn-danger btn-sm shadow-sm" style="border-radius: 20px; white-space: nowrap;">
+                                <i class="fas fa-trash-alt"></i> Reset
+                            </button>
+                        <?php endif; ?>
+                    </div>
                 </div>
 
                 <div class="card-body">
-                    <div class="row mb-3">
-                        <div class="col-md-6 ml-auto">
-                            <div class="search-container">
-                                <i class="fas fa-search search-icon"></i>
-                                <input type="text" id="customSearchBox" class="search-input" placeholder="Cari tanggal atau keterangan...">
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="table-responsive">
                         <table class="table table-bordered table-striped" id="dataTableLibur" width="100%" cellspacing="0">
                             <thead style="background-color: var(--pn-green); color: white;">
@@ -232,40 +228,38 @@ if (isset($_GET['hapus_semua'])) {
 </div>
 
 <script>
-    // Pastikan script dijalankan setelah semua halaman termuat
     document.addEventListener("DOMContentLoaded", function(event) { 
         
-        // Cek apakah jQuery sudah terload dari template
+        // Cek jQuery
         if (typeof jQuery == 'undefined') {
-            console.error('jQuery belum diload oleh template!');
-            alert('Error: jQuery tidak ditemukan. Pastikan template admin sudah meload jQuery di header/footer.');
+            console.error('jQuery belum diload!');
             return;
         }
 
         $(document).ready(function() {
-            // Hancurkan datatable lama jika ada (agar tidak double init)
+            // Hancurkan datatable lama jika ada
             if ($.fn.DataTable.isDataTable('#dataTableLibur')) {
                 $('#dataTableLibur').DataTable().destroy();
             }
 
-            // Inisialisasi DataTable Baru
+            // Inisialisasi DataTable Baru dengan Pagination
             var table = $('#dataTableLibur').DataTable({
-                "bDestroy": true, // Penting! Reset table jika sudah ada
-                "ordering": false,
-                "dom": 'rtip', // Sembunyikan 'f' (filter default) agar pakai custom search
-                "pageLength": 10,
+                "bDestroy": true,
+                "ordering": false, // Matikan sorting default agar sesuai query
+                "dom": 'rtp',      // r=processing, t=table, p=pagination (Hapus 'i' info biar bersih)
+                "pageLength": 5,   // Tampilkan 5 baris per halaman (bisa diganti 10)
                 "language": {
                     "emptyTable": "Belum ada data hari libur",
-                    "info": "Menampilkan _START_ - _END_ dari _TOTAL_ data",
+                    "zeroRecords": "Data tidak ditemukan",
                     "paginate": {
-                        "next": ">",
-                        "previous": "<"
+                        "next": "<i class='fas fa-chevron-right'></i>",
+                        "previous": "<i class='fas fa-chevron-left'></i>"
                     }
                 }
             });
 
-            // Hubungkan Custom Search Input ke DataTables
-            $('#customSearchBox').on('keyup change', function() {
+            // Hubungkan Custom Search Input di Header ke DataTables
+            $('#customSearchBox').on('keyup', function() {
                 table.search(this.value).draw();
             });
         });
@@ -288,7 +282,7 @@ if (isset($_GET['hapus_semua'])) {
             }
         })
     }
-
+    
     // Alert Hapus Semua
     function konfirmasiHapusSemua(url) {
         Swal.fire({

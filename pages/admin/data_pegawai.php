@@ -1,24 +1,59 @@
 <?php
-// --- FILE: pages/admin/data_pegawai.php ---
-
-// Cek session
 if (session_status() == PHP_SESSION_NONE) {
     session_start();
 }
-
-// Variabel notifikasi
 $swal_script = "";
-
-// --- 1. AMBIL DATA USERS UNTUK DROPDOWN ATASAN ---
 $list_atasan = [];
 $q_all_users = mysqli_query($koneksi, "SELECT id_user, nama_lengkap FROM users ORDER BY nama_lengkap ASC");
-if ($q_all_users) {
-    while ($user_row = mysqli_fetch_assoc($q_all_users)) {
-        $list_atasan[] = $user_row;
+
+// ==========================================
+// 1. LOGIKA SIMPAN NAMA PEJABAT (MANUAL TEXT)
+// ==========================================
+if(isset($_POST['simpan_pejabat'])){
+    $ketua_nama = mysqli_real_escape_string($koneksi, $_POST['ketua_nama']);
+    $ketua_nip  = mysqli_real_escape_string($koneksi, $_POST['ketua_nip']);
+    $wakil_nama = mysqli_real_escape_string($koneksi, $_POST['wakil_nama']);
+    $wakil_nip  = mysqli_real_escape_string($koneksi, $_POST['wakil_nip']);
+    
+    // Cek apakah data setting sudah ada (row id=1)
+    $cek_set = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
+    if(mysqli_num_rows($cek_set) == 0){
+        // Jika belum ada, buat baru
+        mysqli_query($koneksi, "INSERT INTO tbl_setting_instansi (id_setting, nama_instansi) VALUES (1, 'Pengadilan Negeri')");
+    }
+
+    // Update Data
+    $update = mysqli_query($koneksi, "UPDATE tbl_setting_instansi SET 
+        ketua_nama='$ketua_nama', 
+        ketua_nip='$ketua_nip',
+        wakil_nama='$wakil_nama',
+        wakil_nip='$wakil_nip'
+        WHERE id_setting='1'");
+    
+    if($update){
+        echo "<script>
+            Swal.fire({
+                title: 'Berhasil',
+                text: 'Data Pejabat berhasil disimpan!',
+                icon: 'success'
+            }).then(() => {
+                window.location.href='index.php?page=data_pegawai';
+            });
+        </script>";
     }
 }
 
-// --- LOGIKA: TAMBAH DATA ---
+// 2. AMBIL DATA (DENGAN PENANGANAN ERROR)
+$query_set   = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
+$set_instansi = mysqli_fetch_array($query_set);
+
+// Jaga-jaga jika data kosong agar tidak error "Undefined array key"
+if(!$set_instansi) {
+    $set_instansi = [
+        'ketua_nama' => '', 'ketua_nip' => '',
+        'wakil_nama' => '', 'wakil_nip' => ''
+    ];
+}
 if (isset($_POST['tambah'])) {
     $nip          = $_POST['nip'];
     $nama_lengkap = $_POST['nama_lengkap'];
@@ -28,12 +63,9 @@ if (isset($_POST['tambah'])) {
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
     $id_atasan    = !empty($_POST['id_atasan']) ? $_POST['id_atasan'] : 0; 
     $status_akun  = 'aktif'; 
-
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
     $ct_sakit     = $_POST['kuota_cuti_sakit'];
-
-    // Cek duplikasi NIP
     $cek_nip = mysqli_query($koneksi, "SELECT nip FROM users WHERE nip='$nip'");
     if (mysqli_num_rows($cek_nip) > 0) {
         $swal_script = "Swal.fire({ title: 'Gagal!', text: 'NIP sudah terdaftar!', icon: 'error', confirmButtonColor: '#006837' });";
@@ -47,8 +79,6 @@ if (isset($_POST['tambah'])) {
         }
     }
 }
-
-// --- LOGIKA: EDIT DATA ---
 if (isset($_POST['edit'])) {
     $id_user      = $_POST['id_user'];
     $nip          = $_POST['nip'];
@@ -58,45 +88,35 @@ if (isset($_POST['edit'])) {
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
     $status_akun  = $_POST['status_akun']; 
     $id_atasan    = !empty($_POST['id_atasan']) ? $_POST['id_atasan'] : 0;
-    
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
     $ct_sakit     = $_POST['kuota_cuti_sakit'];
-
     if (!empty($_POST['password'])) {
         $password = md5($_POST['password']);
         $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', password='$password', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', id_atasan='$id_atasan', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit' WHERE id_user='$id_user'";
     } else {
         $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', id_atasan='$id_atasan', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit' WHERE id_user='$id_user'";
     }
-
     $run_update = mysqli_query($koneksi, $query_update);
-
     if ($run_update) {
         $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data Pegawai diperbarui.', icon: 'success', confirmButtonColor: '#006837' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
     } else {
         $swal_script = "Swal.fire({ title: 'Gagal!', text: '" . mysqli_error($koneksi) . "', icon: 'error', confirmButtonColor: '#006837' });";
     }
 }
-
-// --- LOGIKA: GANTI STATUS ---
 if (isset($_GET['toggle_status'])) {
     $id = $_GET['toggle_status'];
     $cek = mysqli_query($koneksi, "SELECT status_akun FROM users WHERE id_user='$id'");
     $row = mysqli_fetch_array($cek);
     $new_status = ($row['status_akun'] == 'aktif') ? 'tidak_aktif' : 'aktif';
-    
     $update_status = mysqli_query($koneksi, "UPDATE users SET status_akun='$new_status' WHERE id_user='$id'");
-    
     if ($update_status) {
         echo "<script>window.location='index.php?page=data_pegawai';</script>";
     }
 }
-
 // ==========================================
 // --- LOGIKA BARU: PENCARIAN & PAGINATION ---
 // ==========================================
-
 $batas = 10;
 $halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
@@ -104,13 +124,11 @@ $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
 $keyword = "";
 $where_clause = "";
 $url_pencarian = "";
-
 if (isset($_GET['cari'])) {
     $keyword = $_GET['cari'];
     $where_clause = "WHERE u.nama_lengkap LIKE '%$keyword%' OR u.nip LIKE '%$keyword%'";
     $url_pencarian = "&cari=" . $keyword;
 }
-
 $query_jumlah = mysqli_query($koneksi, "SELECT count(*) AS total FROM users u $where_clause");
 $data_jumlah = mysqli_fetch_assoc($query_jumlah);
 $total_data = $data_jumlah['total'];
@@ -118,21 +136,16 @@ $total_halaman = ceil($total_data / $batas);
 
 $nomor = $halaman_awal + 1;
 ?>
-
 <style>
-    /* Styling Global */
     .page-wrapper-custom {
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
         color: #333;
     }
-    
     .bg-main-green { background-color: #006837 !important; color: white !important; }
     .text-main-green { color: #006837 !important; }
     .border-main-green { border-color: #006837 !important; }
-
     .bg-accent-yellow { background-color: #F9A825 !important; color: #006837 !important; }
     .text-accent-yellow { color: #F9A825 !important; }
-    
     .btn-custom-green {
         background-color: #006837;
         color: white;
@@ -142,14 +155,12 @@ $nomor = $halaman_awal + 1;
         background-color: #004e2a; 
         color: #F9A825;
     }
-
     .btn-custom-yellow {
         background-color: #F9A825;
         color: #006837;
         font-weight: bold;
         border: 1px solid #F9A825;
     }
-
     .table-custom-head th {
         background-color: #006837;
         color: white;
@@ -158,25 +169,19 @@ $nomor = $halaman_awal + 1;
         text-transform: uppercase;
         font-size: 0.85rem;
     }
-    
     .card-custom-border {
         border-top: 4px solid #F9A825;
         border-radius: 0.35rem;
     }
-
     .badge-custom-green { background-color: rgba(0, 104, 55, 0.1); color: #006837; border: 1px solid #006837; }
     .badge-custom-yellow { background-color: rgba(249, 168, 37, 0.15); color: #c27d0e; border: 1px solid #F9A825; }
-
     .pagination .page-item .page-link { color: #006837; border-color: #dee2e6; }
     .pagination .page-item.active .page-link { background-color: #006837; border-color: #006837; color: white; }
-
-    /* CSS BARU UNTUK SEARCH BAR DI DALAM */
     .search-wrapper {
         position: relative;
         width: 100%;
         max-width: 300px; /* Lebar maksimal search bar */
     }
-    
     .search-input-inside {
         width: 100%;
         padding-right: 40px !important; /* Memberi ruang untuk ikon di kanan */
@@ -466,7 +471,6 @@ $nomor = $halaman_awal + 1;
                                             <a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $x; ?><?php echo $url_pencarian; ?>"><?php echo $x; ?></a>
                                         </li>
                                     <?php endfor; ?>
-
                                     <?php if($halaman < $total_halaman): ?>
                                         <li class="page-item">
                                             <a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman + 1; ?><?php echo $url_pencarian; ?>">&raquo;</a>
@@ -484,7 +488,6 @@ $nomor = $halaman_awal + 1;
         </div>
     </div>
 </div>
-
 <div class="modal fade" id="modalTambah" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -492,6 +495,9 @@ $nomor = $halaman_awal + 1;
                 <h5 class="modal-title"><i class="fas fa-user-plus text-accent-yellow"></i> Tambah Pegawai Baru</h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
+            <button class="btn btn-warning btn-sm shadow-sm mx-1" data-toggle="modal" data-target="#modalPejabat">
+                <i class="fas fa-user-tie text-white-50"></i> Atur Ketua/Wakil
+            </button>
             <form method="POST">
                 <div class="modal-body">
                     <h6 class="font-weight-bold text-main-green border-bottom pb-2 mb-3">Identitas</h6>
@@ -559,6 +565,81 @@ $nomor = $halaman_awal + 1;
         </div>
     </div>
 </div>
+<div class="modal fade" id="modalPejabat" tabindex="-1" role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title font-weight-bold">Atur Pejabat Penandatangan</h5>
+                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
+            </div>
+            <form method="POST">
+                <div class="modal-body">
+                    <div class="alert alert-info small p-2 mb-3">
+                        <i class="fas fa-pen"></i> Silakan ketik Nama & NIP Pejabat. <br>
+                        Data ini yang akan muncul di cetakan surat.
+                    </div>
+
+                    <datalist id="list_nama_pegawai">
+                        <?php
+                        $q_all = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users ORDER BY nama_lengkap ASC");
+                        while($user = mysqli_fetch_array($q_all)){
+                            // Menyimpan NIP dalam atribut data-nip
+                            echo "<option value='".$user['nama_lengkap']."' data-nip='".$user['nip']."'>";
+                        }
+                        ?>
+                    </datalist>
+
+                    <h6 class="font-weight-bold text-dark border-bottom pb-2">1. Ketua Pengadilan</h6>
+                    <div class="form-group mb-1">
+                        <label class="small mb-0">Nama Lengkap</label>
+                        <input type="text" name="ketua_nama" id="ketua_nama" class="form-control" list="list_nama_pegawai"
+                               value="<?= $set_instansi['ketua_nama'] ?? '' ?>" required autocomplete="off" onchange="autoIsiNip('ketua')">
+                    </div>
+                    <div class="form-group">
+                        <label class="small mb-0">NIP</label>
+                        <input type="text" name="ketua_nip" id="ketua_nip" class="form-control" 
+                               value="<?= $set_instansi['ketua_nip'] ?? '' ?>" required>
+                    </div>
+
+                    <h6 class="font-weight-bold text-dark border-bottom pb-2 mt-3">2. Wakil Ketua</h6>
+                    <div class="form-group mb-1">
+                        <label class="small mb-0">Nama Lengkap</label>
+                        <input type="text" name="wakil_nama" id="wakil_nama" class="form-control" list="list_nama_pegawai"
+                               value="<?= $set_instansi['wakil_nama'] ?? '' ?>" autocomplete="off" onchange="autoIsiNip('wakil')">
+                    </div>
+                    <div class="form-group">
+                        <label class="small mb-0">NIP</label>
+                        <input type="text" name="wakil_nip" id="wakil_nip" class="form-control" 
+                               value="<?= $set_instansi['wakil_nip'] ?? '' ?>">
+                    </div>
+
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" name="simpan_pejabat" class="btn btn-warning font-weight-bold">Simpan</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+function autoIsiNip(tipe) {
+    // Ambil nilai nama yang diketik/dipilih user
+    var inputNama = document.getElementById(tipe + '_nama').value;
+    var listOptions = document.getElementById('list_nama_pegawai').options;
+    
+    // Loop cari apakah nama tersebut ada di datalist
+    for (var i = 0; i < listOptions.length; i++) {
+        if (listOptions[i].value === inputNama) {
+            // Jika ketemu, ambil atribut data-nip dan masukkan ke kolom NIP
+            var nip = listOptions[i].getAttribute('data-nip');
+            document.getElementById(tipe + '_nip').value = nip;
+            break;
+        }
+    }
+}
+</script>
 
 <script>
     function konfirmasiStatus(id, aksi, nama) {

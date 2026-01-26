@@ -2,7 +2,6 @@
 session_start();
 // Matikan error reporting agar warning kecil tidak merusak tampilan cetak
 error_reporting(0); 
-
 // --- 1. KONEKSI DATABASE (KHUSUS ADMIN) ---
 // Jalur disesuaikan dengan struktur folder: pages/admin/ -> assets/config/
 include '../../assets/config/database.php';
@@ -12,23 +11,31 @@ if (!$koneksi) {
     include '../../config/database.php';
 }
 
+// --- TAMBAHAN: AMBIL DATA PEJABAT ---
+$q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
+$instansi   = mysqli_fetch_array($q_instansi);
+
+// Jaga-jaga kalau kosong biar gak error
+if(!$instansi) {
+    $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
+}
+// ------------------------------------
+
 // --- 2. KEAMANAN: CEK LOGIN ---
 if (!isset($_SESSION['id_user'])) {
     echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
     exit;
 }
 
-// Cek Level (Opsional: Memastikan yang akses adalah Admin/Pimpinan)
+// Cek Level (Opsional)
 if (isset($_SESSION['level']) && $_SESSION['level'] == 'pegawai') {
     // Jika pegawai biasa mencoba akses file admin ini, tolak
-    // (Kecuali jika sistem Anda membolehkan pegawai akses folder admin, baris ini bisa dihapus)
 }
 
 // Ambil ID dari URL
 $id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 
 // Ambil Data Lengkap Pengajuan
-// Kita tambahkan "pengajuan_cuti.id_atasan AS id_atasan_fix" untuk memastikan ID yang diambil benar
 $query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
@@ -42,8 +49,6 @@ if (!$data) {
     exit;
 }
 
-// (PENTING: Validasi Kepemilikan DIHAPUS disini, karena Admin berhak cetak punya siapa saja)
-
 // ============================================================
 // --- LOGIC PERBAIKAN: KETERANGAN DINAMIS ---
 // ============================================================
@@ -54,7 +59,7 @@ $lama_ambil = $data['lama_hari'];
 // Variabel default
 $sisa_n_tampil = $data['sisa_cuti_n']; 
 
-// Siapkan variabel kosong untuk setiap kolom keterangan di Tabel V
+// Siapkan variabel kosong
 $ket_tahunan = "";
 $ket_besar   = "";
 $ket_sakit   = "";
@@ -126,7 +131,6 @@ if (!function_exists('tgl_indo')) {
 $nama_atasan = "............................................."; 
 $nip_atasan  = ".......................";
 
-// Ambil dari alias 'id_atasan_fix' yang sudah kita buat di query atas
 $id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0;
 
 if ($id_atasan_terpilih > 0) {
@@ -321,8 +325,7 @@ if ($id_atasan_terpilih > 0) {
             <tr>
                 <td width="15%">Selama</td>
                 <td width="20%"><?php echo $data['lama_hari']; ?> (Hari/Bulan/Tahun)*</td>
-                <td width="15%">mulai tanggal</td>
-                <td width="20%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_mulai'])); ?></td>
+                <td width="15%" class="text-center">mulai tanggal</td>
                 <td width="5%" class="text-center">s/d</td>
                 <td width="25%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_selesai'])); ?></td>
             </tr>
@@ -387,7 +390,7 @@ if ($id_atasan_terpilih > 0) {
                     <div class="box-ttd-fixed">
                         <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
                         
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
                             <?php echo $data['nama_lengkap']; ?>
                         </div>
 
@@ -449,10 +452,13 @@ if ($id_atasan_terpilih > 0) {
                 
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold; text-decoration: none;">
-                            &nbsp;
+                        <div style="text-align: center; margin-top: 5px;">Ketua,</div>
+
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;">
+                            <?php echo $instansi['ketua_nama']; ?>
                         </div>
-                        <div class="nip-bottom">NIP. </div>
+
+                        <div class="nip-bottom">NIP. <?php echo $instansi['ketua_nip']; ?></div>
                     </div>
                 </td>
             </tr>
