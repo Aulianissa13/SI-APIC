@@ -327,7 +327,7 @@ if(isset($_POST['login'])){
                 <div class="input-wrapper">
                     <i class="fas fa-lock input-icon"></i>
                     <input type="password" id="password" name="password" class="form-input" placeholder="Masukkan Password" required>
-                    <i class="fas fa-eye toggle-password" onclick="togglePass()" id="eye-icon"></i>
+                    <i class="fas fa-eye-slash toggle-password" onclick="togglePass()" id="eye-icon"></i>
                 </div>
             </div>
 
@@ -349,14 +349,14 @@ if(isset($_POST['login'])){
             var icon = document.getElementById("eye-icon");
             if (passInput.type === "password") {
                 passInput.type = "text";
-                icon.classList.remove("fa-eye");
-                icon.classList.add("fa-eye-slash");
-                icon.style.color = "#006837"; 
-            } else {
-                passInput.type = "password";
                 icon.classList.remove("fa-eye-slash");
                 icon.classList.add("fa-eye");
-                icon.style.color = "#98a2b3"; 
+                icon.style.color = "#006837";
+            } else {
+                passInput.type = "password";
+                icon.classList.remove("fa-eye");
+                icon.classList.add("fa-eye-slash");
+                icon.style.color = "#98a2b3";
             }
         }
     </script>

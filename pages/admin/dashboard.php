@@ -46,7 +46,7 @@ $libur_data = array_filter($libur_data, function($item) {
 
     .hero-card {
         background: linear-gradient(135deg, var(--pn-green) 0%, #004d29 100%);
-        color: white; border-radius: 20px; padding: 2rem;
+        color: white; border-radius: 20px; padding: 1.5rem;
         position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0, 104, 55, 0.2);
     }
     .hero-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; }
@@ -85,18 +85,18 @@ $libur_data = array_filter($libur_data, function($item) {
     .fc .fc-toolbar-title { font-size: 1rem !important; font-weight: bold; color: var(--pn-green); }
     .fc .fc-button-primary { background-color: var(--pn-green) !important; border: none !important; padding: 3px 6px !important; }
 
-    .libur-item { font-size: 0.7rem; padding: 5px 8px; margin-bottom: 4px; border-radius: 6px; display: flex; align-items: center; }
-    .dot { width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
+    .libur-item { font-size: 0.6rem; padding: 4px 6px; margin-bottom: 3px; border-radius: 6px; display: flex; align-items: center; }
+    .dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
 </style>
 
 <style>
     .hero-card { background: linear-gradient(135deg, var(--pn-green) 0%, #004d29 100%); color: white; border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden; min-height: 150px; }
     .section-spacing { margin-bottom: 15px !important; }
-    .stat-card { border: none; border-radius: 15px; background: #fff; height: 170px; position: relative; overflow: hidden; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .stat-card { border: none; border-radius: 15px; background: #fff; height: 140px; position: relative; overflow: hidden; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .stat-number { font-size: 3.5rem; font-weight: 800; line-height: 1; margin-top: 15px; text-align: center; }
     .stat-icon-bg { position: absolute; right: 12px; bottom: 10px; font-size: 2.5rem; opacity: 0.12; }
-    .calendar-card-fix { height: calc(175px + 140px + 20px) !important; }
-    #calendar { font-size: 0.8rem; }
+    .calendar-card-fix { height: calc(150px + 140px + 20px) !important; }
+    #calendar { font-size: 0.6rem; }
 </style>
 
 <div class="container-fluid">
@@ -112,35 +112,35 @@ $libur_data = array_filter($libur_data, function($item) {
                 </div>
             </div>
             <div class="row mb-4">
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-info shadow-sm"><div class="card-body"><div class="stat-main-label text-info text-uppercase font-weight-bold small">Total Pegawai</div><div class="stat-number text-gray-800"><?php echo $d_pegawai['total']; ?></div><i class="fas fa-users stat-icon-bg text-info"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-warning shadow-sm"><div class="card-body"><div class="stat-main-label text-warning text-uppercase font-weight-bold small">Menunggu Tindakan</div><div class="stat-number text-gray-800"><?php echo $d_pending['total']; ?></div><i class="fas fa-hourglass-half stat-icon-bg text-warning"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-brand shadow-sm"><div class="card-body"><div class="stat-main-label text-success text-uppercase font-weight-bold small">Cuti Disetujui</div><div class="stat-number text-gray-800"><?php echo $d_acc['total']; ?></div><i class="fas fa-check-circle stat-icon-bg text-success"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-danger shadow-sm"><div class="card-body"><div class="stat-main-label text-danger text-uppercase font-weight-bold small">Cuti Ditolak</div><div class="stat-number text-gray-800"><?php echo $d_tolak['total']; ?></div><i class="fas fa-times-circle stat-icon-bg text-danger"></i></div></div></div>
+                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-info shadow-sm"><div class="card-body"><div class="stat-main-label text-info text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Total<br>Pegawai</div><div class="stat-number text-gray-800"><?php echo $d_pegawai['total']; ?></div><i class="fas fa-users stat-icon-bg text-info"></i></div></div></div>
+                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-warning shadow-sm"><div class="card-body"><div class="stat-main-label text-warning text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Menunggu Persetujuan</div><div class="stat-number text-gray-800"><?php echo $d_pending['total']; ?></div><i class="fas fa-hourglass-half stat-icon-bg text-warning"></i></div></div></div>
+                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-brand shadow-sm"><div class="card-body"><div class="stat-main-label text-success text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Disetujui</div><div class="stat-number text-gray-800"><?php echo $d_acc['total']; ?></div><i class="fas fa-check-circle stat-icon-bg text-success"></i></div></div></div>
+                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-danger shadow-sm"><div class="card-body"><div class="stat-main-label text-danger text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Ditolak</div><div class="stat-number text-gray-800"><?php echo $d_tolak['total']; ?></div><i class="fas fa-times-circle stat-icon-bg text-danger"></i></div></div></div>
             </div>
         </div>
         <div class="col-xl-4 col-lg-5 mb-4">
             <div class="card card-modern calendar-card-fix shadow-sm"><div class="card-body p-3"><div id="calendar"></div><div id="libur-list-container" class="mt-2" style="max-height: 60px; overflow-y: auto;"></div></div></div>
         </div>
     </div>
-    <div class="row" style="margin-top: -45px;">
+    <div class="row" style="margin-top: -35px;">
         <div class="col-lg-6 mb-4">
-            <div class="card card-modern shadow-sm" style="height: 380px;">
-                <div class="card-header-modern py-3"><h5 class="m-0 font-weight-bold" style="color: #006837;">Grafik Status Cuti</h5></div>
-                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 310px;"><canvas id="myAreaChart"></canvas></div>
+            <div class="card card-modern shadow-sm" style="height: 320px;">
+                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #006837; font-size: 0.9rem;">Grafik Status Cuti</h5></div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 250px;"><canvas id="myAreaChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-6 mb-4">
-            <div class="card card-modern shadow-sm" style="height: 380px;">
-                <div class="card-header-modern py-3"><h5 class="m-0 font-weight-bold" style="color: #006837;">Permohonan Terbaru</h5></div>
+            <div class="card card-modern shadow-sm" style="height: 320px;">
+                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #006837; font-size: 0.9rem;">Permohonan Terbaru</h5></div>
                 <div class="card-body p-0" style="height: 100%;">
                     <table class="table table-hover mb-0" style="border-collapse: collapse; height: 100%;">
-                        <thead style="background-color: #006837; color: white;"><tr><th class="text-center py-2" style="width: 40%; border: 1px solid #ddd;">Nama Pegawai</th><th class="text-center py-2" style="width: 35%; border: 1px solid #ddd;">Waktu Pengajuan</th><th class="text-center pr-4 py-2" style="width: 25%; border: 1px solid #ddd;">Status</th></tr></thead>
+                        <thead style="background-color: #006837; color: white;"><tr><th class="text-center py-1" style="width: 40%; border: 1px solid #ddd; font-size: 0.75rem;">Nama Pegawai</th><th class="text-center py-1" style="width: 35%; border: 1px solid #ddd; font-size: 0.75rem;">Waktu Pengajuan</th><th class="text-center pr-4 py-1" style="width: 25%; border: 1px solid #ddd; font-size: 0.75rem;">Status</th></tr></thead>
                         <tbody>
                             <?php while($row = mysqli_fetch_array($sql_latest)) {
                                 $badge = ($row['status'] == 'Diajukan') ? "warning" : (($row['status'] == 'Disetujui') ? "success" : "danger");
                                 $waktu = date('d/m/Y H:i', strtotime($row['created_at']));
                             ?>
-                            <tr><td class="text-center py-2" style="border: 1px solid #ddd;"><div class="font-weight-bold text-dark" style="font-size: 0.9rem;"><?= $row['nama_lengkap'] ?></div><div class="text-muted small" style="font-size: 0.8rem;"><?= $row['jabatan'] ?></div></td><td class="text-center py-2" style="border: 1px solid #ddd;"><div class="text-muted small" style="font-size: 0.8rem;"><?= $waktu ?></div></td><td class="text-center pr-4 py-2" style="border: 1px solid #ddd;"><span class="badge badge-pill badge-<?= $badge ?> p-1 px-2" style="font-size: 0.75rem;"><?= $row['status'] ?></span></td></tr>
+                            <tr><td class="text-center py-1" style="border: 1px solid #ddd;"><div class="font-weight-bold text-dark" style="font-size: 0.75rem;"><?= $row['nama_lengkap'] ?></div><div class="text-muted small" style="font-size: 0.7rem;"><?= $row['jabatan'] ?></div></td><td class="text-center py-1" style="border: 1px solid #ddd;"><div class="text-muted small" style="font-size: 0.7rem;"><?= $waktu ?></div></td><td class="text-center pr-4 py-1" style="border: 1px solid #ddd;"><span class="badge badge-pill badge-<?= $badge ?> p-1 px-2" style="font-size: 0.65rem;"><?= $row['status'] ?></span></td></tr>
                             <?php } ?>
                         </tbody>
                     </table>
