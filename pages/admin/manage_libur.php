@@ -283,7 +283,7 @@ if (isset($_GET['hapus_semua'])) {
         })
     }
     
-    // Alert Hapus Semua
+
     function konfirmasiHapusSemua(url) {
         Swal.fire({
             title: 'Hapus SEMUA Data?',
