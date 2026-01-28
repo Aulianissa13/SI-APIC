@@ -10,8 +10,9 @@ $total_kuota_tahunan = $user['sisa_cuti_n'] + $user['sisa_cuti_n1'];
 // 2. Ambil Daftar Jenis Cuti
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 
-// 3. Ambil Atasan
-$query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE id_pejabat='1' AND status_akun='aktif' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
+// 3. Ambil Atasan (Pejabat Penilai)
+// Mengambil user yang statusnya atasan (1), kecuali diri sendiri
+$query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_atasan_langsung = '1' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
 
 // 4. Ambil Libur Nasional untuk JavaScript
 $libur_nasional = [];
@@ -20,18 +21,29 @@ while ($row = mysqli_fetch_assoc($q_libur)) {
     $libur_nasional[] = $row['tanggal'];
 }
 
-// 5. Generate Nomor Surat Otomatis
+// 5. Generate Nomor Surat Otomatis (Reset Tiap Tahun)
 $tahun_ini = date('Y');
 $bulan_ini = date('n');
-$romawi = [ 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", 10 => "X", 11 => "XI", 12 => "XII" ];
+$romawi    = [ 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", 10 => "X", 11 => "XI", 12 => "XII" ];
 $bulan_romawi = $romawi[$bulan_ini];
 
-$q_cek_no = mysqli_query($koneksi, "SELECT id_pengajuan FROM pengajuan_cuti ORDER BY id_pengajuan DESC LIMIT 1");
-$row_no = mysqli_fetch_array($q_cek_no);
-$urut = isset($row_no['id_pengajuan']) ? ($row_no['id_pengajuan'] + 1) : 1;
-$no_urut_format = sprintf("%03d", $urut);
+// Cek surat terakhir yang dibuat TAHUN INI saja
+// Pastikan nama kolom di database adalah 'nomor_surat' atau 'no_surat' (sesuaikan dengan DB Anda)
+$q_cek_no = mysqli_query($koneksi, "SELECT nomor_surat FROM pengajuan_cuti WHERE nomor_surat LIKE '%/$tahun_ini' ORDER BY id_pengajuan DESC LIMIT 1");
+$row_no   = mysqli_fetch_array($q_cek_no);
 
-$no_surat_auto = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
+if ($row_no) {
+    // Jika sudah ada surat tahun ini, ambil 3 digit depan (explode berdasarkan /)
+    $pecah_no = explode('/', $row_no['nomor_surat']);
+    $last_no  = (int)$pecah_no[0]; // Ambil angka paling depan, misal "005" jadi 5
+    $urut     = $last_no + 1;
+} else {
+    // Jika belum ada surat tahun ini, mulai dari 1
+    $urut = 1;
+}
+
+$no_urut_format = sprintf("%03d", $urut); // Format jadi 001, 002, dst
+$no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 ?>
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
@@ -195,9 +207,13 @@ $no_surat_auto = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 
                         <div class="form-group">
                             <label class="form-label-pro">Atasan Langsung (Penandatangan)</label>
-                            <select name="id_atasan" class="form-control form-control-pro" required>
+                            <select name="id_pejabat" class="form-control form-control-pro" required>
                                 <option value="">-- Pilih Nama Atasan --</option>
-                                <?php mysqli_data_seek($query_atasan, 0); while($atasan = mysqli_fetch_array($query_atasan)) { ?>
+                                <?php 
+                                // Reset pointer data jika perlu, tapi karena ini loop pertama tidak wajib
+                                // mysqli_data_seek($query_atasan, 0); 
+                                while($atasan = mysqli_fetch_array($query_atasan)) { 
+                                ?>
                                     <option value="<?php echo $atasan['id_user']; ?>">
                                         <?php echo $atasan['nama_lengkap']; ?> (NIP. <?php echo $atasan['nip']; ?>)
                                     </option>

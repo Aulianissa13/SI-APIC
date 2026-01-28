@@ -1,9 +1,10 @@
 <?php
+// FILE: pages/user/cetak_cuti.php
+
 session_start();
 error_reporting(0);
 
 // --- 1. KONEKSI DATABASE (FALLBACK SYSTEM) ---
-// Mencoba path user dulu, jika gagal coba path admin (biar fleksibel)
 if (file_exists('../../config/database.php')) {
     include '../../config/database.php';
 } else {
@@ -21,7 +22,6 @@ $id_user_login = $_SESSION['id_user'];
 $level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
 
 // --- 3. AMBIL DATA SETTING INSTANSI (KETUA) ---
-// UPDATED: Mengambil dari database, bukan hardcode lagi!
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi   = mysqli_fetch_array($q_instansi);
 // Fallback jika database setting kosong
@@ -42,12 +42,13 @@ if (!$data) { echo "<script>alert('Data tidak ditemukan!'); window.close();</scr
 if ($level_login != 'admin' && $data['id_user'] != $id_user_login) { echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak data orang lain.'); window.close();</script>"; exit; }
 
 // ============================================================
-// --- LOGIC ATASAN LANGSUNG ---
+// --- LOGIC ATASAN LANGSUNG (Sesuai Pilihan di Form) ---
 // ============================================================
 $nama_atasan_langsung = "............................................."; 
 $nip_atasan_langsung  = ".......................";
-$id_atasan_terpilih   = isset($data['id_pejabat']) ? $data['id_pejabat'] : 0; // Tetap menggunakan id_pejabat sesuai file user asli
+$id_atasan_terpilih   = isset($data['id_pejabat']) ? $data['id_pejabat'] : 0; 
 
+// Jika ada ID pejabat tersimpan, cari namanya di database
 if ($id_atasan_terpilih > 0) {
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
     if ($bos = mysqli_fetch_array($cari_bos)) {
@@ -57,7 +58,7 @@ if ($id_atasan_terpilih > 0) {
 }
 
 // ============================================================
-// --- LOGIC PERHITUNGAN CUTI (SUDAH BAGUS, DIPERTAHANKAN) ---
+// --- LOGIC PERHITUNGAN CUTI (Sesuai Kode Asli) ---
 // ============================================================
 $id_jenis   = $data['id_jenis']; 
 $lama_ambil = $data['lama_hari'];

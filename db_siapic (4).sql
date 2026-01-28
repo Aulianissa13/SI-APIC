@@ -3,9 +3,9 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Waktu pembuatan: 27 Jan 2026 pada 01.59
--- Versi server: 10.4.32-MariaDB
--- Versi PHP: 8.2.12
+-- Generation Time: Jan 28, 2026 at 08:36 AM
+-- Server version: 10.4.32-MariaDB
+-- PHP Version: 8.2.12
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
 START TRANSACTION;
@@ -24,7 +24,7 @@ SET time_zone = "+00:00";
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `jenis_cuti`
+-- Table structure for table `jenis_cuti`
 --
 
 CREATE TABLE `jenis_cuti` (
@@ -33,7 +33,7 @@ CREATE TABLE `jenis_cuti` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `jenis_cuti`
+-- Dumping data for table `jenis_cuti`
 --
 
 INSERT INTO `jenis_cuti` (`id_jenis`, `nama_jenis`) VALUES
@@ -46,7 +46,7 @@ INSERT INTO `jenis_cuti` (`id_jenis`, `nama_jenis`) VALUES
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `libur_nasional`
+-- Table structure for table `libur_nasional`
 --
 
 CREATE TABLE `libur_nasional` (
@@ -57,7 +57,7 @@ CREATE TABLE `libur_nasional` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `libur_nasional`
+-- Dumping data for table `libur_nasional`
 --
 
 INSERT INTO `libur_nasional` (`id_libur`, `tanggal`, `jenis_libur`, `keterangan`) VALUES
@@ -89,7 +89,7 @@ INSERT INTO `libur_nasional` (`id_libur`, `tanggal`, `jenis_libur`, `keterangan`
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `pengajuan_cuti`
+-- Table structure for table `pengajuan_cuti`
 --
 
 CREATE TABLE `pengajuan_cuti` (
@@ -113,45 +113,21 @@ CREATE TABLE `pengajuan_cuti` (
   `sisa_cuti_n` int(11) DEFAULT 0,
   `sisa_cuti_n1` int(11) DEFAULT 0,
   `dipotong_n1` int(11) DEFAULT 0,
-  `dipotong_n` int(11) DEFAULT 0
+  `dipotong_n` int(11) DEFAULT 0,
+  `id_pejabat` int(11) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `pengajuan_cuti`
+-- Dumping data for table `pengajuan_cuti`
 --
 
-INSERT INTO `pengajuan_cuti` (`id_pengajuan`, `id_user`, `jenis_cuti`, `id_atasan`, `id_jenis`, `nomor_surat`, `tgl_pengajuan`, `tgl_mulai`, `tgl_selesai`, `lama_hari`, `alasan`, `no_telepon`, `masa_kerja`, `alamat_cuti`, `status`, `catatan_admin`, `created_at`, `sisa_cuti_n`, `sisa_cuti_n1`, `dipotong_n1`, `dipotong_n`) VALUES
-(1, 2, NULL, NULL, 1, NULL, '2026-01-15', '2026-01-15', '2026-01-19', 3, 'Pergi Keluar Kota', NULL, NULL, 'Magelang', 'Disetujui', NULL, '2026-01-15 04:03:00', 0, 0, 0, 0),
-(2, 2, NULL, NULL, 1, NULL, '2026-01-15', '2026-01-16', '2026-01-18', 1, 'Acara Keluarga', NULL, NULL, 'Yogyakarta', 'Disetujui', NULL, '2026-01-15 04:10:41', 0, 0, 0, 0),
-(3, 2, NULL, NULL, 1, '001/KPN/W13.U1/KP.05.3/I/2026', '2026-01-15', '2026-02-04', '2026-02-07', 3, 'Pergi Ziarah', NULL, NULL, 'Yogyakarta', 'Disetujui', NULL, '2026-01-15 04:18:14', 0, 0, 0, 0),
-(4, 3, NULL, NULL, 1, '002/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-19', '2026-01-26', 6, 'Acara Keluarga', NULL, NULL, 'London', 'Ditolak', NULL, '2026-01-17 15:39:20', 0, 0, 0, 0),
-(5, 3, NULL, NULL, 2, '003/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-22', '2026-01-26', 3, 'Sakit Tipes', NULL, NULL, 'Maguwo', 'Ditolak', NULL, '2026-01-17 15:44:46', 0, 0, 0, 0),
-(6, 3, NULL, NULL, 2, '004/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-26', '2026-01-28', 3, 'Izin Sakit', NULL, NULL, 'Jakarta', 'Ditolak', NULL, '2026-01-17 15:48:20', 0, 0, 0, 0),
-(7, 3, NULL, NULL, 2, '005/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-02-05', '2026-02-06', 2, 'Izin Sakit', NULL, NULL, 'Florida', 'Disetujui', NULL, '2026-01-17 15:51:21', 0, 0, 0, 0),
-(8, 3, NULL, NULL, 2, '006/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-26', '2026-01-30', 5, 'Izin Sakit', NULL, NULL, 'Kanada', 'Ditolak', NULL, '2026-01-17 16:02:51', 0, 0, 0, 0),
-(9, 3, NULL, NULL, 2, '007/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-21', '2026-01-21', 1, 'SAKIT', NULL, NULL, 'MAGUWO', 'Ditolak', NULL, '2026-01-17 16:21:04', 0, 0, 0, 0),
-(10, 3, NULL, NULL, 1, '008/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-21', '2026-01-23', 3, 'Keluarga', NULL, NULL, 'Batu', 'Ditolak', NULL, '2026-01-17 16:26:43', 0, 0, 0, 0),
-(11, 3, NULL, NULL, 2, '009/KPN/W13.U1/KP.05.3/I/2026', '2026-01-17', '2026-01-19', '2026-01-21', 3, 'SAKIT', NULL, NULL, 'BATU', 'Ditolak', NULL, '2026-01-17 16:34:36', 0, 0, 0, 0),
-(12, 3, NULL, NULL, 2, '010/KPN/W13.U1/KP.05.3/I/2026', '2026-01-18', '2026-01-21', '2026-01-24', 3, 'Berobat Kerumahsakit', NULL, NULL, 'Jakarta\r\n', 'Ditolak', NULL, '2026-01-18 06:04:08', 0, 0, 0, 0),
-(13, 3, NULL, NULL, 1, '011/KPN/W13.U1/KP.05.3/I/2026', '2026-01-18', '2026-01-29', '2026-02-03', 4, 'Acara keluarga', NULL, NULL, 'magelang', 'Disetujui', NULL, '2026-01-18 06:30:35', 0, 0, 0, 0),
-(14, 3, NULL, NULL, 1, '012/KPN/W13.U1/KP.05.3/I/2026', '2026-01-18', '2026-01-28', '2026-02-02', 4, 'Pergi Keluar Kota', NULL, NULL, 'Bandung', 'Disetujui', NULL, '2026-01-18 07:26:40', 0, 0, 0, 0),
-(21, 3, NULL, NULL, 1, '014/KPN/W13.U1/KP.05.3/I/2026', '2026-01-20', '2026-12-24', '2026-12-28', 3, 'ke luar ', NULL, NULL, 'new york', 'Disetujui', NULL, '2026-01-20 00:51:46', 0, 0, 0, 0),
-(30, 6, NULL, NULL, 1, NULL, '2026-01-22', '2026-01-23', '2026-01-26', 2, 'Keluarga', NULL, NULL, '', 'Disetujui', NULL, '2026-01-22 08:16:33', 0, 0, 0, 0),
-(31, 3, NULL, NULL, 2, NULL, '2026-01-22', '2026-01-30', '2026-01-30', 1, 'Sakit', NULL, NULL, '', 'Ditolak', NULL, '2026-01-22 12:57:01', 0, 0, 0, 0),
-(32, 3, NULL, 1, 1, '032/KPN/W13.U1/KP.05.3/I/2026', '2026-01-24', '2026-03-17', '2026-03-23', 1, 'Acara Keluarga', NULL, '', 'Magelang', 'Ditolak', NULL, '2026-01-24 07:35:19', 0, 0, 0, 0),
-(33, 3, NULL, 2, 1, '033/KPN/W13.U1/KP.05.3/I/2026', '2026-01-24', '2026-06-03', '2026-06-09', 5, 'Acara Keluarga', NULL, '10 Tahun', 'Magelang', 'Ditolak', NULL, '2026-01-24 09:00:38', 0, 0, 0, 0),
-(42, 3, NULL, NULL, 1, NULL, '2026-01-25', '2026-01-29', '2026-01-30', 2, 'Acara keluarga', NULL, NULL, '', 'Ditolak', NULL, '2026-01-25 14:08:51', 0, 0, 0, 0),
-(43, 3, NULL, 3, 1, '043/CUTI/PN.Yyk/I/2026', '2026-01-25', '2026-02-03', '2026-02-04', 2, 'Acara Keluarga', '0897878657657', NULL, 'Magelang', 'Disetujui', NULL, '2026-01-25 15:19:34', 4, 0, 0, 2),
-(44, 5, NULL, NULL, 1, '', '2026-01-26', '2026-03-02', '2026-03-04', 3, 'Acara Keluarga', NULL, NULL, '', 'Ditolak', NULL, '2026-01-26 03:15:50', 0, 0, 3, 0),
-(45, 5, NULL, NULL, 1, '045/KPN/W13.U1/KP.05.3/I/2026', '2026-01-26', '2026-02-03', '2026-02-04', 2, 'Acara Keluarga', NULL, NULL, '', 'Ditolak', NULL, '2026-01-26 03:22:59', 0, 0, 2, 0),
-(46, 5, NULL, NULL, 1, '046/KPN/W13.U1/KP.05.3/I/2026', '2026-01-26', '2026-02-16', '2026-03-17', 20, 'Pergi', NULL, NULL, '', 'Ditolak', NULL, '2026-01-26 04:05:21', 0, 0, 6, 14),
-(47, 5, NULL, NULL, 2, '047/KPN/W13.U1/KP.05.3/I/2026', '2026-01-26', '2026-03-30', '2026-03-31', 2, 'Pergi', NULL, NULL, '', 'Ditolak', NULL, '2026-01-26 04:21:26', 0, 0, 0, 0),
-(48, 3, NULL, NULL, 1, '048/KPN/W13.U1/KP.05.3/I/2026', '2026-01-26', '2026-02-06', '2026-02-09', 2, 'Acara Keluarga', NULL, NULL, 'Magelang', 'Disetujui', NULL, '2026-01-26 06:57:45', 0, 0, 0, 2);
+INSERT INTO `pengajuan_cuti` (`id_pengajuan`, `id_user`, `jenis_cuti`, `id_atasan`, `id_jenis`, `nomor_surat`, `tgl_pengajuan`, `tgl_mulai`, `tgl_selesai`, `lama_hari`, `alasan`, `no_telepon`, `masa_kerja`, `alamat_cuti`, `status`, `catatan_admin`, `created_at`, `sisa_cuti_n`, `sisa_cuti_n1`, `dipotong_n1`, `dipotong_n`, `id_pejabat`) VALUES
+(66, 3, NULL, NULL, 1, '001/KPN/W13.U1/KP.05.3/I/2026', '2026-01-28', '2026-01-12', '2026-01-19', 5, 'Acara Keluarga', NULL, NULL, 'Magelang', 'Disetujui', NULL, '2026-01-28 04:17:22', 0, 0, 4, 1, 0);
 
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `tbl_setting_instansi`
+-- Table structure for table `tbl_setting_instansi`
 --
 
 CREATE TABLE `tbl_setting_instansi` (
@@ -165,7 +141,7 @@ CREATE TABLE `tbl_setting_instansi` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `tbl_setting_instansi`
+-- Dumping data for table `tbl_setting_instansi`
 --
 
 INSERT INTO `tbl_setting_instansi` (`id_setting`, `nama_instansi`, `alamat_instansi`, `ketua_nama`, `ketua_nip`, `wakil_nama`, `wakil_nip`) VALUES
@@ -174,7 +150,7 @@ INSERT INTO `tbl_setting_instansi` (`id_setting`, `nama_instansi`, `alamat_insta
 -- --------------------------------------------------------
 
 --
--- Struktur dari tabel `users`
+-- Table structure for table `users`
 --
 
 CREATE TABLE `users` (
@@ -198,13 +174,13 @@ CREATE TABLE `users` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
--- Dumping data untuk tabel `users`
+-- Dumping data for table `users`
 --
 
 INSERT INTO `users` (`id_user`, `nip`, `password`, `nama_lengkap`, `jabatan`, `pangkat`, `unit_kerja`, `no_telepon`, `role`, `is_atasan_langsung`, `sisa_cuti_n`, `sisa_cuti_n1`, `sisa_cuti_n2`, `kuota_cuti_sakit`, `created_at`, `status_akun`, `id_atasan`) VALUES
 (1, 'admin', '$2y$10$Hz8R7a0J4bGIuHB4Ygu.LeYjaZG2aQRO5JqfQDX3dw2Iqp3nYMDcS', 'Administrator Ortala', 'Kepala Sub Bagian', NULL, 'Pengadilan Negeri Yogyakarta', NULL, 'admin', 0, 12, 6, 0, 14, '2026-01-15 02:30:50', 'aktif', 0),
 (2, '198001011', '202cb962ac59075b964b07152d234b70', 'Budi Santoso, S.H.', 'Hakim Pratama', '', 'Pengadilan Negeri Yogyakarta', '088888888888', 'user', 0, 3, 2, 0, 14, '2026-01-15 02:30:50', 'aktif', 5),
-(3, '124230050', '$2y$10$8BG/A/1OTFtCEuZmtKqyY.pi/nnKQiLwli56itJxFB6y/HjpZvT42', 'Nissa Aulia', 'Panitera', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '0897878657657', 'user', 0, 4, 0, 0, 11, '2026-01-17 15:38:04', 'aktif', 5),
+(3, '124230050', '$2y$10$8BG/A/1OTFtCEuZmtKqyY.pi/nnKQiLwli56itJxFB6y/HjpZvT42', 'Nissa Aulia', 'Panitera', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '0897878657657', 'user', 0, 12, 4, 0, 14, '2026-01-17 15:38:04', 'aktif', 0),
 (4, '123', 'e10adc3949ba59abbe56e057f20f883e', 'Tsalatsa', 'Panitera', NULL, 'Pengadilan Negeri Yogyakarta', '0808080808', 'user', 0, 12, 6, 0, 14, '2026-01-21 01:43:11', 'aktif', 5),
 (5, '19680414 199603 1 002', '123', 'SYAFRIZAL, S.H.', 'Ketua ', 'Pembina Utama Madya (IV/d)', 'Pengadilan Negeri Yogyakarta', '81264701704', 'user', 0, 12, 6, 0, 14, '2026-01-21 04:27:12', 'aktif', 0),
 (6, '19780911 200112 2 002', 'e10adc3949ba59abbe56e057f20f883e', 'MELINDA ARITONANG, S.H.', 'Wakil Ketua ', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', NULL, 'user', 0, 12, 5, 0, 14, '2026-01-22 02:44:06', 'aktif', 0);
@@ -214,19 +190,19 @@ INSERT INTO `users` (`id_user`, `nip`, `password`, `nama_lengkap`, `jabatan`, `p
 --
 
 --
--- Indeks untuk tabel `jenis_cuti`
+-- Indexes for table `jenis_cuti`
 --
 ALTER TABLE `jenis_cuti`
   ADD PRIMARY KEY (`id_jenis`);
 
 --
--- Indeks untuk tabel `libur_nasional`
+-- Indexes for table `libur_nasional`
 --
 ALTER TABLE `libur_nasional`
   ADD PRIMARY KEY (`id_libur`);
 
 --
--- Indeks untuk tabel `pengajuan_cuti`
+-- Indexes for table `pengajuan_cuti`
 --
 ALTER TABLE `pengajuan_cuti`
   ADD PRIMARY KEY (`id_pengajuan`),
@@ -234,58 +210,58 @@ ALTER TABLE `pengajuan_cuti`
   ADD KEY `id_jenis` (`id_jenis`);
 
 --
--- Indeks untuk tabel `tbl_setting_instansi`
+-- Indexes for table `tbl_setting_instansi`
 --
 ALTER TABLE `tbl_setting_instansi`
   ADD PRIMARY KEY (`id_setting`);
 
 --
--- Indeks untuk tabel `users`
+-- Indexes for table `users`
 --
 ALTER TABLE `users`
   ADD PRIMARY KEY (`id_user`),
   ADD UNIQUE KEY `nip` (`nip`);
 
 --
--- AUTO_INCREMENT untuk tabel yang dibuang
+-- AUTO_INCREMENT for dumped tables
 --
 
 --
--- AUTO_INCREMENT untuk tabel `jenis_cuti`
+-- AUTO_INCREMENT for table `jenis_cuti`
 --
 ALTER TABLE `jenis_cuti`
   MODIFY `id_jenis` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
--- AUTO_INCREMENT untuk tabel `libur_nasional`
+-- AUTO_INCREMENT for table `libur_nasional`
 --
 ALTER TABLE `libur_nasional`
   MODIFY `id_libur` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=29;
 
 --
--- AUTO_INCREMENT untuk tabel `pengajuan_cuti`
+-- AUTO_INCREMENT for table `pengajuan_cuti`
 --
 ALTER TABLE `pengajuan_cuti`
-  MODIFY `id_pengajuan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=49;
+  MODIFY `id_pengajuan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=67;
 
 --
--- AUTO_INCREMENT untuk tabel `tbl_setting_instansi`
+-- AUTO_INCREMENT for table `tbl_setting_instansi`
 --
 ALTER TABLE `tbl_setting_instansi`
   MODIFY `id_setting` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
--- AUTO_INCREMENT untuk tabel `users`
+-- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
   MODIFY `id_user` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
--- Ketidakleluasaan untuk tabel pelimpahan (Dumped Tables)
+-- Constraints for dumped tables
 --
 
 --
--- Ketidakleluasaan untuk tabel `pengajuan_cuti`
+-- Constraints for table `pengajuan_cuti`
 --
 ALTER TABLE `pengajuan_cuti`
   ADD CONSTRAINT `pengajuan_cuti_ibfk_1` FOREIGN KEY (`id_user`) REFERENCES `users` (`id_user`),
