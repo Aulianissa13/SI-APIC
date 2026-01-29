@@ -215,10 +215,10 @@ if (isset($_POST['simpan_password'])) {
         const icon = document.getElementById(iconId);
         if (input.type === "password") {
             input.type = "text";
-            icon.classList.replace("fa-eye", "fa-eye-slash"); 
+            icon.classList.replace("fa-eye-slash", "fa-eye");
         } else {
             input.type = "password";
-            icon.classList.replace("fa-eye-slash", "fa-eye"); 
+            icon.classList.replace("fa-eye", "fa-eye-slash");
         }
     }
 </script>

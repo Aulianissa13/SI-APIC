@@ -36,7 +36,7 @@ $libur_data = array_filter($libur_data, function($item) {
 
 <style>
     :root {
-        --pn-green: #006837;
+        --pn-green: #004d00;
         --pn-gold: #F9A825;
         --soft-bg: #f8f9fc;
         --text-dark: #2c3e50;
@@ -45,7 +45,7 @@ $libur_data = array_filter($libur_data, function($item) {
     body { font-family: 'Poppins', sans-serif; background-color: var(--soft-bg); }
 
     .hero-card {
-        background: linear-gradient(135deg, var(--pn-green) 0%, #004d29 100%);
+        background: linear-gradient(135deg, var(--pn-green) 0%, #004d00 100%);
         color: white; border-radius: 20px; padding: 1.5rem;
         position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0, 104, 55, 0.2);
     }
@@ -64,9 +64,9 @@ $libur_data = array_filter($libur_data, function($item) {
     .card-header-modern { background-color: white; border-bottom: 1px solid #f0f0f0; padding: 0.75rem 1.25rem; border-radius: 15px 15px 0 0; }
     .card-header-modern h5 { font-size: 0.9rem; margin-bottom: 0; }
     
-    #calendar { border: none !important; font-size: 0.9rem; max-height: 250px; }
+    #calendar { border: none !important; font-size: 0.9rem; max-height: 200px; }
     .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid { border: none !important; }
-    .fc-daygrid-day-frame { display: flex; align-items: center; justify-content: center; min-height: 15px !important; position: relative; }
+    .fc-daygrid-day-frame { display: flex; align-items: center; justify-content: center; min-height: 20px !important; position: relative; }
     
     .fc .fc-daygrid-day-number {
         width: 30px; height: 30px; display: flex !important; align-items: center; justify-content: center;
@@ -90,7 +90,7 @@ $libur_data = array_filter($libur_data, function($item) {
 </style>
 
 <style>
-    .hero-card { background: linear-gradient(135deg, var(--pn-green) 0%, #004d29 100%); color: white; border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden; min-height: 150px; }
+    .hero-card { background: linear-gradient(135deg, var(--pn-green) 0%, #004d00 100%); color: white; border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden; min-height: 150px; }
     .section-spacing { margin-bottom: 15px !important; }
     .stat-card { border: none; border-radius: 15px; background: #fff; height: 140px; position: relative; overflow: hidden; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
     .stat-number { font-size: 3.5rem; font-weight: 800; line-height: 1; margin-top: 15px; text-align: center; }
@@ -119,22 +119,22 @@ $libur_data = array_filter($libur_data, function($item) {
             </div>
         </div>
         <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card card-modern calendar-card-fix shadow-sm"><div class="card-body p-3"><div id="calendar"></div><div id="libur-list-container" class="mt-2" style="max-height: 60px; overflow-y: auto;"></div></div></div>
+            <div class="card card-modern calendar-card-fix shadow-sm"><div class="card-body p-3"><div id="calendar"></div><div id="libur-list-container" class="mt-3" style="max-height: 60px; overflow-y: auto;"></div></div></div>
         </div>
     </div>
     <div class="row" style="margin-top: -35px;">
         <div class="col-lg-6 mb-4">
             <div class="card card-modern shadow-sm" style="height: 320px;">
-                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #006837; font-size: 0.9rem;">Grafik Status Cuti</h5></div>
+                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #004d00; font-size: 0.9rem;">Grafik Status Cuti</h5></div>
                 <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 250px;"><canvas id="myAreaChart"></canvas></div>
             </div>
         </div>
         <div class="col-lg-6 mb-4">
             <div class="card card-modern shadow-sm" style="height: 320px;">
-                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #006837; font-size: 0.9rem;">Permohonan Terbaru</h5></div>
+                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #004d00; font-size: 0.9rem;">Permohonan Terbaru</h5></div>
                 <div class="card-body p-0" style="height: 100%;">
                     <table class="table table-hover mb-0" style="border-collapse: collapse; height: 100%;">
-                        <thead style="background-color: #006837; color: white;"><tr><th class="text-center py-1" style="width: 40%; border: 1px solid #ddd; font-size: 0.75rem;">Nama Pegawai</th><th class="text-center py-1" style="width: 35%; border: 1px solid #ddd; font-size: 0.75rem;">Waktu Pengajuan</th><th class="text-center pr-4 py-1" style="width: 25%; border: 1px solid #ddd; font-size: 0.75rem;">Status</th></tr></thead>
+                        <thead style="background-color: #004d00; color: white;"><tr><th class="text-center py-1" style="width: 40%; border: 1px solid #ddd; font-size: 0.75rem;">Nama Pegawai</th><th class="text-center py-1" style="width: 35%; border: 1px solid #ddd; font-size: 0.75rem;">Waktu Pengajuan</th><th class="text-center pr-4 py-1" style="width: 25%; border: 1px solid #ddd; font-size: 0.75rem;">Status</th></tr></thead>
                         <tbody>
                             <?php while($row = mysqli_fetch_array($sql_latest)) {
                                 $badge = ($row['status'] == 'Diajukan') ? "warning" : (($row['status'] == 'Disetujui') ? "success" : "danger");

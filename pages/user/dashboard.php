@@ -56,7 +56,7 @@ $libur_data = array_filter($libur_data, function($item) {
 <div class="container-fluid">
     <div class="row">
         <div class="col-xl-8 col-lg-7">
-            <div class="card text-white shadow mb-3" style="background: linear-gradient(90deg, #006837 0%, #43a047 100%); border-radius: 20px; border:none;">
+            <div class="card text-white shadow mb-3" style="background: linear-gradient(90deg, #004d00 0%, #004d00 100%); border-radius: 20px; border:none;">
                 <div class="card-body p-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
@@ -130,7 +130,7 @@ $libur_data = array_filter($libur_data, function($item) {
         <div class="col-12">
             <div class="card mb-4 shadow-sm">
                 <div class="card-header py-3 bg-white d-flex align-items-center">
-                    <h6 class="m-0 font-weight-bold text-primary" style="color: #006837 !important;">
+                    <h6 class="m-0 font-weight-bold text-primary" style="color: #004d00 !important;">
                         <i class="fas fa-info-circle mr-2"></i> Ketentuan
                     </h6>
                 </div>
@@ -148,7 +148,7 @@ $libur_data = array_filter($libur_data, function($item) {
 
 <style>
     :root {
-        --pn-green: #006837;
+        --pn-green: #004d00;
         --pn-gold: #F9A825;
         --soft-bg: #f8f9fc;
     }

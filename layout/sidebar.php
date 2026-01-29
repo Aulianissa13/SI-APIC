@@ -1,5 +1,5 @@
 <ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar"
-    style="background: linear-gradient(180deg, #006837 10%, #004d29 100%); position: sticky; top: 0; height: 100vh; overflow-y: hidden; overflow-x: hidden; z-index: 1050;">
+    style="background: linear-gradient(180deg, #004d00 10%, #004d00 100%); position: sticky; top: 0; height: 100vh; overflow-y: hidden; overflow-x: hidden; z-index: 1050;">
 
     <style>
         /* --- STANDAR SIDEBAR BESAR (TIDAK BERUBAH) --- */
