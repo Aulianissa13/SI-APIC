@@ -1,5 +1,8 @@
 <?php
 session_start();
+
+// 1. KONEKSI DATABASE
+// Menggunakan path standar karena index.php ada di root folder
 include 'config/database.php';
 
 // Cek Login
@@ -9,10 +12,8 @@ if(!isset($_SESSION['status']) || $_SESSION['status'] != "login"){
 }
 
 // =============================================================
-// LOGIKA PAGE (DIPINDAH KE ATAS)
+// LOGIKA PAGE (ROUTING)
 // =============================================================
-// Kita ambil variabel 'page' di sini supaya SIDEBAR bisa membacanya
-// untuk keperluan fitur "Active State" (Highlight Menu)
 if(isset($_GET['page'])){
     $page = $_GET['page'];
 } else {
@@ -24,7 +25,7 @@ if(isset($_GET['page'])){
     }
 }
 
-// 1. Load Header
+// 2. Load Header
 include 'layout/header.php';
 ?>
 
@@ -36,52 +37,45 @@ include 'layout/header.php';
     }
     
     /* 2. Background Content Lebih Bersih */
-    #content-wrapper {
-        background-color: #F2F5F3 !important; 
-    }
+    #content-wrapper { background-color: #F2F5F3 !important; }
 
-    /* 3. MODIFIKASI TAMPILAN KARTU (CARD) - AGAR TIDAK KOTAK */
+    /* 3. MODIFIKASI KARTU (CARD) */
     .card {
-        border-radius: 20px !important; /* Sudut melengkung besar */
-        border: none !important; /* Hapus garis pinggir kasar */
-        box-shadow: 0 5px 20px rgba(0,0,0,0.05) !important; /* Bayangan halus */
-        overflow: hidden; /* Agar isi tidak keluar dari lengkungan */
-        margin-bottom: 25px; /* Jarak antar kartu */
+        border-radius: 20px !important;
+        border: none !important;
+        box-shadow: 0 5px 20px rgba(0,0,0,0.05) !important;
+        overflow: hidden;
+        margin-bottom: 25px;
     }
-
     .card-header {
         background-color: #fff !important;
         border-bottom: 1px solid #f0f0f0 !important;
-        padding-top: 20px;
-        padding-bottom: 20px;
+        padding: 20px;
     }
 
-    /* 4. MODIFIKASI TOMBOL & INPUT - AGAR TIDAK KOTAK */
+    /* 4. MODIFIKASI TOMBOL & INPUT */
     .btn {
-        border-radius: 12px !important; /* Tombol melengkung */
+        border-radius: 12px !important;
         padding: 10px 20px;
         font-weight: 500;
-        box-shadow: none !important; /* Hilangkan shadow kasar bawaan */
+        box-shadow: none !important;
     }
-    
     .form-control {
-        border-radius: 12px !important; /* Input text melengkung */
-        height: 45px; /* Sedikit lebih tinggi */
+        border-radius: 12px !important;
+        height: 45px;
         padding: 10px 15px;
     }
 
-    /* 5. Sidebar Active State (Hijau-Emas) */
+    /* 5. Sidebar Active State */
     .sidebar .nav-item.active .nav-link {
         font-weight: 600 !important;
         color: #ffffff !important;
         background-color: rgba(255, 255, 255, 0.1);
         border-left: 5px solid #F9A825;
         padding-left: 1rem;
-        border-radius: 0 10px 10px 0; /* Lengkungan di sisi kanan menu */
+        border-radius: 0 10px 10px 0;
     }
-    .sidebar .nav-item.active .nav-link i {
-        color: #F9A825 !important;
-    }
+    .sidebar .nav-item.active .nav-link i { color: #F9A825 !important; }
     .sidebar .nav-item .nav-link:hover {
         background-color: rgba(255, 255, 255, 0.05);
         border-radius: 0 10px 10px 0;
@@ -89,15 +83,11 @@ include 'layout/header.php';
 </style>
 
 <?php
-// 2. Load Sidebar
+// 3. Load Sidebar & Topbar
 include 'layout/sidebar.php';
-
-// 3. Load Topbar
 include 'layout/topbar.php';
 
-// 4. Load Konten Halaman (Dinamis)
-// Menggunakan variabel $page yang sudah didefinisikan di atas
-
+// 4. Load Konten Halaman (Routing)
 // --- AREA ADMIN ---
 if($page == "dashboard_admin" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/dashboard.php';
@@ -108,7 +98,6 @@ else if($page == "validasi_cuti" && $_SESSION['role'] == 'admin') {
 else if($page == "data_pegawai" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/data_pegawai.php';
 }
-// --- [TAMBAHAN BARU] ROUTING FORM & PROSES PEGAWAI ---
 else if($page == "form_pegawai" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/form_pegawai.php';
 }
@@ -121,10 +110,7 @@ else if($page == "input_cuti" && $_SESSION['role'] == 'admin') {
 else if($page == "manage_libur" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/manage_libur.php';
 }
-// --- [END TAMBAHAN] ---
-
 else if($page == "laporan_cuti" && $_SESSION['role'] == 'admin') {
-    // Asumsi file nanti akan dibuat di pages/admin/laporan_cuti.php
     include 'pages/admin/laporan_cuti.php';
 }
 
@@ -139,9 +125,8 @@ else if($page == "riwayat_cuti") {
     include 'pages/user/riwayat_cuti.php';
 }
 
-// --- AREA UMUM (Ganti Password & Profile) ---
+// --- AREA UMUM ---
 else if($page == "ganti_password") {
-    // Sesuaikan path ini dengan lokasi file Anda
     include 'pages/ganti_password.php'; 
 }
 else {
@@ -157,3 +142,24 @@ else {
 // 5. Load Footer
 include 'layout/footer.php';
 ?>
+
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<?php if(isset($_SESSION['swal'])): ?>
+<script>
+    Swal.fire({
+        icon: '<?= $_SESSION['swal']['icon'] ?>',
+        title: '<?= $_SESSION['swal']['title'] ?>',
+        text: '<?= $_SESSION['swal']['text'] ?>',
+        confirmButtonColor: '#1cc88a', // Warna Hijau sesuai tema
+        confirmButtonText: 'OK'
+    }).then((result) => {
+        // Opsional: Jika mau refresh halaman setelah klik OK (supaya form bersih)
+        // window.location.reload(); 
+    });
+</script>
+<?php 
+    // 3. Hapus session agar alert tidak muncul terus menerus saat di-refresh
+    unset($_SESSION['swal']); 
+?>
+<?php endif; ?>

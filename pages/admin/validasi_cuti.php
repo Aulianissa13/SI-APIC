@@ -29,13 +29,14 @@ $total_halaman = ceil($jumlah_data / $batas);
 
 // Query Data Utama
 $query_utama = "SELECT pengajuan_cuti.*, 
-                       users.nama_lengkap, users.nip, users.sisa_cuti_n, users.kuota_cuti_sakit, 
+                       users.nama_lengkap, users.nip, 
+                       users.sisa_cuti_n, users.sisa_cuti_n1, users.kuota_cuti_sakit, 
                        jenis_cuti.nama_jenis 
                 FROM pengajuan_cuti 
                 JOIN users ON pengajuan_cuti.id_user = users.id_user 
                 JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
                 WHERE 1=1 $where_clause
-                ORDER BY CASE WHEN status='Menunggu' OR status='Diajukan' THEN 0 ELSE 1 END, tgl_pengajuan DESC 
+                ORDER BY pengajuan_cuti.tgl_pengajuan DESC, pengajuan_cuti.id_pengajuan DESC 
                 LIMIT $halaman_awal, $batas";
 
 $query = mysqli_query($koneksi, $query_utama);
@@ -56,22 +57,22 @@ $nomor = $halaman_awal + 1;
     .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
     .page-link { color: var(--pn-green); }
 
-    /* STYLE SEARCH BAR COSTUM (YANG ANDA MINTA) */
+    /* STYLE SEARCH BAR COSTUM */
     .search-wrapper {
         position: relative;
         width: 100%;
-        max-width: 300px; /* Lebar maksimal search bar */
+        max-width: 300px;
     }
     
     .search-input-inside {
         width: 100%;
-        padding-right: 40px !important; /* Memberi ruang untuk ikon di kanan */
+        padding-right: 40px !important;
         padding-left: 15px !important;
-        border-radius: 50px !important; /* Membuat ujung bulat (pill shape) */
+        border-radius: 50px !important;
         border: 1px solid #ddd;
         background-color: #f8f9fc;
         transition: all 0.3s ease;
-        height: 38px; /* Pastikan tinggi cukup */
+        height: 38px;
     }
 
     .search-input-inside:focus {
@@ -87,7 +88,7 @@ $nomor = $halaman_awal + 1;
         top: 50%;
         transform: translateY(-50%);
         color: #aaa;
-        pointer-events: none; /* Supaya klik tembus ke input */
+        pointer-events: none;
     }
 </style>
 
@@ -127,14 +128,17 @@ $nomor = $halaman_awal + 1;
                     <table class="table table-bordered table-hover" width="100%" cellspacing="0">
                         <thead class="thead-pn">
                             <tr class="text-center">
-                                <th width="5%">No</th>
-                                <th>Pegawai</th>
-                                <th>Jenis Cuti</th>
-                                <th>Detail Pengajuan</th>
-                                <th width="5%">Sisa<br>Thn</th>
-                                <th width="5%">Sisa<br>Skt</th>
-                                <th>Status</th>
-                                <th width="15%">Aksi</th>
+                                <th width="5%" style="vertical-align: middle;">No</th>
+                                <th style="vertical-align: middle;">Pegawai</th>
+                                <th style="vertical-align: middle;">Jenis Cuti</th>
+                                <th style="vertical-align: middle;">Detail Pengajuan</th>
+                                
+                                <th width="5%" style="vertical-align: middle;">Sisa<br>Tahun Ini</th>
+                                <th width="5%" style="vertical-align: middle;">Sisa<br>Tahun Lalu</th>
+                                <th width="5%" style="vertical-align: middle;">Sisa<br>Sakit</th>
+                                
+                                <th style="vertical-align: middle;">Status</th>
+                                <th width="15%" style="vertical-align: middle;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -167,9 +171,22 @@ $nomor = $halaman_awal + 1;
                                         <?php echo date('d M', strtotime($row['tgl_mulai'])); ?> s/d 
                                         <?php echo date('d M Y', strtotime($row['tgl_selesai'])); ?>
                                     </small>
+                                    <br>
+                                    <small class="text-muted" style="font-size: 0.8rem;">
+                                        <i>Diajukan: <?php echo date('d M Y', strtotime($row['tgl_pengajuan'])); ?></i>
+                                    </small>
                                 </td>
-                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;"><?php echo $row['sisa_cuti_n']; ?></td>
-                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;"><?php echo $row['kuota_cuti_sakit']; ?></td>
+                                
+                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;" title="Sisa Tahun Ini">
+                                    <?php echo $row['sisa_cuti_n']; ?>
+                                </td>
+                                <td class="text-center font-weight-bold text-secondary" style="vertical-align: middle; background-color: #f1f3f9;" title="Sisa Tahun Lalu">
+                                    <?php echo $row['sisa_cuti_n1']; ?>
+                                </td>
+                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;" title="Sisa Cuti Sakit">
+                                    <?php echo $row['kuota_cuti_sakit']; ?>
+                                </td>
+
                                 <td class="text-center" style="vertical-align: middle;"><?php echo $badge; ?></td>
                                 
                                 <td class="text-center" style="vertical-align: middle;">

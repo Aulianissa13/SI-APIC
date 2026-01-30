@@ -1,10 +1,11 @@
 <?php
 // FILE: pages/user/cetak_cuti.php
+// REVISI: Booking System Logic (Snapshot Based)
 
 session_start();
 error_reporting(0);
 
-// --- 1. KONEKSI DATABASE (FALLBACK SYSTEM) ---
+// --- 1. KONEKSI DATABASE ---
 if (file_exists('../../config/database.php')) {
     include '../../config/database.php';
 } else {
@@ -13,43 +14,51 @@ if (file_exists('../../config/database.php')) {
 
 // --- 2. KEAMANAN STRICT ---
 if (!isset($_SESSION['id_user'])) {
-    echo "<script>alert('Anda harus login terlebih dahulu!'); window.location='../../index.php';</script>";
+    echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
     exit;
 }
 
-$id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$id_pengajuan  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_user_login = $_SESSION['id_user'];
-$level_login   = isset($_SESSION['level']) ? $_SESSION['level'] : 'pegawai'; 
 
-// --- 3. AMBIL DATA SETTING INSTANSI (KETUA) ---
+// --- 3. AMBIL DATA INSTANSI (Untuk Tanda Tangan Ketua) ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi   = mysqli_fetch_array($q_instansi);
-// Fallback jika database setting kosong
 if(!$instansi) {
     $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
 }
 
 // --- 4. AMBIL DATA PENGAJUAN ---
-$query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
+// Kita tambahkan "pengajuan_cuti.id_atasan AS id_atasan_fix" agar tidak tertukar
+$query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix 
+    FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
     WHERE id_pengajuan='$id_pengajuan'");
 
 $data = mysqli_fetch_array($query);
 
-// Validasi Kepemilikan Data
-if (!$data) { echo "<script>alert('Data tidak ditemukan!'); window.close();</script>"; exit; }
-if ($level_login != 'admin' && $data['id_user'] != $id_user_login) { echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak data orang lain.'); window.close();</script>"; exit; }
+// Validasi Kepemilikan (Anti Intip Punya Orang Lain)
+if (!$data) { 
+    echo "<script>alert('Data tidak ditemukan!'); window.close();</script>"; 
+    exit; 
+}
+if ($data['id_user'] != $id_user_login) { 
+    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak data orang lain.'); window.close();</script>"; 
+    exit; 
+}
 
 // ============================================================
-// --- LOGIC ATASAN LANGSUNG (Sesuai Pilihan di Form) ---
+// --- LOGIC 1: ATASAN LANGSUNG (FIXED ALIAS) ---
 // ============================================================
 $nama_atasan_langsung = "............................................."; 
 $nip_atasan_langsung  = ".......................";
-$id_atasan_terpilih   = isset($data['id_pejabat']) ? $data['id_pejabat'] : 0; 
 
-// Jika ada ID pejabat tersimpan, cari namanya di database
+// PENTING: Kita ambil dari ALIAS yang baru kita buat tadi
+$id_atasan_terpilih   = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; 
+
 if ($id_atasan_terpilih > 0) {
+    // Cari data si Bos berdasarkan ID yang ditemukan
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
     if ($bos = mysqli_fetch_array($cari_bos)) {
         $nama_atasan_langsung = $bos['nama_lengkap'];
@@ -58,56 +67,82 @@ if ($id_atasan_terpilih > 0) {
 }
 
 // ============================================================
-// --- LOGIC PERHITUNGAN CUTI (Sesuai Kode Asli) ---
+// --- LOGIC 2: PERHITUNGAN CUTI (BOOKING SYSTEM / SNAPSHOT) ---
 // ============================================================
+// Penjelasan: 
+// Karena sistem Anda "Potong Duluan", maka angka di tabel 'users' saat ini 
+// mungkin sudah berkurang jauh jika user mengajukan cuti lagi.
+// Maka, kita WAJIB menggunakan data SNAPSHOT yang tersimpan di tabel 'pengajuan_cuti'
+// (sisa_cuti_n, sisa_cuti_n1) yang merekam saldo SAAT pengajuan dibuat.
+
 $id_jenis   = $data['id_jenis']; 
 $lama_ambil = $data['lama_hari'];
-$sisa_n_tampil  = $data['sisa_cuti_n']; 
-$sisa_n1_tampil = $data['sisa_cuti_n1']; 
 
+// Variabel Default
 $ket_tahunan_n = "-"; $ket_tahunan_n1 = "-";
+$sisa_n_tampil = 0;   $sisa_n1_tampil = 0;
 $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
-    case '1': // Tahunan
-        $sisa_akhir_n  = max(0, (int)$data['sisa_cuti_n']); 
-        $sisa_akhir_n1 = max(0, (int)$data['sisa_cuti_n1']);
+    case '1': // TAHUNAN
+        // 1. Ambil Saldo Awal (Dari Snapshot Pengajuan)
+        $saldo_awal_n  = (int)$data['sisa_cuti_n']; 
+        $saldo_awal_n1 = (int)$data['sisa_cuti_n1'];
         
-        $ambil_n  = (int) $data['dipotong_n'];
-        $ambil_n1 = (int) $data['dipotong_n1'];
+        // 2. Ambil Jumlah Potongan (Dari Snapshot Pengajuan)
+        $ambil_n  = (int)$data['dipotong_n'];
+        $ambil_n1 = (int)$data['dipotong_n1'];
 
-        $sisa_n_tampil  = $sisa_akhir_n + $ambil_n;
-        $sisa_n1_tampil = $sisa_akhir_n1 + $ambil_n1;
+        // 3. Hitung Sisa Akhir (Prediksi setelah disetujui)
+        $sisa_akhir_n  = max(0, $saldo_awal_n - $ambil_n);
+        $sisa_akhir_n1 = max(0, $saldo_awal_n1 - $ambil_n1);
 
-        if ($ambil_n1 > 0 || $sisa_n1_tampil > 0) {
-            if ($ambil_n1 > 0) {
-                $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
-            } else {
-                $ket_tahunan_n1 = "-"; 
-            }
+        // 4. Set Angka untuk Ditampilkan di Kolom Tabel
+        // Di tabel surat, biasanya menampilkan SISA AWAL (sebelum potong) atau SISA AKHIR.
+        // Agar sesuai logika "Diambil X sisa Y", kita tampilkan SALDO AWAL di kolom angka,
+        // tapi di kolom Keterangan kita jelaskan sisanya.
+        // TAPI: Agar tidak membingungkan, mari kita tampilkan SISA AWAL di kolom "Sisa".
+        $sisa_n_tampil  = $saldo_awal_n; 
+        $sisa_n1_tampil = $saldo_awal_n1;
+
+        // 5. Buat Kalimat Keterangan (Gaya Admin)
+        
+        // --- Tahun N-1 ---
+        if ($ambil_n1 > 0) {
+            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
+        } elseif ($saldo_awal_n1 > 0) {
+            $ket_tahunan_n1 = "Sisa " . $saldo_awal_n1 . " hari"; // Info saldo nganggur
         } else {
-             $sisa_n1_tampil = 0; 
-             $ket_tahunan_n1 = "-";
+            $ket_tahunan_n1 = "-";
+            $sisa_n1_tampil = 0; // Kosongkan angka jika 0
         }
 
+        // --- Tahun N ---
         if ($ambil_n > 0) {
             $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
         } else {
-            $ket_tahunan_n = "-"; 
+            // Jika tidak mengambil tahun N (misal cuma ambil N-1)
+            $ket_tahunan_n = "Sisa " . $sisa_akhir_n . " hari";
         }
         break;
 
-    case '2': // Sakit
+    case '2': // SAKIT
+        // Untuk sakit, kita cek kuota di tabel users saat ini saja (lebih simpel)
+        // Atau jika mau snapshot, harusnya disimpan juga. Kita pakai fallback users.
         $sisa_sakit = max(0, (isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0));
+        // Jika sistem booking memotong sakit juga, kita tambahkan balik untuk tampilan "Sisa"
+        $sisa_sakit_tampil = $sisa_sakit + $lama_ambil; 
+        
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
         break;
 
-    case '4': $ket_besar = "Diambil " . $lama_ambil . " hari"; break;
-    case '5': $ket_lahir = "Diambil " . $lama_ambil . " hari"; break;
+    case '4': $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
+    case '5': $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
     case '3': $ket_penting = "Diambil " . $lama_ambil . " hari"; break;
-    case '6': $ket_luar = "Diambil " . $lama_ambil . " hari"; break;
+    case '6': $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
 }
 
+// Simbol Centang
 $c1 = ($id_jenis == '1') ? '&#10003;' : '';
 $c2 = ($id_jenis == '4') ? '&#10003;' : '';
 $c3 = ($id_jenis == '2') ? '&#10003;' : '';
@@ -115,7 +150,10 @@ $c4 = ($id_jenis == '5') ? '&#10003;' : '';
 $c5 = ($id_jenis == '3') ? '&#10003;' : '';
 $c6 = ($id_jenis == '6') ? '&#10003;' : '';
 
-$tahun_n  = date('Y'); $tahun_n1 = $tahun_n - 1; $tahun_n2 = $tahun_n - 2;
+// Tanggal & Tahun
+$tahun_n  = date('Y'); 
+$tahun_n1 = $tahun_n - 1; 
+$tahun_n2 = $tahun_n - 2;
 
 if (!function_exists('tgl_indo')) {
     function tgl_indo($tanggal){
@@ -130,7 +168,7 @@ if (!function_exists('tgl_indo')) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Cuti F4 - <?php echo $data['nomor_surat']; ?></title>
+    <title>Cetak Cuti - <?php echo $data['nomor_surat']; ?></title>
     <style>
         @page { size: 215mm 330mm; margin: 1cm 1.5cm 1cm 1.5cm; }
         body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; margin: 0; padding: 0; line-height: 1; }
@@ -191,7 +229,7 @@ if (!function_exists('tgl_indo')) {
             </tr>
             <tr>
                 <td>Jabatan</td><td><?php echo $data['jabatan']; ?></td>
-                <td>Gol.Ruang</td><td><?php echo isset($data['pangkat']) ? $data['pangkat'] : ''; ?> / <?php echo isset($data['golongan']) ? $data['golongan'] : ''; ?></td>
+                <td>Gol.Ruang</td><td><?php echo isset($data['pangkat']) ? $data['pangkat'] : '-'; ?> / <?php echo isset($data['golongan']) ? $data['golongan'] : '-'; ?></td>
             </tr>
             <tr>
                 <td>Unit Kerja</td><td>Pengadilan Negeri Yogyakarta</td>
