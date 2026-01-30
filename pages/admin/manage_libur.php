@@ -1,6 +1,4 @@
 <?php
-// --- FILE: pages/admin/manage_libur.php ---
-// asumsi: $koneksi sudah ada dari include utama
 
 // =========================================================
 // A. PROSES PHP (LOGIKA TIDAK DIUBAH)
