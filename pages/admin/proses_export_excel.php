@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // FILE: pages/admin/proses_export_excel.php
 
 // 1. KONEKSI

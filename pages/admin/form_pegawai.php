@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // Cek apakah mode EDIT atau TAMBAH
 if (isset($_GET['id'])) {
     $id_user = $_GET['id'];

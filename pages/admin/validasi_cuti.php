@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // =========================================================
 // 1. CONFIG PAGINATION & SEARCH
 // =========================================================
@@ -29,9 +31,9 @@ $total_halaman = ceil($jumlah_data / $batas);
 
 // Query Data Utama
 $query_utama = "SELECT pengajuan_cuti.*, 
-                       users.nama_lengkap, users.nip, 
-                       users.sisa_cuti_n, users.sisa_cuti_n1, users.kuota_cuti_sakit, 
-                       jenis_cuti.nama_jenis 
+                        users.nama_lengkap, users.nip, 
+                        users.sisa_cuti_n, users.sisa_cuti_n1, users.kuota_cuti_sakit, 
+                        jenis_cuti.nama_jenis 
                 FROM pengajuan_cuti 
                 JOIN users ON pengajuan_cuti.id_user = users.id_user 
                 JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
@@ -133,9 +135,7 @@ $nomor = $halaman_awal + 1;
                                 <th style="vertical-align: middle;">Jenis Cuti</th>
                                 <th style="vertical-align: middle;">Detail Pengajuan</th>
                                 
-                                <th width="5%" style="vertical-align: middle;">Sisa<br>Tahun Ini</th>
-                                <th width="5%" style="vertical-align: middle;">Sisa<br>Tahun Lalu</th>
-                                <th width="5%" style="vertical-align: middle;">Sisa<br>Sakit</th>
+                                <th style="vertical-align: middle;">Nomor Surat</th>
                                 
                                 <th style="vertical-align: middle;">Status</th>
                                 <th width="15%" style="vertical-align: middle;">Aksi</th>
@@ -177,14 +177,10 @@ $nomor = $halaman_awal + 1;
                                     </small>
                                 </td>
                                 
-                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;" title="Sisa Tahun Ini">
-                                    <?php echo $row['sisa_cuti_n']; ?>
-                                </td>
-                                <td class="text-center font-weight-bold text-secondary" style="vertical-align: middle; background-color: #f1f3f9;" title="Sisa Tahun Lalu">
-                                    <?php echo $row['sisa_cuti_n1']; ?>
-                                </td>
-                                <td class="text-center font-weight-bold text-dark" style="vertical-align: middle; background-color: #f8f9fc;" title="Sisa Cuti Sakit">
-                                    <?php echo $row['kuota_cuti_sakit']; ?>
+                                <td class="text-center" style="vertical-align: middle;">
+                                    <span class="font-weight-bold text-dark">
+                                        <?php echo !empty($row['nomor_surat']) ? $row['nomor_surat'] : '-'; ?>
+                                    </span>
                                 </td>
 
                                 <td class="text-center" style="vertical-align: middle;"><?php echo $badge; ?></td>

@@ -1,142 +1,162 @@
 <?php
-session_start();
-error_reporting(0);
+/** @var mysqli $koneksi */
 
-// --- 1. KONEKSI DATABASE (FALLBACK SYSTEM) ---
-// Mencoba path admin dulu, jika gagal coba path user
-if (file_exists('../../assets/config/database.php')) {
-    include '../../assets/config/database.php';
+session_start();
+
+// --- MODE DEBUGGING ---
+ini_set('display_errors', 1);
+ini_set('display_startup_errors', 1);
+error_reporting(E_ALL);
+
+// --- 1. KONEKSI DATABASE ---
+$path_db1 = '../../assets/config/database.php';
+$path_db2 = '../../config/database.php';
+$path_db3 = '../config/database.php'; 
+
+if (file_exists($path_db1)) {
+    include $path_db1;
+} elseif (file_exists($path_db2)) {
+    include $path_db2;
+} elseif (file_exists($path_db3)) {
+    include $path_db3;
 } else {
-    include '../../config/database.php';
+    die("<h3>ERROR FATAL: File database.php tidak ditemukan!</h3>");
+}
+
+if (empty($koneksi)) {
+    die("<h3>ERROR KONEKSI:</h3> <p>Variabel <code>\$koneksi</code> kosong/gagal.</p>");
 }
 
 // --- 2. KEAMANAN ---
-if (!isset($_SESSION['id_user'])) {
-    echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
-    exit;
+if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) {
+     die("<h3>AKSES DITOLAK:</h3> <p>Harap login terlebih dahulu.</p>");
 }
 
-// --- 3. AMBIL DATA SETTING INSTANSI (KETUA) ---
-// Fitur Admin: Data Ketua Dinamis dari Database
+// --- 3. AMBIL DATA SETTING INSTANSI ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
-$instansi   = mysqli_fetch_array($q_instansi);
+$instansi = ($q_instansi) ? mysqli_fetch_array($q_instansi) : null;
 if(!$instansi) {
     $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
 }
 
 // --- 4. AMBIL DATA PENGAJUAN ---
-$id_pengajuan = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+if (!isset($_GET['id'])) {
+    die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>");
+}
 
-// Query disesuaikan dengan struktur tabel asli Anda
-// Note: Kita gunakan 'id_atasan' sesuai file admin asli, tapi logic hitungnya pakai user
-$query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix FROM pengajuan_cuti 
+$id_pengajuan = (int)$_GET['id'];
+
+$sql = "SELECT 
+    pengajuan_cuti.*, 
+    users.id_user, users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.unit_kerja, users.no_telepon,
+    users.kuota_cuti_sakit,
+    users.sisa_cuti_n AS u_sisa_n_realtime,   
+    users.sisa_cuti_n1 AS u_sisa_n1_realtime,
+    users.sisa_cuti_n2 AS u_sisa_n2_realtime,
+    pengajuan_cuti.id_atasan AS id_atasan_fix 
+    FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
-    WHERE id_pengajuan='$id_pengajuan'");
+    WHERE id_pengajuan='$id_pengajuan'";
 
+$query = mysqli_query($koneksi, $sql);
 $data = mysqli_fetch_array($query);
 
 if (!$data) {
-    echo "<script>alert('Data pengajuan tidak ditemukan!'); window.close();</script>";
-    exit;
+    die("<h3>DATA TIDAK DITEMUKAN:</h3> <p>ID Pengajuan: $id_pengajuan tidak valid.</p>");
 }
 
 // ============================================================
-// --- LOGIC HITUNG SISA CUTI (DIPERBARUI DARI FILE USER) ---
+// --- LOGIC HITUNG HISTORY (SNAPSHOT SALDO) ---
 // ============================================================
-$id_jenis   = $data['id_jenis']; 
-$lama_ambil = $data['lama_hari'];
-$sisa_n_tampil  = $data['sisa_cuti_n']; 
-$sisa_n1_tampil = $data['sisa_cuti_n1']; 
 
-// Variabel keterangan default
-$ket_tahunan_n = "-"; $ket_tahunan_n1 = "-";
+// 1. Ambil saldo user SAAT INI (Realtime)
+$saldo_n_realtime  = (int)$data['u_sisa_n_realtime'];
+$saldo_n1_realtime = (int)$data['u_sisa_n1_realtime'];
+
+// 2. Hitung jumlah cuti yang disetujui DI MASA DEPAN (ID lebih besar dari ID ini)
+//    Logika: Saldo History = Saldo Sekarang + Cuti yg diambil setelahnya
+$q_future = mysqli_query($koneksi, "SELECT 
+    SUM(dipotong_n) as masa_depan_n, 
+    SUM(dipotong_n1) as masa_depan_n1 
+    FROM pengajuan_cuti 
+    WHERE id_user = '".$data['id_user']."' 
+    AND id_pengajuan > '$id_pengajuan' 
+    AND status = 'Disetujui'");
+
+$future = mysqli_fetch_array($q_future);
+$kembalikan_n  = (int)$future['masa_depan_n'];
+$kembalikan_n1 = (int)$future['masa_depan_n1'];
+
+// 3. Tentukan Saldo "Snapshot" (Saldo Akhir setelah cuti ini diproses, tapi mengabaikan cuti masa depan)
+$sisa_n_tampil  = $saldo_n_realtime + $kembalikan_n;
+$sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1;
+
+
+// --- LOGIC TAMPILAN KETERANGAN ---
+$id_jenis   = (int)$data['id_jenis']; 
+$lama_ambil = (int)$data['lama_hari'];
+
+$ket_tahunan_n  = ""; 
+$ket_tahunan_n1 = "";
 $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
-   case '1': // Cuti Tahunan
-        // -----------------------------------------------------------
-        // 1. AMBIL DATA DARI DATABASE (SALDO AWAL)
-        // -----------------------------------------------------------
-        // Kita anggap angka di database (6) adalah SALDO AWAL sebelum dipotong
-        $saldo_awal_n  = max(0, (int)$data['sisa_cuti_n']);  // 6
-        $saldo_awal_n1 = max(0, (int)$data['sisa_cuti_n1']); 
-        
-        $potongan_db_n  = isset($data['dipotong_n']) ? (int)$data['dipotong_n'] : 0; // 4
-        $potongan_db_n1 = isset($data['dipotong_n1']) ? (int)$data['dipotong_n1'] : 0;
+   case 1: // CUTI TAHUNAN
+        $ambil_n  = (int)$data['dipotong_n'];
+        $ambil_n1 = (int)$data['dipotong_n1'];
 
-        // Tentukan jumlah ambil
-        if (($potongan_db_n + $potongan_db_n1) == 0 && $lama_ambil > 0) {
-            $ambil_n = $lama_ambil; $ambil_n1 = 0;
-        } else {
-            $ambil_n = $potongan_db_n; $ambil_n1 = $potongan_db_n1;
+        // Fallback jika database belum nyatat potongan (misal manual/legacy)
+        if (($ambil_n + $ambil_n1) == 0 && $lama_ambil > 0) {
+            // Estimasi FIFO sederhana
+            if ($sisa_n1_tampil + $ambil_n1 >= $lama_ambil) { // Cek saldo N-1 sebelum dipotong
+                 $ambil_n1 = $lama_ambil;
+                 $ambil_n = 0;
+            } else {
+                 $ambil_n1 = ($sisa_n1_tampil + $ambil_n1); // Habiskan N-1
+                 $ambil_n  = $lama_ambil - $ambil_n1;
+            }
         }
 
-        // -----------------------------------------------------------
-        // 2. SETTING TAMPILAN KOLOM SISA (YANG SEBENARNYA)
-        // -----------------------------------------------------------
-        // Kolom Sisa menampilkan apa yang ada di database (6)
-        $sisa_n_tampil  = $saldo_awal_n; 
-        $sisa_n1_tampil = $saldo_awal_n1;
-
-        // -----------------------------------------------------------
-        // 3. LOGIKA MATEMATIKA (SAMA UNTUK SEMUA STATUS)
-        // -----------------------------------------------------------
-        // Tidak peduli statusnya Menunggu atau Disetujui, rumusnya tetap dikurang.
-        // Rumus: 6 - 4 = 2
-        
-        $sisa_akhir_n  = $saldo_awal_n - $ambil_n;
-        $sisa_akhir_n1 = $saldo_awal_n1 - $ambil_n1;
-
-        // -----------------------------------------------------------
-        // 4. FORMAT KETERANGAN TEKS
-        // -----------------------------------------------------------
-        
-        // Tahun N-1
+        // Revisi 1: Keterangan hanya muncul jika tahun itu terpotong
         if ($ambil_n1 > 0) {
-            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
-        } elseif ($saldo_awal_n1 > 0) {
-            $ket_tahunan_n1 = "Sisa " . $saldo_awal_n1 . " hari"; 
-        } else {
-             $ket_tahunan_n1 = "-";
-             $sisa_n1_tampil = 0;
-        }
-
-        // Tahun N
+            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_n1_tampil . " hari";
+        } 
+        
         if ($ambil_n > 0) {
-            // Output Keduanya (Menunggu/Disetujui) akan sama:
-            // "Diambil 4 hari, Sisa 2 hari"
-            $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
-        } else {
-            $ket_tahunan_n = "-"; 
-        }
+            $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_n_tampil . " hari";
+        } 
+
+        // Untuk kolom "Sisa" di tabel, jika tidak ada potongan, tampilkan saldo snapshotnya saja
+        // Logika di atas ($sisa_n_tampil) sudah merepresentasikan "Sisa Akhir" pada saat itu.
         break;
-    case '2': // SAKIT
-        // Logic fallback untuk sakit: Jika kuota tidak tercatat, anggap 0
-        $sisa_sakit = max(0, (isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0));
+
+    case 2: // SAKIT
+        // Sisa Sakit biasanya kuota statis per tahun, jarang ada history saldo berjalan di tabel user
+        // Kita pakai kuota user saat ini
+        $sisa_sakit = isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0;
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari";
         break;
 
-    case '4': $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
-    case '5': $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
-    case '3': $ket_penting = "Diambil " . $lama_ambil . " hari"; break;
-    case '6': $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
+    case 3: $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
+    case 4: $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
+    case 5: $ket_penting = "Diambil " . $lama_ambil . " hari"; break;
+    case 6: $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
 }
 
-// Checklist Simbol Centang
-$c1 = ($id_jenis == '1') ? '&#10003;' : '';
-$c2 = ($id_jenis == '4') ? '&#10003;' : '';
-$c3 = ($id_jenis == '2') ? '&#10003;' : '';
-$c4 = ($id_jenis == '5') ? '&#10003;' : '';
-$c5 = ($id_jenis == '3') ? '&#10003;' : '';
-$c6 = ($id_jenis == '6') ? '&#10003;' : '';
+// Simbol Centang (Fix Mapping)
+$c1 = ($id_jenis == 1) ? '&#10003;' : '';
+$c2 = ($id_jenis == 3) ? '&#10003;' : '';
+$c3 = ($id_jenis == 2) ? '&#10003;' : '';
+$c4 = ($id_jenis == 4) ? '&#10003;' : '';
+$c5 = ($id_jenis == 5) ? '&#10003;' : '';
+$c6 = ($id_jenis == 6) ? '&#10003;' : '';
 
-// Tahun Dinamis
-$tahun_n  = date('Y'); 
+// Tahun & Tanggal
+$tahun_n  = date('Y', strtotime($data['tgl_pengajuan'])); 
 $tahun_n1 = $tahun_n - 1; 
 $tahun_n2 = $tahun_n - 2;
 
-// Fungsi Tanggal Indonesia
 if (!function_exists('tgl_indo')) {
     function tgl_indo($tanggal){
         $bulan = array (1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
@@ -145,10 +165,10 @@ if (!function_exists('tgl_indo')) {
     }
 }
 
-// --- DATA ATASAN LANGSUNG ---
+// Data Atasan
 $nama_atasan = "............................................."; 
 $nip_atasan  = ".......................";
-$id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; // Menggunakan id_atasan dari file asli admin
+$id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; 
 
 if ($id_atasan_terpilih > 0) {
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
@@ -163,7 +183,7 @@ if ($id_atasan_terpilih > 0) {
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Cuti Admin F4 - <?php echo $data['nomor_surat']; ?></title>
+    <title>Cetak Cuti - <?php echo $data['nomor_surat']; ?></title>
     <style>
         @page { size: 215mm 330mm; margin: 1cm 1.5cm 1cm 1.5cm; }
         body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; margin: 0; padding: 0; line-height: 1; }
@@ -224,7 +244,7 @@ if ($id_atasan_terpilih > 0) {
             </tr>
             <tr>
                 <td>Jabatan</td><td><?php echo $data['jabatan']; ?></td>
-                <td>Gol.Ruang</td><td><?php echo isset($data['pangkat']) ? $data['pangkat'] : '-'; ?> / <?php echo isset($data['golongan']) ? $data['golongan'] : '-'; ?></td>
+                <td>Gol.Ruang</td><td><?php echo isset($data['pangkat']) ? $data['pangkat'] : '-'; ?></td>
             </tr>
             <tr>
                 <td>Unit Kerja</td><td>Pengadilan Negeri Yogyakarta</td>
@@ -234,9 +254,18 @@ if ($id_atasan_terpilih > 0) {
 
         <table>
             <tr><td colspan="4" class="font-bold">II. JENIS CUTI YANG DIAMBIL**</td></tr>
-            <tr><td width="40%">1. Cuti Tahunan</td><td width="10%" class="check-col"><?php echo $c1; ?></td><td width="40%">4. Cuti Besar</td><td width="10%" class="check-col"><?php echo $c2; ?></td></tr>
-            <tr><td>2. Cuti Sakit</td><td class="check-col"><?php echo $c3; ?></td><td>5. Cuti Melahirkan</td><td class="check-col"><?php echo $c4; ?></td></tr>
-            <tr><td>3. Cuti Karena Alasan Penting</td><td class="check-col"><?php echo $c5; ?></td><td>6. Cuti di Luar Tanggungan Negara</td><td class="check-col"><?php echo $c6; ?></td></tr>
+            <tr>
+                <td width="40%">1. Cuti Tahunan</td><td width="10%" class="check-col"><?php echo $c1; ?></td>
+                <td width="40%">4. Cuti Besar</td><td width="10%" class="check-col"><?php echo $c2; ?></td>
+            </tr>
+            <tr>
+                <td>2. Cuti Sakit</td><td class="check-col"><?php echo $c3; ?></td>
+                <td>5. Cuti Melahirkan</td><td class="check-col"><?php echo $c4; ?></td>
+            </tr>
+            <tr>
+                <td>3. Cuti Karena Alasan Penting</td><td class="check-col"><?php echo $c5; ?></td>
+                <td>6. Cuti di Luar Tanggungan Negara</td><td class="check-col"><?php echo $c6; ?></td>
+            </tr>
         </table>
 
         <table>

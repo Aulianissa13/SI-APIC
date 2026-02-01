@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // --- FILE: pages/admin/cuti/input_cuti.php ---
 
 // 1. DATA PENDUKUNG (Libur & Users)

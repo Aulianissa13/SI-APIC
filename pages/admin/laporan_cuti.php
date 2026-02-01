@@ -1,6 +1,6 @@
 <?php
-// --- FILE: pages/admin/laporan.php ---
-// asumsi $koneksi sudah tersedia dari include utama
+/** @var mysqli $koneksi */
+
 
 $bln = date('m');
 $thn = date('Y');

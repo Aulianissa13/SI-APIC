@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // Include config database
 include '../../config/database.php';
 

@@ -1,4 +1,5 @@
 <?php
+/** @var mysqli $koneksi */
 
 // =========================================================
 // A. PROSES PHP (LOGIKA TIDAK DIUBAH)

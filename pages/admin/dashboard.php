@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 // --- 1. LOGIKA PHP PENGAMBILAN DATA (REAL TIME) ---
 
 $get_pegawai = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users WHERE role='user'");

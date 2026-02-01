@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 session_start();
 include '../../config/database.php';
 
