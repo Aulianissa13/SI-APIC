@@ -76,7 +76,7 @@ $libur_data = array_filter($libur_data, function($item) {
                     <div class="card py-2 border-left-success shadow-sm h-100" style="border-left: 5px solid #006837 !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Sisa Tahunan</div>
-                            <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $total_tahunan; ?><span style="font-size:1rem"> H</span></div>
+                            <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $total_tahunan; ?></div>
                             <div class="mt-2 text-xs font-weight-bold text-muted" style="background: #f8f9fc; padding: 4px; border-radius: 5px;">
                                 <?php echo substr($thn_skrg, 2); ?>:<b><?php echo $n; ?></b> | <?php echo substr($thn_min1, 2); ?>:<b><?php echo $n1; ?></b> | <?php echo substr($thn_min2, 2); ?>:<b><?php echo $n2; ?></b>
                             </div>
@@ -88,7 +88,7 @@ $libur_data = array_filter($libur_data, function($item) {
                     <div class="card py-2 border-left-info shadow-sm h-100" style="border-left: 5px solid #36b9cc !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sisa Cuti Sakit</div>
-                            <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $sisa_sakit; ?><span style="font-size:1rem"> H</span></div>
+                            <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $sisa_sakit; ?></div>
                             <div class="mt-2 text-xs text-muted">Sisa saat ini</div>
                         </div>
                     </div>
@@ -245,4 +245,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
     calendar.render();
 });
-</script>n
+</script>

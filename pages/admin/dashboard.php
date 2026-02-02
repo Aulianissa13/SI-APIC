@@ -18,7 +18,7 @@ $d_tolak = mysqli_fetch_assoc($get_tolak);
 $query_latest = "SELECT c.*, u.nama_lengkap, u.jabatan, c.created_at FROM pengajuan_cuti c JOIN users u ON c.id_user = u.id_user ORDER BY c.created_at DESC LIMIT 5";
 $sql_latest = mysqli_query($koneksi, $query_latest);
 
-// Ambil Data Hari Libur
+// Ambil Data Hari Libur (FILTER 2026 DIHAPUS AGAR DINAMIS)
 $query_libur = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
 $libur_data = [];
 while($row = mysqli_fetch_assoc($query_libur)) {
@@ -29,11 +29,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         'allDay' => true
     ];
 }
-// Filter hanya untuk tahun 2026
-$libur_data = array_filter($libur_data, function($item) {
-    $item_year = date('Y', strtotime($item['start']));
-    return $item_year == 2026;
-});
 ?>
 
 <style>
@@ -110,7 +105,6 @@ $libur_data = array_filter($libur_data, function($item) {
                         <div><h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Halo, Administrator!</h1><p class="mb-0 text-white-50 h5">Selamat datang di Panel Kontrol SI-APIC Pengadilan Negeri Yogyakarta.</p></div>
                         <div class="d-none d-md-block"><i class="fas fa-chart-line fa-4x text-white-50"></i></div>
                     </div>
-                   
                 </div>
             </div>
             <div class="row mb-4">
@@ -158,10 +152,7 @@ $libur_data = array_filter($libur_data, function($item) {
 
 <script>
 const dataLibur = <?php echo json_encode($libur_data); ?>;
-const dataLiburFiltered = dataLibur.filter(item => {
-    const itemDate = new Date(item.start);
-    return itemDate.getFullYear() === 2026;
-});
+// FILTER 2026 DIHAPUS AGAR JS BISA BACA SEMUA DATA TAHUN
 const currentYear = <?php echo date('Y'); ?>;
 
 new Chart(document.getElementById("myAreaChart"), {
@@ -181,18 +172,14 @@ document.addEventListener('DOMContentLoaded', function() {
             const listContainer = document.getElementById('libur-list-container');
             listContainer.innerHTML = '';
 
-            // Ambil bulan dan tahun dari view kalender saat ini
             const currentMonth = info.view.currentStart.getMonth();
             const currentYearInView = info.view.currentStart.getFullYear();
 
-            // Hanya tampilkan list jika tahun di kalender adalah 2026
-            let filtered = [];
-            if (currentYearInView === 2026) {
-                filtered = dataLibur.filter(item => {
-                    const itemDate = new Date(item.start);
-                    return itemDate.getFullYear() === 2026 && itemDate.getMonth() === currentMonth;
-                }).sort((a,b) => new Date(a.start) - new Date(b.start));
-            }
+            // FILTER DINAMIS MENGIKUTI TAHUN DAN BULAN YANG SEDANG DILIHAT
+            let filtered = dataLibur.filter(item => {
+                const itemDate = new Date(item.start);
+                return itemDate.getFullYear() === currentYearInView && itemDate.getMonth() === currentMonth;
+            }).sort((a,b) => new Date(a.start) - new Date(b.start));
 
             if(filtered.length === 0) {
                 listContainer.innerHTML = '<div class="text-center text-muted small py-2">Tidak ada libur</div>';
@@ -209,7 +196,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            // Add classes to day cells for holidays (only for 2026)
+            // Penanda lingkaran warna di angka tanggal (Dinamis untuk semua tahun)
             document.querySelectorAll('.fc-daygrid-day').forEach(dayEl => {
                 const dateStr = dayEl.getAttribute('data-date');
                 if (dateStr) {

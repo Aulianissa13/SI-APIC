@@ -67,15 +67,18 @@ if (!$data) {
 }
 
 // ============================================================
-// --- LOGIC HITUNG HISTORY (SNAPSHOT SALDO) ---
+// --- LOGIC HITUNG HISTORY (SNAPSHOT SALDO SEBELUM TERPOTONG) ---
 // ============================================================
 
 // 1. Ambil saldo user SAAT INI (Realtime)
 $saldo_n_realtime  = (int)$data['u_sisa_n_realtime'];
 $saldo_n1_realtime = (int)$data['u_sisa_n1_realtime'];
 
-// 2. Hitung jumlah cuti yang disetujui DI MASA DEPAN (ID lebih besar dari ID ini)
-//    Logika: Saldo History = Saldo Sekarang + Cuti yg diambil setelahnya
+// 2. Ambil potongan dari pengajuan INI
+$potongan_ini_n  = (int)$data['dipotong_n'];
+$potongan_ini_n1 = (int)$data['dipotong_n1'];
+
+// 3. Hitung jumlah cuti yang disetujui DI MASA DEPAN (ID lebih besar dari ID ini)
 $q_future = mysqli_query($koneksi, "SELECT 
     SUM(dipotong_n) as masa_depan_n, 
     SUM(dipotong_n1) as masa_depan_n1 
@@ -85,12 +88,13 @@ $q_future = mysqli_query($koneksi, "SELECT
     AND status = 'Disetujui'");
 
 $future = mysqli_fetch_array($q_future);
-$kembalikan_n  = (int)$future['masa_depan_n'];
-$kembalikan_n1 = (int)$future['masa_depan_n1'];
+$kembalikan_n_future  = (int)$future['masa_depan_n'];
+$kembalikan_n1_future = (int)$future['masa_depan_n1'];
 
-// 3. Tentukan Saldo "Snapshot" (Saldo Akhir setelah cuti ini diproses, tapi mengabaikan cuti masa depan)
-$sisa_n_tampil  = $saldo_n_realtime + $kembalikan_n;
-$sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1;
+// 4. Tentukan Saldo "Sebelum Terpotong" untuk pengajuan ini
+// Saldo Realtime + Potongan Masa Depan + Potongan Cuti Ini
+$sisa_n_tampil  = $saldo_n_realtime + $kembalikan_n_future + $potongan_ini_n;
+$sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1_future + $potongan_ini_n1;
 
 
 // --- LOGIC TAMPILAN KETERANGAN ---
@@ -103,39 +107,39 @@ $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar 
 
 switch ($id_jenis) {
    case 1: // CUTI TAHUNAN
-        $ambil_n  = (int)$data['dipotong_n'];
-        $ambil_n1 = (int)$data['dipotong_n1'];
+        $ambil_n  = $potongan_ini_n;
+        $ambil_n1 = $potongan_ini_n1;
 
         // Fallback jika database belum nyatat potongan (misal manual/legacy)
         if (($ambil_n + $ambil_n1) == 0 && $lama_ambil > 0) {
-            // Estimasi FIFO sederhana
-            if ($sisa_n1_tampil + $ambil_n1 >= $lama_ambil) { // Cek saldo N-1 sebelum dipotong
+            if ($sisa_n1_tampil >= $lama_ambil) { 
                  $ambil_n1 = $lama_ambil;
                  $ambil_n = 0;
             } else {
-                 $ambil_n1 = ($sisa_n1_tampil + $ambil_n1); // Habiskan N-1
+                 $ambil_n1 = $sisa_n1_tampil;
                  $ambil_n  = $lama_ambil - $ambil_n1;
             }
         }
 
-        // Revisi 1: Keterangan hanya muncul jika tahun itu terpotong
+        // Keterangan Sisa di sini adalah sisa SETELAH dipotong pengajuan ini
         if ($ambil_n1 > 0) {
-            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_n1_tampil . " hari";
+            $sisa_akhir_n1 = $sisa_n1_tampil - $ambil_n1;
+            $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
         } 
         
         if ($ambil_n > 0) {
-            $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_n_tampil . " hari";
+            $sisa_akhir_n = $sisa_n_tampil - $ambil_n;
+            $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
         } 
-
-        // Untuk kolom "Sisa" di tabel, jika tidak ada potongan, tampilkan saldo snapshotnya saja
-        // Logika di atas ($sisa_n_tampil) sudah merepresentasikan "Sisa Akhir" pada saat itu.
         break;
 
     case 2: // SAKIT
-        // Sisa Sakit biasanya kuota statis per tahun, jarang ada history saldo berjalan di tabel user
-        // Kita pakai kuota user saat ini
         $sisa_sakit = isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0;
+        // Asumsi kuota_cuti_sakit di user adalah sisa yang sudah terpotong
+        $sisa_sebelum_sakit = $sisa_sakit + $lama_ambil;
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari";
+        // Override tampilan sisa sakit jika ingin konsisten "sebelum terpotong"
+        $sisa_sakit_tampil = $sisa_sebelum_sakit; 
         break;
 
     case 3: $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
