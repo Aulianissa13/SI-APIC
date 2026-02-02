@@ -7,7 +7,7 @@ if (session_status() == PHP_SESSION_NONE) {
 $swal_script = "";
 
 // ==========================================
-// 1. LOGIKA SIMPAN NAMA PEJABAT (MANUAL TEXT)
+// 1. LOGIKA SIMPAN NAMA PEJABAT (MANUAL)
 // ==========================================
 if(isset($_POST['simpan_pejabat'])){
     $ketua_nama = mysqli_real_escape_string($koneksi, $_POST['ketua_nama']);
@@ -15,44 +15,29 @@ if(isset($_POST['simpan_pejabat'])){
     $wakil_nama = mysqli_real_escape_string($koneksi, $_POST['wakil_nama']);
     $wakil_nip  = mysqli_real_escape_string($koneksi, $_POST['wakil_nip']);
     
-    // Cek apakah data setting sudah ada (row id=1)
     $cek_set = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
     if(mysqli_num_rows($cek_set) == 0){
         mysqli_query($koneksi, "INSERT INTO tbl_setting_instansi (id_setting, nama_instansi) VALUES (1, 'Pengadilan Negeri')");
     }
 
     $update = mysqli_query($koneksi, "UPDATE tbl_setting_instansi SET 
-        ketua_nama='$ketua_nama', 
-        ketua_nip='$ketua_nip',
-        wakil_nama='$wakil_nama',
-        wakil_nip='$wakil_nip'
+        ketua_nama='$ketua_nama', ketua_nip='$ketua_nip',
+        wakil_nama='$wakil_nama', wakil_nip='$wakil_nip'
         WHERE id_setting='1'");
     
     if($update){
-        echo "<script>
-            Swal.fire({
-                title: 'Berhasil',
-                text: 'Data Pejabat berhasil disimpan!',
-                icon: 'success'
-            }).then(() => {
-                window.location.href='index.php?page=data_pegawai';
-            });
-        </script>";
+        $swal_script = "Swal.fire({ title: 'Berhasil', text: 'Pejabat berhasil disimpan!', icon: 'success' }).then(() => { window.location='index.php?page=data_pegawai'; });";
     }
 }
 
-// 2. AMBIL DATA SETTING INSTANSI
+// AMBIL DATA SETTING
 $query_set   = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $set_instansi = mysqli_fetch_array($query_set);
+if(!$set_instansi) { $set_instansi = ['ketua_nama' => '', 'ketua_nip' => '', 'wakil_nama' => '', 'wakil_nip' => '']; }
 
-if(!$set_instansi) {
-    $set_instansi = [
-        'ketua_nama' => '', 'ketua_nip' => '',
-        'wakil_nama' => '', 'wakil_nip' => ''
-    ];
-}
-
-// 3. LOGIKA TAMBAH USER (ATASAN DIHAPUS)
+// ==========================================
+// 2. LOGIKA TAMBAH USER (DENGAN IS_ATASAN)
+// ==========================================
 if (isset($_POST['tambah'])) {
     $nip          = htmlspecialchars($_POST['nip']);
     $nama_lengkap = htmlspecialchars($_POST['nama_lengkap']);
@@ -61,6 +46,9 @@ if (isset($_POST['tambah'])) {
     $pangkat      = htmlspecialchars($_POST['pangkat']); 
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
     
+    // Checkbox is_atasan (Jika dicentang value=1, jika tidak 0)
+    $is_atasan    = isset($_POST['is_atasan']) ? '1' : '0';
+
     $status_akun  = 'aktif'; 
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
@@ -68,20 +56,21 @@ if (isset($_POST['tambah'])) {
 
     $cek_nip = mysqli_query($koneksi, "SELECT nip FROM users WHERE nip='$nip'");
     if (mysqli_num_rows($cek_nip) > 0) {
-        $swal_script = "Swal.fire({ title: 'Gagal!', text: 'NIP sudah terdaftar!', icon: 'error', confirmButtonColor: '#006837' });";
+        $swal_script = "Swal.fire({ title: 'Gagal!', text: 'NIP sudah terdaftar!', icon: 'error' });";
     } else {
-        // Query Insert (Kolom id_atasan dihapus)
-        $query = mysqli_query($koneksi, "INSERT INTO users (nip, nama_lengkap, password, jabatan, pangkat, role, status_akun, sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit) VALUES ('$nip', '$nama_lengkap', '$password', '$jabatan', '$pangkat', '$role', '$status_akun', '$ct_n', '$ct_n1', '$ct_sakit')");
+        $query = mysqli_query($koneksi, "INSERT INTO users (nip, nama_lengkap, password, jabatan, pangkat, role, status_akun, sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit, is_atasan) VALUES ('$nip', '$nama_lengkap', '$password', '$jabatan', '$pangkat', '$role', '$status_akun', '$ct_n', '$ct_n1', '$ct_sakit', '$is_atasan')");
 
         if ($query) {
-            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Pegawai baru ditambahkan.', icon: 'success', confirmButtonColor: '#006837' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
+            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Pegawai baru ditambahkan.', icon: 'success' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
         } else {
-            $swal_script = "Swal.fire({ title: 'Error!', text: '" . mysqli_error($koneksi) . "', icon: 'error', confirmButtonColor: '#006837' });";
+            $swal_script = "Swal.fire({ title: 'Error!', text: '" . mysqli_error($koneksi) . "', icon: 'error' });";
         }
     }
 }
 
-// 4. LOGIKA EDIT USER (ATASAN DIHAPUS)
+// ==========================================
+// 3. LOGIKA EDIT USER (DENGAN IS_ATASAN)
+// ==========================================
 if (isset($_POST['edit'])) {
     $id_user      = $_POST['id_user'];
     $nip          = htmlspecialchars($_POST['nip']);
@@ -90,6 +79,9 @@ if (isset($_POST['edit'])) {
     $pangkat      = htmlspecialchars($_POST['pangkat']); 
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
     $status_akun  = $_POST['status_akun']; 
+    
+    // Update logic checkbox
+    $is_atasan    = isset($_POST['is_atasan']) ? '1' : '0';
 
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
@@ -97,31 +89,27 @@ if (isset($_POST['edit'])) {
 
     if (!empty($_POST['password'])) {
         $password = md5($_POST['password']);
-        // Query Update Password + Data Lain (id_atasan dihapus)
-        $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', password='$password', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit' WHERE id_user='$id_user'";
+        $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', password='$password', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit', is_atasan='$is_atasan' WHERE id_user='$id_user'";
     } else {
-        // Query Update Data Lain Saja (id_atasan dihapus)
-        $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit' WHERE id_user='$id_user'";
+        $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit', is_atasan='$is_atasan' WHERE id_user='$id_user'";
     }
     
     $run_update = mysqli_query($koneksi, $query_update);
     if ($run_update) {
-        $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data Pegawai diperbarui.', icon: 'success', confirmButtonColor: '#006837' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
+        $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data Pegawai diperbarui.', icon: 'success' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
     } else {
-        $swal_script = "Swal.fire({ title: 'Gagal!', text: '" . mysqli_error($koneksi) . "', icon: 'error', confirmButtonColor: '#006837' });";
+        $swal_script = "Swal.fire({ title: 'Gagal!', text: '" . mysqli_error($koneksi) . "', icon: 'error' });";
     }
 }
 
-// 5. LOGIKA TOGGLE STATUS
+// 4. LOGIKA TOGGLE STATUS
 if (isset($_GET['toggle_status'])) {
     $id = $_GET['toggle_status'];
     $cek = mysqli_query($koneksi, "SELECT status_akun FROM users WHERE id_user='$id'");
     $row = mysqli_fetch_array($cek);
     $new_status = ($row['status_akun'] == 'aktif') ? 'tidak_aktif' : 'aktif';
-    $update_status = mysqli_query($koneksi, "UPDATE users SET status_akun='$new_status' WHERE id_user='$id'");
-    if ($update_status) {
-        echo "<script>window.location='index.php?page=data_pegawai';</script>";
-    }
+    mysqli_query($koneksi, "UPDATE users SET status_akun='$new_status' WHERE id_user='$id'");
+    echo "<script>window.location='index.php?page=data_pegawai';</script>";
 }
 
 // ==========================================
@@ -151,127 +139,36 @@ $nomor = $halaman_awal + 1;
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    :root {
-        --pn-green: #004d00;       
-        --pn-green-light: #e6f0eb; 
-        --pn-gold: #F9A825;        
-        --text-dark: #2c3e50;
-    }
-
+    :root { --pn-green: #004d00; --pn-gold: #F9A825; --text-dark: #2c3e50; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
-
-    /* STYLE BARU: HEADER JUDUL HALAMAN */
-    .page-header-title {
-        border-left: 5px solid var(--pn-gold);
-        padding-left: 15px;
-        color: var(--pn-green);
-        font-weight: 700;
-        font-size: 1.6rem;
-    }
-
-    /* STYLE BARU: CARD & HEADER HIJAU */
-    .card-pn-custom {
-        border: none;
-        border-radius: 12px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-        background: #fff;
-        overflow: hidden;
-    }
-
-    .card-header-green {
-        background-color: #1b5e20; /* Hijau Tua Solid sesuai gambar */
-        color: white;
-        padding: 15px 25px;
-        border-bottom: 4px solid var(--pn-gold); /* Garis bawah kuning */
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    /* SEARCH BAR DALAM HEADER */
-    .header-search-box {
-        position: relative;
-        width: 300px;
-    }
-    .header-search-input {
-        width: 100%;
-        border-radius: 20px;
-        border: none;
-        padding: 6px 15px 6px 35px;
-        font-size: 0.9rem;
-        outline: none;
-    }
-    .header-search-icon {
-        position: absolute;
-        right: 12px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #999;
-        font-size: 0.9rem;
-    }
-
-    /* Tombol Aksi Utama */
-    .btn-custom-action {
-        background-color: var(--pn-gold);
-        color: var(--pn-green);
-        font-weight: 600;
-        border: none;
-        border-radius: 8px;
-        padding: 8px 15px;
-        transition: 0.3s;
-    }
-    .btn-custom-action:hover {
-        background-color: #fdd835;
-        color: #003300;
-        transform: translateY(-2px);
-    }
-
-    .btn-setting-action {
-        background-color: #fff;
-        color: var(--pn-green);
-        border: 1px solid var(--pn-green);
-        font-weight: 600;
-        border-radius: 8px;
-        padding: 8px 15px;
-    }
-    .btn-setting-action:hover {
-        background-color: var(--pn-green);
-        color: #fff;
-    }
-
-    /* Tabel Custom */
+    .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.6rem; }
+    .card-pn-custom { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; overflow: hidden; }
+    .card-header-green { background-color: #1b5e20; color: white; padding: 15px 25px; border-bottom: 4px solid var(--pn-gold); display: flex; justify-content: space-between; align-items: center; }
+    .header-search-box { position: relative; width: 300px; }
+    .header-search-input { width: 100%; border-radius: 20px; border: none; padding: 6px 15px 6px 35px; font-size: 0.9rem; outline: none; }
+    .header-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.9rem; }
+    .btn-custom-action { background-color: var(--pn-gold); color: var(--pn-green); font-weight: 600; border: none; border-radius: 8px; padding: 8px 15px; transition: 0.3s; }
+    .btn-custom-action:hover { background-color: #fdd835; color: #003300; transform: translateY(-2px); }
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
-    .table-custom thead th {
-        background-color: #f8f9fc;
-        color: var(--text-dark);
-        font-weight: 700;
-        padding: 12px;
-        border-bottom: 2px solid #e3e6f0;
-        font-size: 0.85rem;
-        text-transform: uppercase;
-    }
+    .table-custom thead th { background-color: #f8f9fc; color: var(--text-dark); font-weight: 700; padding: 12px; border-bottom: 2px solid #e3e6f0; font-size: 0.85rem; text-transform: uppercase; }
     .table-custom tbody tr { background-color: white; transition: 0.2s; }
     .table-custom tbody tr:hover { background-color: #f1f8e9; }
     .table-custom td { padding: 12px; vertical-align: middle; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #444; }
-
-    /* Badges */
     .badge-status-active { background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; }
     .badge-status-inactive { background-color: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; }
-    
+    .badge-atasan { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-top: 2px; display: inline-block; }
     .btn-action-edit { background: #fff3cd; color: #856404; border:none; border-radius: 5px; padding: 5px 10px; }
     .btn-action-off { background: #ffebee; color: #c62828; border:none; border-radius: 5px; padding: 5px 10px; }
     .btn-action-on { background: #e8f5e9; color: #2e7d32; border:none; border-radius: 5px; padding: 5px 10px; }
-
     .pagination .page-link { color: var(--pn-green); border-radius: 5px; margin: 0 3px; }
     .pagination .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
 </style>
 
 <div class="container-fluid mb-5">
-
     <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
         <h3 class="page-header-title">Data Pegawai & Cuti</h3>
         <div>
-            <button class="btn btn-setting-action mr-2 shadow-sm" data-toggle="modal" data-target="#modalPejabat">
+            <button class="btn btn-light border text-success font-weight-bold mr-2 shadow-sm" data-toggle="modal" data-target="#modalPejabat">
                 <i class="fas fa-user-tie"></i> Atur Pejabat
             </button>
             <button class="btn btn-custom-action shadow-sm" data-toggle="modal" data-target="#modalTambah">
@@ -285,7 +182,6 @@ $nomor = $halaman_awal + 1;
             <div class="font-weight-bold" style="font-size: 1.1rem;">
                 <i class="fas fa-list-ul mr-2"></i> Daftar Pegawai
             </div>
-            
             <div class="header-search-box">
                 <form action="index.php" method="GET" onsubmit="return false;"> 
                     <input type="text" id="keyword" class="header-search-input" placeholder="Cari Nama / NIP..." value="<?php echo $keyword; ?>" autocomplete="off">
@@ -311,14 +207,9 @@ $nomor = $halaman_awal + 1;
                         </thead>
                         <tbody>
                             <?php
-                            // Query Tanpa id_atasan
-                            $query_string = "SELECT u.* FROM users u 
-                                             $where_clause
-                                             ORDER BY u.id_user DESC 
-                                             LIMIT $halaman_awal, $batas";
-                            
+                            $query_string = "SELECT u.* FROM users u $where_clause ORDER BY u.id_user DESC LIMIT $halaman_awal, $batas";
                             $query_pegawai = mysqli_query($koneksi, $query_string);
-                            $data_users_modal = [];
+                            $data_users_search = []; // Array untuk menyimpan data user agar bisa diloop untuk modal
 
                             if (!$query_pegawai) {
                                 echo "<tr><td colspan='7' class='text-center text-danger'>Error: " . mysqli_error($koneksi) . "</td></tr>";
@@ -326,14 +217,12 @@ $nomor = $halaman_awal + 1;
                                 echo "<tr><td colspan='7' class='text-center text-secondary py-5'><i class='fas fa-inbox fa-3x mb-3'></i><br>Data tidak ditemukan.</td></tr>";
                             } else {
                                 while ($data = mysqli_fetch_array($query_pegawai)) {
-                                    $data_users_modal[] = $data;
+                                    $data_users_search[] = $data; // Simpan ke array untuk modal nanti
                                     $is_active = ($data['status_akun'] == 'aktif');
-                                    $row_opacity = $is_active ? '' : 'style="opacity: 0.6; background-color: #f9f9f9;"';
                                     $pangkat_text = isset($data['pangkat']) && !empty($data['pangkat']) ? $data['pangkat'] : '-';
                             ?>
-                            <tr <?php echo $row_opacity; ?>>
+                            <tr <?php echo !$is_active ? 'style="opacity: 0.6; background-color: #f9f9f9;"' : ''; ?>>
                                 <td class="text-center font-weight-bold text-secondary"><?php echo $nomor++; ?></td>
-                                
                                 <td>
                                     <div class="font-weight-bold text-dark" style="font-size: 0.95rem;"><?php echo $data['nama_lengkap']; ?></div>
                                     <div class="small text-secondary mb-1">NIP: <?php echo $data['nip']; ?></div>
@@ -342,38 +231,26 @@ $nomor = $halaman_awal + 1;
                                     <?php else: ?>
                                         <span class="badge-status-inactive">NONAKTIF</span>
                                     <?php endif; ?>
-                                    <?php if($data['role'] == 'admin'): ?>
-                                        <span class="badge badge-warning text-white ml-1" style="font-size:0.7rem;">ADMIN</span>
+                                    
+                                    <?php if($data['is_atasan'] == '1'): ?>
+                                        <div class="badge-atasan"><i class="fas fa-user-check"></i> Atasan Langsung</div>
                                     <?php endif; ?>
                                 </td>
-
                                 <td>
                                     <div class="font-weight-600 text-success"><?php echo $data['jabatan']; ?></div>
                                     <small class="text-muted"><?php echo $pangkat_text; ?></small>
                                 </td>
-
-                                <td class="text-center">
-                                    <span class="font-weight-bold text-dark" style="font-size:1.1rem;"><?php echo $data['sisa_cuti_n']; ?></span>
-                                </td>
+                                <td class="text-center"><span class="font-weight-bold text-dark" style="font-size:1.1rem;"><?php echo $data['sisa_cuti_n']; ?></span></td>
                                 <td class="text-center text-secondary"><?php echo $data['sisa_cuti_n1']; ?></td>
                                 <td class="text-center text-info"><?php echo $data['kuota_cuti_sakit']; ?></td>
-                                
                                 <td class="text-center">
-                                    <button type="button" class="btn-action-edit" 
-                                        data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
+                                    <button type="button" class="btn-action-edit" data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
                                         <i class="fas fa-pen fa-sm"></i>
                                     </button>
-                                    
                                     <?php if($is_active): ?>
-                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" 
-                                            class="btn-action-off" title="Nonaktifkan Akun">
-                                            <i class="fas fa-power-off fa-sm"></i>
-                                        </button>
+                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-off" title="Nonaktifkan Akun"><i class="fas fa-power-off fa-sm"></i></button>
                                     <?php else: ?>
-                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" 
-                                            class="btn-action-on" title="Aktifkan Akun">
-                                            <i class="fas fa-check fa-sm"></i>
-                                        </button>
+                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-on" title="Aktifkan Akun"><i class="fas fa-check fa-sm"></i></button>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -384,9 +261,7 @@ $nomor = $halaman_awal + 1;
 
                 <div class="row mt-3 align-items-center">
                     <div class="col-md-6">
-                        <p class="text-secondary small mb-0">
-                            Halaman <strong><?php echo $halaman; ?></strong> dari <?php echo $total_halaman; ?>. Total: <?php echo $total_data; ?> Data.
-                        </p>
+                        <p class="text-secondary small mb-0">Halaman <strong><?php echo $halaman; ?></strong> dari <?php echo $total_halaman; ?>. Total: <?php echo $total_data; ?> Data.</p>
                     </div>
                     <div class="col-md-6 d-flex justify-content-end">
                         <nav aria-label="Page navigation">
@@ -396,14 +271,10 @@ $nomor = $halaman_awal + 1;
                                 <?php else: ?>
                                     <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
                                 <?php endif; ?>
-
                                 <?php for($x = 1; $x <= $total_halaman; $x++): 
                                     $active_class = ($x == $halaman) ? 'active' : ''; ?>
-                                    <li class="page-item <?php echo $active_class; ?>">
-                                        <a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $x; ?><?php echo $url_pencarian; ?>"><?php echo $x; ?></a>
-                                    </li>
+                                    <li class="page-item <?php echo $active_class; ?>"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $x; ?><?php echo $url_pencarian; ?>"><?php echo $x; ?></a></li>
                                 <?php endfor; ?>
-
                                 <?php if($halaman < $total_halaman): ?>
                                     <li class="page-item"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman + 1; ?><?php echo $url_pencarian; ?>">&raquo;</a></li>
                                 <?php else: ?>
@@ -413,7 +284,90 @@ $nomor = $halaman_awal + 1;
                         </nav>
                     </div>
                 </div>
-            </div> </div>
+
+                <?php foreach($data_users_search as $data): ?>
+                <div class="modal fade" id="modalEdit<?php echo $data['id_user']; ?>" tabindex="-1">
+                    <div class="modal-dialog modal-lg"> 
+                        <div class="modal-content">
+                            <div class="modal-header" style="background-color: var(--pn-gold); color: #000;">
+                                <h5 class="modal-title font-weight-bold"><i class="fas fa-edit"></i> Edit Pegawai</h5>
+                                <button type="button" class="close text-dark" data-dismiss="modal">&times;</button>
+                            </div>
+                            <form method="POST">
+                                <div class="modal-body text-left text-dark">
+                                    <input type="hidden" name="id_user" value="<?php echo $data['id_user']; ?>">
+                                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3">Identitas</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label class="font-weight-bold small">NIP</label>
+                                            <input type="text" name="nip" class="form-control" value="<?php echo $data['nip']; ?>" required>
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="font-weight-bold small">Nama Lengkap</label>
+                                            <input type="text" name="nama_lengkap" class="form-control" value="<?php echo $data['nama_lengkap']; ?>" required>
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <div class="col-md-4 form-group">
+                                            <label class="font-weight-bold small">Jabatan</label>
+                                            <input type="text" name="jabatan" class="form-control" value="<?php echo $data['jabatan']; ?>" required>
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label class="font-weight-bold small">Pangkat</label>
+                                            <input type="text" name="pangkat" class="form-control" value="<?php echo isset($data['pangkat']) ? $data['pangkat'] : ''; ?>">
+                                        </div>
+                                        <div class="col-md-4 form-group">
+                                            <label class="font-weight-bold small">Status Akun</label>
+                                            <select name="status_akun" class="form-control">
+                                                <option value="aktif" <?php echo ($data['status_akun']=='aktif')?'selected':''; ?>>Aktif</option>
+                                                <option value="tidak_aktif" <?php echo ($data['status_akun']=='tidak_aktif')?'selected':''; ?>>Tidak Aktif</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group bg-light p-2 rounded border">
+                                        <div class="custom-control custom-checkbox">
+                                            <input type="checkbox" class="custom-control-input" id="chkAtasanEdit<?= $data['id_user']; ?>" name="is_atasan" value="1" <?php echo ($data['is_atasan'] == '1') ? 'checked' : ''; ?>>
+                                            <label class="custom-control-label font-weight-bold text-dark" for="chkAtasanEdit<?= $data['id_user']; ?>">
+                                                Tandai sebagai opsi Atasan Langsung?
+                                            </label>
+                                            <div class="small text-muted ml-4">Jika dicentang, nama ini akan muncul di list pilihan atasan.</div>
+                                        </div>
+                                    </div>
+
+                                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3 mt-3">Kuota Cuti</h6>
+                                    <div class="row bg-light p-3 rounded mx-0 mb-3">
+                                        <div class="col-md-4"><label class="small font-weight-bold">Sisa Tahun Ini</label><input type="number" name="sisa_cuti_n" class="form-control" value="<?php echo $data['sisa_cuti_n']; ?>"></div>
+                                        <div class="col-md-4"><label class="small font-weight-bold">Sisa Tahun Lalu</label><input type="number" name="sisa_cuti_n1" class="form-control" value="<?php echo $data['sisa_cuti_n1']; ?>"></div>
+                                        <div class="col-md-4"><label class="small font-weight-bold">Cuti Sakit</label><input type="number" name="kuota_cuti_sakit" class="form-control" value="<?php echo $data['kuota_cuti_sakit']; ?>"></div>
+                                    </div>
+
+                                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3 mt-3">Akses & Peran</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 form-group">
+                                            <label class="font-weight-bold small">Password <span class="text-muted">(Isi jika ingin ubah)</span></label>
+                                            <input type="password" name="password" class="form-control" placeholder="******">
+                                        </div>
+                                        <div class="col-md-6 form-group">
+                                            <label class="font-weight-bold small">Role</label>
+                                            <select name="role" class="form-control">
+                                                <option value="user" <?php echo ($data['role']=='user')?'selected':''; ?>>User</option>
+                                                <option value="admin" <?php echo ($data['role']=='admin')?'selected':''; ?>>Admin</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
+                                    <button type="submit" name="edit" class="btn btn-warning font-weight-bold text-dark">Simpan Perubahan</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                <?php endforeach; ?>
+                </div> 
+            </div>
     </div>
 </div>
 
@@ -448,6 +402,16 @@ $nomor = $halaman_awal + 1;
                             <input type="text" name="pangkat" class="form-control" placeholder="Contoh: Penata Muda (III/a)">
                         </div>
                     </div>
+
+                    <div class="form-group bg-light p-2 rounded border mt-2">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input" id="chkAtasanBaru" name="is_atasan" value="1">
+                            <label class="custom-control-label font-weight-bold text-dark" for="chkAtasanBaru">
+                                Tandai sebagai opsi Atasan Langsung?
+                            </label>
+                            <div class="small text-muted ml-4">Jika dicentang, nama ini akan muncul di list pilihan atasan.</div>
+                        </div>
+                    </div>
                     
                     <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3 mt-3">Kuota Cuti Awal</h6>
                     <div class="row bg-light p-3 rounded mx-0 mb-3">
@@ -469,7 +433,7 @@ $nomor = $halaman_awal + 1;
                                 <option value="admin">Administrator</option>
                             </select>
                         </div>
-                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
@@ -492,40 +456,30 @@ $nomor = $halaman_awal + 1;
                     <div class="alert alert-light border border-warning small p-2 mb-3 text-dark">
                         <i class="fas fa-info-circle text-warning"></i> Data ini akan muncul di cetakan surat.
                     </div>
-
                     <datalist id="list_nama_pegawai">
                         <?php
                         $q_all = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users ORDER BY nama_lengkap ASC");
-                        while($user = mysqli_fetch_array($q_all)){
-                            echo "<option value='".$user['nama_lengkap']."' data-nip='".$user['nip']."'>";
-                        }
+                        while($user = mysqli_fetch_array($q_all)){ echo "<option value='".$user['nama_lengkap']."' data-nip='".$user['nip']."'>"; }
                         ?>
                     </datalist>
-
                     <h6 class="font-weight-bold text-dark border-bottom pb-2">1. Ketua Pengadilan</h6>
                     <div class="form-group mb-2">
                         <label class="small mb-0">Nama Lengkap</label>
-                        <input type="text" name="ketua_nama" id="ketua_nama" class="form-control" list="list_nama_pegawai"
-                               value="<?= $set_instansi['ketua_nama'] ?? '' ?>" required autocomplete="off" onchange="autoIsiNip('ketua')">
+                        <input type="text" name="ketua_nama" id="ketua_nama" class="form-control" list="list_nama_pegawai" value="<?= $set_instansi['ketua_nama'] ?? '' ?>" required autocomplete="off" onchange="autoIsiNip('ketua')">
                     </div>
                     <div class="form-group">
                         <label class="small mb-0">NIP</label>
-                        <input type="text" name="ketua_nip" id="ketua_nip" class="form-control" 
-                               value="<?= $set_instansi['ketua_nip'] ?? '' ?>" required>
+                        <input type="text" name="ketua_nip" id="ketua_nip" class="form-control" value="<?= $set_instansi['ketua_nip'] ?? '' ?>" required>
                     </div>
-
                     <h6 class="font-weight-bold text-dark border-bottom pb-2 mt-4">2. Wakil Ketua</h6>
                     <div class="form-group mb-2">
                         <label class="small mb-0">Nama Lengkap</label>
-                        <input type="text" name="wakil_nama" id="wakil_nama" class="form-control" list="list_nama_pegawai"
-                               value="<?= $set_instansi['wakil_nama'] ?? '' ?>" autocomplete="off" onchange="autoIsiNip('wakil')">
+                        <input type="text" name="wakil_nama" id="wakil_nama" class="form-control" list="list_nama_pegawai" value="<?= $set_instansi['wakil_nama'] ?? '' ?>" autocomplete="off" onchange="autoIsiNip('wakil')">
                     </div>
                     <div class="form-group">
                         <label class="small mb-0">NIP</label>
-                        <input type="text" name="wakil_nip" id="wakil_nip" class="form-control" 
-                               value="<?= $set_instansi['wakil_nip'] ?? '' ?>">
+                        <input type="text" name="wakil_nip" id="wakil_nip" class="form-control" value="<?= $set_instansi['wakil_nip'] ?? '' ?>">
                     </div>
-
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
@@ -536,97 +490,17 @@ $nomor = $halaman_awal + 1;
     </div>
 </div>
 
-<?php foreach($data_users_modal as $data): ?>
-<div class="modal fade" id="modalEdit<?php echo $data['id_user']; ?>" tabindex="-1">
-    <div class="modal-dialog modal-lg"> 
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: var(--pn-gold); color: #000;">
-                <h5 class="modal-title font-weight-bold"><i class="fas fa-edit"></i> Edit Pegawai</h5>
-                <button type="button" class="close text-dark" data-dismiss="modal">&times;</button>
-            </div>
-            <form method="POST">
-                <div class="modal-body text-left text-dark">
-                    <input type="hidden" name="id_user" value="<?php echo $data['id_user']; ?>">
-                    
-                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3">Identitas</h6>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">NIP</label>
-                            <input type="text" name="nip" class="form-control" value="<?php echo $data['nip']; ?>" required>
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Nama Lengkap</label>
-                            <input type="text" name="nama_lengkap" class="form-control" value="<?php echo $data['nama_lengkap']; ?>" required>
-                        </div>
-                    </div>
-
-                    <div class="row">
-                        <div class="col-md-4 form-group">
-                            <label class="font-weight-bold small">Jabatan</label>
-                            <input type="text" name="jabatan" class="form-control" value="<?php echo $data['jabatan']; ?>" required>
-                        </div>
-                        <div class="col-md-4 form-group">
-                            <label class="font-weight-bold small">Pangkat</label>
-                            <input type="text" name="pangkat" class="form-control" value="<?php echo isset($data['pangkat']) ? $data['pangkat'] : ''; ?>">
-                        </div>
-                        <div class="col-md-4 form-group">
-                            <label class="font-weight-bold small">Status Akun</label>
-                            <select name="status_akun" class="form-control">
-                                <option value="aktif" <?php echo ($data['status_akun']=='aktif')?'selected':''; ?>>Aktif</option>
-                                <option value="tidak_aktif" <?php echo ($data['status_akun']=='tidak_aktif')?'selected':''; ?>>Tidak Aktif</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3 mt-3">Kuota Cuti</h6>
-                    <div class="row bg-light p-3 rounded mx-0 mb-3">
-                        <div class="col-md-4"><label class="small font-weight-bold">Sisa Tahun Ini</label><input type="number" name="sisa_cuti_n" class="form-control" value="<?php echo $data['sisa_cuti_n']; ?>"></div>
-                        <div class="col-md-4"><label class="small font-weight-bold">Sisa Tahun Lalu</label><input type="number" name="sisa_cuti_n1" class="form-control" value="<?php echo $data['sisa_cuti_n1']; ?>"></div>
-                        <div class="col-md-4"><label class="small font-weight-bold">Cuti Sakit</label><input type="number" name="kuota_cuti_sakit" class="form-control" value="<?php echo $data['kuota_cuti_sakit']; ?>"></div>
-                    </div>
-
-                    <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3 mt-3">Akses & Peran</h6>
-                    <div class="row">
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Password <span class="text-muted">(Isi jika ingin ubah)</span></label>
-                            <input type="password" name="password" class="form-control" placeholder="******">
-                        </div>
-                        <div class="col-md-6 form-group">
-                            <label class="font-weight-bold small">Role</label>
-                            <select name="role" class="form-control">
-                                <option value="user" <?php echo ($data['role']=='user')?'selected':''; ?>>User</option>
-                                <option value="admin" <?php echo ($data['role']=='admin')?'selected':''; ?>>Admin</option>
-                            </select>
-                        </div>
-                        </div>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" name="edit" class="btn btn-warning font-weight-bold text-dark">Simpan Perubahan</button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-<?php endforeach; ?>
-
 <script>
-// Fungsi Auto Isi NIP dari Datalist
 function autoIsiNip(tipe) {
     var inputNama = document.getElementById(tipe + '_nama').value;
     var listOptions = document.getElementById('list_nama_pegawai').options;
-    
     for (var i = 0; i < listOptions.length; i++) {
         if (listOptions[i].value === inputNama) {
-            var nip = listOptions[i].getAttribute('data-nip');
-            document.getElementById(tipe + '_nip').value = nip;
+            document.getElementById(tipe + '_nip').value = listOptions[i].getAttribute('data-nip');
             break;
         }
     }
 }
-
-// SweetAlert Konfirmasi
 function konfirmasiStatus(id, aksi, nama) {
     Swal.fire({
         title: 'Konfirmasi',
@@ -644,14 +518,16 @@ function konfirmasiStatus(id, aksi, nama) {
     })
 }
 
-// AJAX Live Search
+// FIX AJAX SEARCH
 $(document).ready(function() {
     $('#keyword').on('keyup', function() {
         var keyword = $(this).val();
-        // Load hanya bagian #area_tabel
+        // Load HANYA div #area_tabel.
+        // Karena Modal Edit sekarang ADA DI DALAM #area_tabel, 
+        // modal tersebut akan ikut ter-refresh dan tombol edit akan berfungsi.
         $('#area_tabel').load('index.php?page=data_pegawai&cari=' + encodeURIComponent(keyword) + ' #area_tabel', function(response, status, xhr) {
             if (status == "error") {
-                console.log("Error loading search results: " + xhr.status + " " + xhr.statusText);
+                console.log("Error: " + xhr.status + " " + xhr.statusText);
             }
         });
     });
