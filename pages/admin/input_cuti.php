@@ -1,10 +1,12 @@
 <?php
 /** @var mysqli $koneksi */
 
+// --- 1. AMBIL DATA HARI LIBUR ---
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 while ($row = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $row['tanggal']; }
 
+// --- 2. AMBIL DATA PEGAWAI & ATASAN ---
 $list_pegawai = [];
 $list_atasan  = [];
 $q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
@@ -13,6 +15,11 @@ while ($u = mysqli_fetch_assoc($q_u)) {
     if ($u['is_atasan'] == '1') { $list_atasan[] = $u; }
 }
 
+// --- 3. AMBIL DATA INSTANSI (UNTUK NAMA KETUA/WAKIL) ---
+$q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
+$instansi   = mysqli_fetch_assoc($q_instansi);
+
+// --- 4. GENERATE NOMOR SURAT OTOMATIS ---
 $thn_now = date('Y');
 $bln_now = date('n');
 $romawi  = [1=>"I", 2=>"II", 3=>"III", 4=>"IV", 5=>"V", 6=>"VI", 7=>"VII", 8=>"VIII", 9=>"IX", 10=>"X", 11=>"XI", 12=>"XII"];
@@ -25,6 +32,7 @@ if (mysqli_num_rows($q_last) > 0) {
 }
 $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bln_now]."/".$thn_now;
 
+// --- FUNGSI HITUNG HARI KERJA ---
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
@@ -41,8 +49,10 @@ function hitungHariKerja($start, $end, $libur_arr) {
 
 $swal_script = "";
 
+// --- PROSES SIMPAN DATA ---
 if (isset($_POST['simpan_cuti'])) {
     $id_user   = $_POST['id_user_hidden']; 
+    // Mengambil langsung dari select name="id_atasan_hidden"
     $id_atasan = $_POST['id_atasan_hidden']; 
     
     if (empty($id_user)) {
@@ -56,6 +66,7 @@ if (isset($_POST['simpan_cuti'])) {
         $alamat_cuti  = htmlspecialchars($_POST['alamat']); 
         $alasan       = htmlspecialchars($_POST['alasan']);
         $nomor_surat  = htmlspecialchars($_POST['nomor_surat']); 
+        $ttd_pejabat  = $_POST['ttd_pejabat']; 
 
         if ($tgl_selesai < $tgl_mulai) {
             $swal_script = "Swal.fire({ title: 'Tanggal Salah!', text: 'Tanggal selesai lebih kecil dari mulai.', icon: 'error' });";
@@ -94,9 +105,10 @@ if (isset($_POST['simpan_cuti'])) {
                     }
 
                     if ($lanjut_simpan) {
-                        $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat')";
+                        $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat', '$ttd_pejabat')";
+                        
                         if (mysqli_query($koneksi, $query_insert)) {
-                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data disimpan.', icon: 'success' }).then(() => { window.location='index.php?page=laporan_cuti'; });";
+                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data disimpan.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
                         } else {
                             $swal_script = "Swal.fire({ title: 'Error!', text: 'DB Error', icon: 'error' });";
                         }
@@ -302,16 +314,33 @@ if (isset($_POST['simpan_cuti'])) {
                             </div>
                         </div>
 
-                        <div class="mb-4">
+                        <div class="mb-3">
                             <label class="form-label-std">Atasan Penandatangan <span class="text-danger">*</span></label>
                             <div class="input-wrapper">
                                 <i class="fas fa-user-tie input-icon"></i>
-                                <input class="form-control-clean" list="list_atasan" id="input_atasan" placeholder="Cari nama atasan..." required>
+                                <select name="id_atasan_hidden" class="form-control-clean" required style="cursor: pointer;">
+                                    <option value="">-- Pilih Atasan --</option>
+                                    <?php foreach($list_atasan as $u) { 
+                                        echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip])</option>"; 
+                                    } ?>
+                                </select>
                             </div>
-                            <datalist id="list_atasan">
-                                <?php foreach($list_atasan as $u) { echo "<option data-id='$u[id_user]' value='$u[nama_lengkap] (NIP: $u[nip])'>"; } ?>
-                            </datalist>
-                            <input type="hidden" name="id_atasan_hidden" id="id_atasan_hidden">
+                        </div>
+
+                        <div class="mb-4">
+                            <label class="form-label-std">Pejabat Penandatangan (SK) <span class="text-danger">*</span></label>
+                            <div class="input-wrapper">
+                                <i class="fas fa-stamp input-icon"></i>
+                                <select name="ttd_pejabat" class="form-control-clean" required style="cursor: pointer;">
+                                    <option value="">-- Pilih Pejabat Berwenang --</option>
+                                    <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
+                                    <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
+                                    <option value="plh">PLH / KOSONG (Isi Manual Tulis Tangan)</option>
+                                </select>
+                            </div>
+                            <small class="text-muted font-italic ml-1" style="font-size: 11px;">
+                                *Pilih siapa yang akan menandatangani surat izin cuti.
+                            </small>
                         </div>
 
                         <div class="d-flex justify-content-end align-items-center pt-3 border-top mt-4">
@@ -334,6 +363,7 @@ if (isset($_POST['simpan_cuti'])) {
                     <li><b>Hari Kerja:</b> Sistem otomatis melewati Sabtu, Minggu, dan Libur Nasional.</li>
                     <li><b>Status:</b> Pengajuan admin otomatis <b>DISETUJUI</b>.</li>
                     <li><b>Edit:</b> Kesalahan input dapat dihapus melalui menu Laporan Cuti.</li>
+                    <li><b>TTD:</b> Pilih Pejabat (Ketua/Wakil) atau PLH untuk TTD basah.</li>
                 </ul>
             </div>
         </div>
@@ -357,8 +387,8 @@ if (isset($_POST['simpan_cuti'])) {
             }
         });
     }
+    // Hanya setup untuk pegawai (yang masih pakai ketik/datalist)
     setupAutocomplete('input_pegawai', 'list_pegawai', 'id_user_hidden');
-    setupAutocomplete('input_atasan', 'list_atasan', 'id_atasan_hidden');
 
     const holidays = <?php echo json_encode($libur_nasional); ?>;
     const tglMulai = document.getElementById('tgl_mulai');

@@ -1,7 +1,6 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <?php
-// --- LOGIKA PHP TETAP ---
 if (!isset($_SESSION['id_user'])) {
     echo "<script>window.location='login.php';</script>";
     exit;
