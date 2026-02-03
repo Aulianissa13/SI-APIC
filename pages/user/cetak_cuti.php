@@ -1,18 +1,14 @@
 <?php
-// FILE: pages/user/cetak_cuti.php
-// REVISI: Booking System Logic (Snapshot Based)
+/** @var mysqli $koneksi */
 
 session_start();
 error_reporting(0);
-
-// --- 1. KONEKSI DATABASE ---
 if (file_exists('../../config/database.php')) {
     include '../../config/database.php';
 } else {
     include '../../assets/config/database.php';
 }
 
-// --- 2. KEAMANAN STRICT ---
 if (!isset($_SESSION['id_user'])) {
     echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
     exit;
@@ -21,15 +17,11 @@ if (!isset($_SESSION['id_user'])) {
 $id_pengajuan  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_user_login = $_SESSION['id_user'];
 
-// --- 3. AMBIL DATA INSTANSI (Untuk Tanda Tangan Ketua) ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi   = mysqli_fetch_array($q_instansi);
 if(!$instansi) {
     $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
 }
-
-// --- 4. AMBIL DATA PENGAJUAN ---
-// Kita tambahkan "pengajuan_cuti.id_atasan AS id_atasan_fix" agar tidak tertukar
 $query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix 
     FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
@@ -38,7 +30,6 @@ $query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan
 
 $data = mysqli_fetch_array($query);
 
-// Validasi Kepemilikan (Anti Intip Punya Orang Lain)
 if (!$data) { 
     echo "<script>alert('Data tidak ditemukan!'); window.close();</script>"; 
     exit; 
@@ -48,17 +39,11 @@ if ($data['id_user'] != $id_user_login) {
     exit; 
 }
 
-// ============================================================
-// --- LOGIC 1: ATASAN LANGSUNG (FIXED ALIAS) ---
-// ============================================================
 $nama_atasan_langsung = "............................................."; 
 $nip_atasan_langsung  = ".......................";
-
-// PENTING: Kita ambil dari ALIAS yang baru kita buat tadi
 $id_atasan_terpilih   = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; 
 
 if ($id_atasan_terpilih > 0) {
-    // Cari data si Bos berdasarkan ID yang ditemukan
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
     if ($bos = mysqli_fetch_array($cari_bos)) {
         $nama_atasan_langsung = $bos['nama_lengkap'];
@@ -66,30 +51,17 @@ if ($id_atasan_terpilih > 0) {
     }
 }
 
-// ============================================================
-// --- LOGIC 2: PERHITUNGAN CUTI (BOOKING SYSTEM / SNAPSHOT) ---
-// ============================================================
-// Penjelasan: 
-// Karena sistem Anda "Potong Duluan", maka angka di tabel 'users' saat ini 
-// mungkin sudah berkurang jauh jika user mengajukan cuti lagi.
-// Maka, kita WAJIB menggunakan data SNAPSHOT yang tersimpan di tabel 'pengajuan_cuti'
-// (sisa_cuti_n, sisa_cuti_n1) yang merekam saldo SAAT pengajuan dibuat.
-
 $id_jenis   = $data['id_jenis']; 
 $lama_ambil = $data['lama_hari'];
-
-// Variabel Default
 $ket_tahunan_n = "-"; $ket_tahunan_n1 = "-";
 $sisa_n_tampil = 0;   $sisa_n1_tampil = 0;
 $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
-    case '1': // TAHUNAN
-        // 1. Ambil Saldo Awal (Dari Snapshot Pengajuan)
+    case '1': 
         $saldo_awal_n  = (int)$data['sisa_cuti_n']; 
         $saldo_awal_n1 = (int)$data['sisa_cuti_n1'];
         
-        // 2. Ambil Jumlah Potongan (Dari Snapshot Pengajuan)
         $ambil_n  = (int)$data['dipotong_n'];
         $ambil_n1 = (int)$data['dipotong_n1'];
 
@@ -104,33 +76,22 @@ switch ($id_jenis) {
         // TAPI: Agar tidak membingungkan, mari kita tampilkan SISA AWAL di kolom "Sisa".
         $sisa_n_tampil  = $saldo_awal_n; 
         $sisa_n1_tampil = $saldo_awal_n1;
-
-        // 5. Buat Kalimat Keterangan (Gaya Admin)
-        
-        // --- Tahun N-1 ---
         if ($ambil_n1 > 0) {
             $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
         } elseif ($saldo_awal_n1 > 0) {
-            $ket_tahunan_n1 = "Sisa " . $saldo_awal_n1 . " hari"; // Info saldo nganggur
-        } else {
+            $ket_tahunan_n1 = "Sisa " . $saldo_awal_n1 . " hari"; 
             $ket_tahunan_n1 = "-";
-            $sisa_n1_tampil = 0; // Kosongkan angka jika 0
+            $sisa_n1_tampil = 0; 
         }
-
-        // --- Tahun N ---
         if ($ambil_n > 0) {
             $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
         } else {
-            // Jika tidak mengambil tahun N (misal cuma ambil N-1)
             $ket_tahunan_n = "Sisa " . $sisa_akhir_n . " hari";
         }
         break;
 
-    case '2': // SAKIT
-        // Untuk sakit, kita cek kuota di tabel users saat ini saja (lebih simpel)
-        // Atau jika mau snapshot, harusnya disimpan juga. Kita pakai fallback users.
+    case '2': 
         $sisa_sakit = max(0, (isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0));
-        // Jika sistem booking memotong sakit juga, kita tambahkan balik untuk tampilan "Sisa"
         $sisa_sakit_tampil = $sisa_sakit + $lama_ambil; 
         
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
@@ -142,7 +103,6 @@ switch ($id_jenis) {
     case '6': $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
 }
 
-// Simbol Centang
 $c1 = ($id_jenis == '1') ? '&#10003;' : '';
 $c2 = ($id_jenis == '4') ? '&#10003;' : '';
 $c3 = ($id_jenis == '2') ? '&#10003;' : '';
@@ -150,7 +110,6 @@ $c4 = ($id_jenis == '5') ? '&#10003;' : '';
 $c5 = ($id_jenis == '3') ? '&#10003;' : '';
 $c6 = ($id_jenis == '6') ? '&#10003;' : '';
 
-// Tanggal & Tahun
 $tahun_n  = date('Y'); 
 $tahun_n1 = $tahun_n - 1; 
 $tahun_n2 = $tahun_n - 2;
