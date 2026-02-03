@@ -6,9 +6,7 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 $swal_script = "";
 
-// ==========================================
-// 1. LOGIKA SIMPAN NAMA PEJABAT (MANUAL)
-// ==========================================
+// --- LOGIKA SIMPAN PEJABAT ---
 if(isset($_POST['simpan_pejabat'])){
     $ketua_nama = mysqli_real_escape_string($koneksi, $_POST['ketua_nama']);
     $ketua_nip  = mysqli_real_escape_string($koneksi, $_POST['ketua_nip']);
@@ -30,14 +28,11 @@ if(isset($_POST['simpan_pejabat'])){
     }
 }
 
-// AMBIL DATA SETTING
 $query_set   = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $set_instansi = mysqli_fetch_array($query_set);
 if(!$set_instansi) { $set_instansi = ['ketua_nama' => '', 'ketua_nip' => '', 'wakil_nama' => '', 'wakil_nip' => '']; }
 
-// ==========================================
-// 2. LOGIKA TAMBAH USER (DENGAN IS_ATASAN)
-// ==========================================
+// --- LOGIKA TAMBAH USER ---
 if (isset($_POST['tambah'])) {
     $nip          = htmlspecialchars($_POST['nip']);
     $nama_lengkap = htmlspecialchars($_POST['nama_lengkap']);
@@ -45,10 +40,7 @@ if (isset($_POST['tambah'])) {
     $jabatan      = htmlspecialchars($_POST['jabatan']); 
     $pangkat      = htmlspecialchars($_POST['pangkat']); 
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
-    
-    // Checkbox is_atasan (Jika dicentang value=1, jika tidak 0)
     $is_atasan    = isset($_POST['is_atasan']) ? '1' : '0';
-
     $status_akun  = 'aktif'; 
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
@@ -68,9 +60,7 @@ if (isset($_POST['tambah'])) {
     }
 }
 
-// ==========================================
-// 3. LOGIKA EDIT USER (DENGAN IS_ATASAN)
-// ==========================================
+// --- LOGIKA EDIT USER ---
 if (isset($_POST['edit'])) {
     $id_user      = $_POST['id_user'];
     $nip          = htmlspecialchars($_POST['nip']);
@@ -79,10 +69,7 @@ if (isset($_POST['edit'])) {
     $pangkat      = htmlspecialchars($_POST['pangkat']); 
     $role         = isset($_POST['role']) ? $_POST['role'] : 'user';
     $status_akun  = $_POST['status_akun']; 
-    
-    // Update logic checkbox
     $is_atasan    = isset($_POST['is_atasan']) ? '1' : '0';
-
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
     $ct_sakit     = $_POST['kuota_cuti_sakit'];
@@ -102,7 +89,7 @@ if (isset($_POST['edit'])) {
     }
 }
 
-// 4. LOGIKA TOGGLE STATUS
+// --- LOGIKA TOGGLE STATUS ---
 if (isset($_GET['toggle_status'])) {
     $id = $_GET['toggle_status'];
     $cek = mysqli_query($koneksi, "SELECT status_akun FROM users WHERE id_user='$id'");
@@ -112,9 +99,7 @@ if (isset($_GET['toggle_status'])) {
     echo "<script>window.location='index.php?page=data_pegawai';</script>";
 }
 
-// ==========================================
 // --- PENCARIAN & PAGINATION ---
-// ==========================================
 $batas = 10;
 $halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
@@ -134,6 +119,7 @@ $total_halaman = ceil($total_data / $batas);
 
 $nomor = $halaman_awal + 1;
 ?>
+
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -141,25 +127,103 @@ $nomor = $halaman_awal + 1;
 <style>
     :root { --pn-green: #004d00; --pn-gold: #F9A825; --text-dark: #2c3e50; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
+    
     .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.6rem; }
+    
+    /* Card Custom */
     .card-pn-custom { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; overflow: hidden; }
     .card-header-green { background-color: #1b5e20; color: white; padding: 15px 25px; border-bottom: 4px solid var(--pn-gold); display: flex; justify-content: space-between; align-items: center; }
+    
     .header-search-box { position: relative; width: 300px; }
     .header-search-input { width: 100%; border-radius: 20px; border: none; padding: 6px 15px 6px 35px; font-size: 0.9rem; outline: none; }
     .header-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.9rem; }
-    .btn-custom-action { background-color: var(--pn-gold); color: var(--pn-green); font-weight: 600; border: none; border-radius: 8px; padding: 8px 15px; transition: 0.3s; }
-    .btn-custom-action:hover { background-color: #fdd835; color: #003300; transform: translateY(-2px); }
+
+    /* Buttons */
+    .btn-pn-outline { background-color: transparent; color: var(--pn-green); border: 2px solid var(--pn-green); font-weight: 600; border-radius: 8px; padding: 8px 15px; transition: all 0.3s ease; }
+    .btn-pn-outline:hover { background-color: var(--pn-green); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 77, 0, 0.2); }
+
+    .btn-pn-solid { background-color: var(--pn-green); color: white; border: 2px solid var(--pn-green); font-weight: 600; border-radius: 8px; padding: 8px 15px; transition: all 0.3s ease; }
+    .btn-pn-solid:hover { background-color: #003800; color: var(--pn-gold); border-color: #003800; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 77, 0, 0.3); }
+
+    /* TABLE CUSTOM STYLE */
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
-    .table-custom thead th { background-color: #f8f9fc; color: var(--text-dark); font-weight: 700; padding: 12px; border-bottom: 2px solid #e3e6f0; font-size: 0.85rem; text-transform: uppercase; }
+    
+    .thead-pn { background-color: var(--pn-green); color: white; }
+    .thead-pn th {
+        padding: 12px 15px;
+        border-bottom: 3px solid var(--pn-gold) !important;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        vertical-align: middle !important;
+        border-top: none;
+        white-space: nowrap;
+    }
+
     .table-custom tbody tr { background-color: white; transition: 0.2s; }
-    .table-custom tbody tr:hover { background-color: #f1f8e9; }
-    .table-custom td { padding: 12px; vertical-align: middle; border-bottom: 1px solid #eee; font-size: 0.9rem; color: #444; }
-    .badge-status-active { background-color: #d4edda; color: #155724; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; }
-    .badge-status-inactive { background-color: #f8d7da; color: #721c24; padding: 4px 8px; border-radius: 5px; font-size: 0.75rem; font-weight: 600; }
-    .badge-atasan { background-color: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-top: 2px; display: inline-block; }
-    .btn-action-edit { background: #fff3cd; color: #856404; border:none; border-radius: 5px; padding: 5px 10px; }
-    .btn-action-off { background: #ffebee; color: #c62828; border:none; border-radius: 5px; padding: 5px 10px; }
-    .btn-action-on { background: #e8f5e9; color: #2e7d32; border:none; border-radius: 5px; padding: 5px 10px; }
+    .table-custom tbody tr:hover { background-color: #f1f8e9; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+    
+    /* PENGATURAN FONT & KOLOM TABEL */
+    .table-custom td { 
+        padding: 12px 15px; 
+        vertical-align: middle !important;
+        border-bottom: 1px solid #eee; 
+        font-size: 0.95rem; 
+        color: #333; 
+    }
+
+    /* Kelas khusus untuk kolom Nomor */
+    .col-fixed-no {
+        width: 60px;
+        min-width: 60px;
+        max-width: 60px;
+        text-align: center;
+        font-weight: 500;
+    }
+
+    .text-pn { color: var(--pn-green) !important; }
+    
+    /* --- EDIT: BADGES PILL SHAPE (DIKECILKAN BIAR SAMA DENGAN ATASAN) --- */
+    .badge-status-active { 
+        background-color: #d4edda; 
+        color: #155724; 
+        padding: 3px 10px; /* Diubah dari 5px 12px */
+        border-radius: 50px; 
+        font-size: 0.7rem; /* Diubah dari 0.75rem */
+        font-weight: 600; 
+        border: 1px solid #c3e6cb; 
+        display: inline-block;
+    }
+    
+    .badge-status-inactive { 
+        background-color: #f8d7da; 
+        color: #721c24; 
+        padding: 3px 10px; /* Diubah dari 5px 12px */
+        border-radius: 50px; 
+        font-size: 0.7rem; /* Diubah dari 0.75rem */
+        font-weight: 600; 
+        border: 1px solid #f5c6cb; 
+        display: inline-block;
+    }
+    
+    .badge-atasan { 
+        background-color: #e3f2fd; 
+        color: #0d47a1; 
+        border: 1px solid #bbdefb; 
+        padding: 3px 10px; 
+        border-radius: 50px; 
+        font-size: 0.7rem; 
+        display: inline-block; 
+    }
+    /* ------------------------------------------------------------------- */
+
+    /* Action Buttons */
+    .btn-action-edit { background: #fff3cd; color: #856404; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
+    .btn-action-off { background: #ffebee; color: #c62828; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
+    .btn-action-on { background: #e8f5e9; color: #2e7d32; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
+    
+    .btn-action-edit:hover, .btn-action-off:hover, .btn-action-on:hover { opacity: 0.8; transform: scale(1.05); }
+
     .pagination .page-link { color: var(--pn-green); border-radius: 5px; margin: 0 3px; }
     .pagination .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
 </style>
@@ -168,11 +232,11 @@ $nomor = $halaman_awal + 1;
     <div class="d-flex justify-content-between align-items-center mb-4 mt-4">
         <h3 class="page-header-title">Data Pegawai & Cuti</h3>
         <div>
-            <button class="btn btn-light border text-success font-weight-bold mr-2 shadow-sm" data-toggle="modal" data-target="#modalPejabat">
-                <i class="fas fa-user-tie"></i> Atur Pejabat
+            <button class="btn btn-pn-outline shadow-sm mr-2" data-toggle="modal" data-target="#modalPejabat">
+                <i class="fas fa-user-tie mr-2"></i> Atur Pejabat
             </button>
-            <button class="btn btn-custom-action shadow-sm" data-toggle="modal" data-target="#modalTambah">
-                <i class="fas fa-plus"></i> Tambah Pegawai
+            <button class="btn btn-pn-solid shadow-sm" data-toggle="modal" data-target="#modalTambah">
+                <i class="fas fa-plus mr-2"></i> Tambah Pegawai
             </button>
         </div>
     </div>
@@ -193,65 +257,105 @@ $nomor = $halaman_awal + 1;
         <div class="card-body p-0">
             <div id="area_tabel" class="p-3">
                 <div class="table-responsive">
-                    <table class="table table-custom">
-                        <thead>
-                            <tr class="text-center">
-                                <th width="5%">No</th>
-                                <th class="text-left" width="30%">Pegawai</th>
-                                <th class="text-left">Jabatan</th>
-                                <th width="10%">Sisa Cuti</th>
-                                <th width="10%">Cuti Lalu</th>
-                                <th width="10%">Sakit</th>
-                                <th width="10%">Aksi</th>
+                    <table class="table table-custom table-hover">
+                        <thead class="thead-pn">
+                            <tr>
+                                <th class="col-fixed-no">No</th>
+                                
+                                <th class="text-left" style="min-width: 250px;">Pegawai</th>
+                                <th class="text-left" style="min-width: 150px;">Jabatan</th>
+                                <th class="text-center" width="10%">Sisa Cuti<br><small>(Tahun Ini)</small></th>
+                                <th class="text-center" width="10%">Sisa Cuti<br><small>(Tahun Lalu)</small></th>
+                                <th class="text-center" width="10%">Sisa Cuti<br><small>(Sakit)</small></th>
+                                <th class="text-center" width="12%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
                             <?php
-                            $query_string = "SELECT u.* FROM users u $where_clause ORDER BY u.id_user DESC LIMIT $halaman_awal, $batas";
+                            // EDIT: ORDER BY ASC (Dari ID terkecil/User Lama ke Baru)
+                            $query_string = "SELECT u.* FROM users u $where_clause ORDER BY u.id_user ASC LIMIT $halaman_awal, $batas";
                             $query_pegawai = mysqli_query($koneksi, $query_string);
-                            $data_users_search = []; // Array untuk menyimpan data user agar bisa diloop untuk modal
+                            $data_users_search = []; 
 
                             if (!$query_pegawai) {
-                                echo "<tr><td colspan='7' class='text-center text-danger'>Error: " . mysqli_error($koneksi) . "</td></tr>";
+                                echo "<tr><td colspan='7' class='text-center text-danger font-weight-bold py-4'>Error: " . mysqli_error($koneksi) . "</td></tr>";
                             } elseif (mysqli_num_rows($query_pegawai) == 0) {
-                                echo "<tr><td colspan='7' class='text-center text-secondary py-5'><i class='fas fa-inbox fa-3x mb-3'></i><br>Data tidak ditemukan.</td></tr>";
+                                echo "<tr><td colspan='7' class='text-center text-secondary py-5'><i class='fas fa-inbox fa-3x mb-3 text-gray-300'></i><br>Data tidak ditemukan.</td></tr>";
                             } else {
                                 while ($data = mysqli_fetch_array($query_pegawai)) {
-                                    $data_users_search[] = $data; // Simpan ke array untuk modal nanti
+                                    $data_users_search[] = $data; 
                                     $is_active = ($data['status_akun'] == 'aktif');
                                     $pangkat_text = isset($data['pangkat']) && !empty($data['pangkat']) ? $data['pangkat'] : '-';
+
+                                    // --- LOGIKA ICON ADMIN ---
+                                    $icon_admin = "";
+                                    $role_check = strtolower(trim($data['role']));
+                                    if ($role_check === '1' || strpos($role_check, 'admin') !== false) {
+                                        $icon_admin = '<i class="fas fa-user-shield ml-2" style="color: var(--pn-gold); font-size: 0.9rem;" title="Administrator"></i>';
+                                    }
+                                    // ------------------------
                             ?>
-                            <tr <?php echo !$is_active ? 'style="opacity: 0.6; background-color: #f9f9f9;"' : ''; ?>>
-                                <td class="text-center font-weight-bold text-secondary"><?php echo $nomor++; ?></td>
+                            <tr class="align-middle" <?php echo !$is_active ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : ''; ?>>
+                                
+                                <td class="col-fixed-no"><?php echo $nomor++; ?></td>
+                                
                                 <td>
-                                    <div class="font-weight-bold text-dark" style="font-size: 0.95rem;"><?php echo $data['nama_lengkap']; ?></div>
-                                    <div class="small text-secondary mb-1">NIP: <?php echo $data['nip']; ?></div>
-                                    <?php if($is_active): ?>
-                                        <span class="badge-status-active">AKTIF</span>
-                                    <?php else: ?>
-                                        <span class="badge-status-inactive">NONAKTIF</span>
-                                    <?php endif; ?>
-                                    
-                                    <?php if($data['is_atasan'] == '1'): ?>
-                                        <div class="badge-atasan"><i class="fas fa-user-check"></i> Atasan Langsung</div>
-                                    <?php endif; ?>
+                                    <div class="d-flex flex-column justify-content-center">
+                                        <div class="d-flex align-items-center">
+                                            <span class="font-weight-bold text-dark" style="font-size: 1rem;"><?php echo $data['nama_lengkap']; ?></span>
+                                            <?php echo $icon_admin; ?>
+                                        </div>
+                                        
+                                        <span class="small text-secondary mt-1">NIP: <?php echo $data['nip']; ?></span>
+                                        
+                                        <div class="mt-1">
+                                            <?php if($is_active): ?>
+                                                <span class="badge badge-status-active">AKTIF</span>
+                                            <?php else: ?>
+                                                <span class="badge badge-status-inactive">NONAKTIF</span>
+                                            <?php endif; ?>
+                                            
+                                            <?php if($data['is_atasan'] == '1'): ?>
+                                                <span class="badge badge-atasan ml-1"><i class="fas fa-user-check mr-1"></i>ATASAN</span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </td>
+
                                 <td>
-                                    <div class="font-weight-600 text-success"><?php echo $data['jabatan']; ?></div>
-                                    <small class="text-muted"><?php echo $pangkat_text; ?></small>
+                                    <div class="d-flex flex-column justify-content-center">
+                                        <span class="font-weight-bold text-pn" style="font-size: 0.95rem;"><?php echo $data['jabatan']; ?></span>
+                                        <small class="text-muted"><?php echo $pangkat_text; ?></small>
+                                    </div>
                                 </td>
-                                <td class="text-center"><span class="font-weight-bold text-dark" style="font-size:1.1rem;"><?php echo $data['sisa_cuti_n']; ?></span></td>
-                                <td class="text-center text-secondary"><?php echo $data['sisa_cuti_n1']; ?></td>
-                                <td class="text-center text-info"><?php echo $data['kuota_cuti_sakit']; ?></td>
+                                
                                 <td class="text-center">
-                                    <button type="button" class="btn-action-edit" data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
-                                        <i class="fas fa-pen fa-sm"></i>
-                                    </button>
-                                    <?php if($is_active): ?>
-                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-off" title="Nonaktifkan Akun"><i class="fas fa-power-off fa-sm"></i></button>
-                                    <?php else: ?>
-                                        <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-on" title="Aktifkan Akun"><i class="fas fa-check fa-sm"></i></button>
-                                    <?php endif; ?>
+                                    <span class="font-weight-bold text-dark" style="font-size:1rem;"><?php echo $data['sisa_cuti_n']; ?></span>
+                                </td>
+                                
+                                <td class="text-center text-secondary font-weight-bold" style="font-size:1rem;">
+                                    <?php echo $data['sisa_cuti_n1']; ?>
+                                </td>
+                                
+                                <td class="text-center text-info font-weight-bold" style="font-size:1rem;">
+                                    <?php echo $data['kuota_cuti_sakit']; ?>
+                                </td>
+                                
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn-action-edit mr-1 shadow-sm" data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
+                                            <i class="fas fa-pen fa-sm"></i>
+                                        </button>
+                                        <?php if($is_active): ?>
+                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-off shadow-sm" title="Nonaktifkan Akun">
+                                                <i class="fas fa-power-off fa-sm"></i>
+                                            </button>
+                                        <?php else: ?>
+                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-on shadow-sm" title="Aktifkan Akun">
+                                                <i class="fas fa-check fa-sm"></i>
+                                            </button>
+                                        <?php endif; ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php } } ?>
@@ -289,9 +393,9 @@ $nomor = $halaman_awal + 1;
                 <div class="modal fade" id="modalEdit<?php echo $data['id_user']; ?>" tabindex="-1">
                     <div class="modal-dialog modal-lg"> 
                         <div class="modal-content">
-                            <div class="modal-header" style="background-color: var(--pn-gold); color: #000;">
-                                <h5 class="modal-title font-weight-bold"><i class="fas fa-edit"></i> Edit Pegawai</h5>
-                                <button type="button" class="close text-dark" data-dismiss="modal">&times;</button>
+                            <div class="modal-header" style="background-color: var(--pn-green); color: white; border-bottom: 4px solid var(--pn-gold);">
+                                <h5 class="modal-title font-weight-bold"><i class="fas fa-edit mr-2"></i> Edit Pegawai</h5>
+                                <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
                             </div>
                             <form method="POST">
                                 <div class="modal-body text-left text-dark">
@@ -359,23 +463,23 @@ $nomor = $halaman_awal + 1;
                                 </div>
                                 <div class="modal-footer">
                                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                                    <button type="submit" name="edit" class="btn btn-warning font-weight-bold text-dark">Simpan Perubahan</button>
+                                    <button type="submit" name="edit" class="btn btn-pn-solid">Simpan Perubahan</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
                 <?php endforeach; ?>
-                </div> 
-            </div>
+            </div> 
+        </div>
     </div>
 </div>
 
 <div class="modal fade" id="modalTambah" tabindex="-1">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title font-weight-bold">Tambah Pegawai Baru</h5>
+            <div class="modal-header" style="background-color: var(--pn-green); color: white; border-bottom: 4px solid var(--pn-gold);">
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-plus mr-2"></i> Tambah Pegawai Baru</h5>
                 <button type="button" class="close text-white" data-dismiss="modal">&times;</button>
             </div>
             <form method="POST">
@@ -437,7 +541,7 @@ $nomor = $halaman_awal + 1;
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">Batal</button>
-                    <button type="submit" name="tambah" class="btn btn-success">Simpan Data</button>
+                    <button type="submit" name="tambah" class="btn btn-pn-solid">Simpan Data</button>
                 </div>
             </form>
         </div>
@@ -448,7 +552,7 @@ $nomor = $halaman_awal + 1;
     <div class="modal-dialog">
         <div class="modal-content">
             <div class="modal-header" style="background-color: var(--pn-gold); color: #000;">
-                <h5 class="modal-title font-weight-bold">Atur Pejabat Penandatangan</h5>
+                <h5 class="modal-title font-weight-bold"><i class="fas fa-user-tie mr-2"></i> Atur Pejabat Penandatangan</h5>
                 <button type="button" class="close text-dark" data-dismiss="modal">&times;</button>
             </div>
             <form method="POST">
@@ -504,11 +608,11 @@ function autoIsiNip(tipe) {
 function konfirmasiStatus(id, aksi, nama) {
     Swal.fire({
         title: 'Konfirmasi',
-        text: "Apakah Anda yakin ingin " + aksi + " akses untuk: " + nama + "?",
+        html: `Apakah Anda yakin ingin <b>${aksi}</b> akses untuk:<br>${nama}?`,
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: aksi == 'aktifkan' ? '#004d00' : '#d33',
-        cancelButtonColor: '#858796',
+        cancelButtonColor: '#6c757d',
         confirmButtonText: 'Ya, Lakukan!',
         cancelButtonText: 'Batal'
     }).then((result) => {
@@ -522,9 +626,6 @@ function konfirmasiStatus(id, aksi, nama) {
 $(document).ready(function() {
     $('#keyword').on('keyup', function() {
         var keyword = $(this).val();
-        // Load HANYA div #area_tabel.
-        // Karena Modal Edit sekarang ADA DI DALAM #area_tabel, 
-        // modal tersebut akan ikut ter-refresh dan tombol edit akan berfungsi.
         $('#area_tabel').load('index.php?page=data_pegawai&cari=' + encodeURIComponent(keyword) + ' #area_tabel', function(response, status, xhr) {
             if (status == "error") {
                 console.log("Error: " + xhr.status + " " + xhr.statusText);

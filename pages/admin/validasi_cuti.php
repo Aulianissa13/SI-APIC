@@ -2,7 +2,7 @@
 /** @var mysqli $koneksi */
 
 // =========================================================
-// 1. CONFIG PAGINATION & SEARCH
+// 1. CONFIG PAGINATION & SEARCH (LOGIKA TIDAK DIUBAH)
 // =========================================================
 
 $batas   = 10; 
@@ -47,25 +47,75 @@ $nomor = $halaman_awal + 1;
 
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* STYLE UTAMA HALAMAN */
-    :root { --pn-green: #004d00; --pn-gold: #FFD700; }
-    .card-pn { border: none; border-radius: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); overflow: hidden; }
-    .card-header-pn { background: linear-gradient(135deg, var(--pn-green) 0%, #006400 100%); color: white; border-bottom: 4px solid var(--pn-gold); padding: 15px 20px; }
-    .badge-status { border-radius: 10px; padding: 8px 12px; font-weight: 600; }
-    .thead-pn { background-color: var(--pn-green); color: white; }
-    .page-title-pn { font-weight: 700; border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green) !important; }
+    /* STYLE UTAMA KONSISTEN (PN THEME) */
+    :root { 
+        --pn-green: #004d00; 
+        --pn-gold: #F9A825; 
+        --text-dark: #333;
+    }
+    
+    body { font-family: 'Poppins', sans-serif; }
+
+    /* CARD STYLE */
+    .card-pn { 
+        border: none; 
+        border-radius: 12px; 
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+        background-color: #fff;
+        overflow: hidden; 
+    }
+    .card-header-pn { 
+        background: linear-gradient(135deg, #004d00 0%, #003300 100%); 
+        color: white; 
+        border-bottom: 4px solid var(--pn-gold); 
+        padding: 18px 25px; 
+    }
+
+    /* PAGE TITLE */
+    .page-title-pn { 
+        font-weight: 700; 
+        border-left: 5px solid var(--pn-gold); 
+        padding-left: 15px; 
+        color: var(--pn-green) !important; 
+        font-size: 1.5rem;
+    }
+
+    /* TABLE STYLE */
+    .table-pn-head {
+        background-color: var(--pn-green);
+        color: #fff;
+        font-weight: 600;
+        border-top: none;
+    }
+    .table-pn-head th {
+        border-bottom: 3px solid var(--pn-gold) !important;
+        vertical-align: middle !important;
+        text-transform: uppercase;
+        font-size: 0.85rem;
+        letter-spacing: 0.5px;
+    }
+    .table-hover tbody tr:hover {
+        background-color: rgba(0, 77, 0, 0.03) !important;
+    }
+    
+    /* BADGES - UPDATE: Lebih bulat (pill shape) */
+    .badge-status { 
+        border-radius: 50px; /* Diubah jadi 50px agar bulat */
+        padding: 6px 12px; 
+        font-weight: 600; 
+        font-size: 12px; 
+        letter-spacing: 0.5px; 
+    }
+
+    /* PAGINATION */
     .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
     .page-link { color: var(--pn-green); }
 
-    /* STYLE SEARCH BAR COSTUM */
-    .search-wrapper {
-        position: relative;
-        width: 100%;
-        max-width: 300px;
-    }
-    
+    /* SEARCH BAR CUSTOM */
+    .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
         width: 100%;
         padding-right: 40px !important;
@@ -74,37 +124,29 @@ $nomor = $halaman_awal + 1;
         border: 1px solid #ddd;
         background-color: #f8f9fc;
         transition: all 0.3s ease;
-        height: 38px;
+        height: 40px;
+        font-size: 14px;
     }
-
     .search-input-inside:focus {
         background-color: #fff;
-        border-color: #006837;
-        box-shadow: 0 0 0 0.2rem rgba(0, 104, 55, 0.25);
+        border-color: var(--pn-green);
+        box-shadow: 0 0 0 3px rgba(0, 77, 0, 0.1);
         outline: none;
     }
-
-    .search-icon-inside {
-        position: absolute;
-        right: 15px;
-        top: 50%;
-        transform: translateY(-50%);
-        color: #aaa;
-        pointer-events: none;
-    }
+    .search-icon-inside { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
 </style>
 
-<div class="container-fluid mb-5">
+<div class="container-fluid mb-5 mt-4">
     
-    <div class="d-sm-flex align-items-center justify-content-between mb-4 mt-4">
-        <h1 class="h3 mb-0 text-gray-800 page-title-pn">Validasi Permohonan Cuti</h1>
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="page-title-pn mb-0">Validasi Permohonan Cuti</h1>
     </div>
 
     <div class="card card-pn mb-4">
         <div class="card-header-pn d-flex flex-column flex-md-row justify-content-between align-items-center">
             <div class="mb-2 mb-md-0">
                 <i class="fas fa-check-double mr-2"></i>
-                <h6 class="d-inline m-0 font-weight-bold text-white">Daftar Pengajuan Masuk</h6>
+                <span class="font-weight-bold" style="font-size: 1.1rem;">Daftar Pengajuan Masuk</span>
             </div>
             
             <div class="search-wrapper">
@@ -114,31 +156,28 @@ $nomor = $halaman_awal + 1;
                        autocomplete="off">
                 <i class="fas fa-search search-icon-inside"></i>
             </div>
-
         </div>
 
         <div class="card-body">
             
             <div id="area_tabel">
                 <?php if(mysqli_num_rows($query) == 0) { ?>
-                    <div class="alert alert-info text-center" style="border-radius: 15px; border-left: 5px solid #36b9cc;">
-                        <i class="fas fa-info-circle mr-2"></i>Data tidak ditemukan.
+                    <div class="alert alert-light text-center border shadow-sm" style="border-radius: 12px;">
+                        <h6 class="text-muted m-3"><i class="fas fa-info-circle mr-2"></i>Data pengajuan tidak ditemukan.</h6>
                     </div>
                 <?php } else { ?>
 
                 <div class="table-responsive">
                     <table class="table table-bordered table-hover" width="100%" cellspacing="0">
-                        <thead class="thead-pn">
+                        <thead class="table-pn-head">
                             <tr class="text-center">
-                                <th width="5%" style="vertical-align: middle;">No</th>
-                                <th style="vertical-align: middle;">Pegawai</th>
-                                <th style="vertical-align: middle;">Jenis Cuti</th>
-                                <th style="vertical-align: middle;">Detail Pengajuan</th>
-                                
-                                <th style="vertical-align: middle;">Nomor Surat</th>
-                                
-                                <th style="vertical-align: middle;">Status</th>
-                                <th width="15%" style="vertical-align: middle;">Aksi</th>
+                                <th width="5%">No</th>
+                                <th>Pegawai</th>
+                                <th>Jenis Cuti</th>
+                                <th>Detail Pengajuan</th>
+                                <th>Nomor Surat</th>
+                                <th>Status</th>
+                                <th width="15%">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -147,58 +186,63 @@ $nomor = $halaman_awal + 1;
                                 $raw_status = strtolower(trim($row['status'])); 
                                 $bg_row = "";
 
+                                // UPDATE LOGIKA BADGE: Semua menggunakan style transparan (latar terang, teks gelap)
                                 if ($raw_status == 'disetujui') {
-                                    $badge = '<span class="badge badge-success badge-status"><i class="fas fa-check-circle mr-1"></i>Disetujui</span>';
+                                    // Hijau Transparan
+                                    $badge = '<span class="badge badge-status" style="background-color: #d4edda; color: #155724;"><i class="fas fa-check mr-1"></i>DISETUJUI</span>';
                                 } elseif ($raw_status == 'ditolak') {
-                                    $badge = '<span class="badge badge-danger badge-status"><i class="fas fa-times-circle mr-1"></i>Ditolak</span>';
-                                    $bg_row = "style='background-color: #ffecec;'"; 
+                                    // Merah Transparan
+                                    $badge = '<span class="badge badge-status" style="background-color: #f8d7da; color: #721c24;"><i class="fas fa-times mr-1"></i>DITOLAK</span>';
+                                    $bg_row = "style='background-color: #fff5f5;'"; // Baris kemerahan
                                 } else {
-                                    $badge = '<span class="badge badge-warning badge-status"><i class="fas fa-clock mr-1"></i>Menunggu</span>';
-                                    $bg_row = "style='background-color: #fff3cd;'"; 
+                                    // Kuning Transparan
+                                    $badge = '<span class="badge badge-status" style="background-color: #fff3cd; color: #856404;"><i class="fas fa-clock mr-1"></i>MENUNGGU</span>';
+                                    $bg_row = "style='background-color: #fffdf0;'"; // Baris kekuningan
                                 }
                             ?>
                             <tr <?php echo $bg_row; ?>>
-                                <td class="text-center font-weight-bold" style="vertical-align: middle;"><?php echo $nomor++; ?></td>
-                                <td style="vertical-align: middle;">
-                                    <div class="font-weight-bold text-dark" style="font-size: 1.05rem;"><?php echo $row['nama_lengkap']; ?></div>
+                                <td class="text-center font-weight-bold align-middle"><?php echo $nomor++; ?></td>
+                                <td class="align-middle">
+                                    <div class="font-weight-bold text-dark" style="font-size: 15px;"><?php echo $row['nama_lengkap']; ?></div>
                                     <small class="text-muted"><i class="fas fa-id-badge mr-1"></i>NIP: <?php echo $row['nip']; ?></small>
                                 </td>
-                                <td style="vertical-align: middle;"><?php echo $row['nama_jenis']; ?></td>
-                                <td style="vertical-align: middle;">
-                                    <div class="font-weight-bold text-primary"><?php echo $row['lama_hari']; ?> Hari</div>
-                                    <small class="text-dark">
-                                        <i class="far fa-calendar-alt mr-1"></i>
-                                        <?php echo date('d M', strtotime($row['tgl_mulai'])); ?> s/d 
-                                        <?php echo date('d M Y', strtotime($row['tgl_selesai'])); ?>
+                                <td class="align-middle text-center"><?php echo $row['nama_jenis']; ?></td>
+                                <td class="align-middle">
+                                    <div class="font-weight-bold text-primary"><?php echo $row['lama_hari']; ?> Hari Kerja</div>
+                                    <small class="text-dark d-block mt-1">
+                                        <i class="far fa-calendar-alt mr-1 text-muted"></i>
+                                        <?php echo date('d/m/Y', strtotime($row['tgl_mulai'])); ?> - 
+                                        <?php echo date('d/m/Y', strtotime($row['tgl_selesai'])); ?>
                                     </small>
-                                    <br>
-                                    <small class="text-muted" style="font-size: 0.8rem;">
-                                        <i>Diajukan: <?php echo date('d M Y', strtotime($row['tgl_pengajuan'])); ?></i>
+                                    <small class="text-muted font-italic d-block mt-1" style="font-size: 11px;">
+                                        Diajukan: <?php echo date('d M Y', strtotime($row['tgl_pengajuan'])); ?>
                                     </small>
                                 </td>
                                 
-                                <td class="text-center" style="vertical-align: middle;">
-                                    <span class="font-weight-bold text-dark">
-                                        <?php echo !empty($row['nomor_surat']) ? $row['nomor_surat'] : '-'; ?>
-                                    </span>
+                                <td class="text-center align-middle">
+                                    <?php if(!empty($row['nomor_surat'])) { ?>
+                                        <span class="font-weight-bold text-dark small" style="display:inline-block; max-width:150px; line-height:1.2;">
+                                            <?php echo $row['nomor_surat']; ?>
+                                        </span>
+                                    <?php } else { echo '-'; } ?>
                                 </td>
 
-                                <td class="text-center" style="vertical-align: middle;"><?php echo $badge; ?></td>
+                                <td class="text-center align-middle"><?php echo $badge; ?></td>
                                 
-                                <td class="text-center" style="vertical-align: middle;">
-                                    <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-circle btn-sm shadow-sm" title="Cetak Surat">
+                                <td class="text-center align-middle">
+                                    <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;" title="Cetak Surat">
                                         <i class="fas fa-print"></i>
                                     </a>
 
                                     <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
-                                        <span class="mx-1">|</span>
-                                        <button class="btn btn-success btn-circle btn-sm shadow-sm" 
+                                        <span class="mx-1 text-muted">|</span>
+                                        <button class="btn btn-success btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;"
                                                 onclick="konfirmasiValidasi('setuju', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
                                                 title="Setujui">
                                             <i class="fas fa-check"></i>
                                         </button>
                                         
-                                        <button class="btn btn-danger btn-circle btn-sm shadow-sm" 
+                                        <button class="btn btn-danger btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;"
                                                 onclick="konfirmasiValidasi('tolak', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
                                                 title="Tolak">
                                             <i class="fas fa-times"></i>
@@ -229,7 +273,8 @@ $nomor = $halaman_awal + 1;
                     </nav>
                 </div>
                 <?php } ?>
-            </div> </div>
+            </div> 
+        </div>
     </div>
 </div>
 
@@ -238,7 +283,6 @@ $nomor = $halaman_awal + 1;
     $(document).ready(function() {
         $('#keyword').on('keyup', function() {
             var keyword = $(this).val();
-            
             // Load ulang #area_tabel dengan parameter pencarian baru
             $('#area_tabel').load('index.php?page=validasi_cuti&cari=' + encodeURIComponent(keyword) + ' #area_tabel', function() {
                 // Callback function jika diperlukan
