@@ -61,7 +61,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
 <style>
     :root{
         --pn-green:#004d00;
-        --pn-gold:#f6c23e; 
+        --pn-gold:#f6c23e;
         --bg:#f8f9fc;
         --text:#1f2937;
     }
@@ -90,6 +90,19 @@ $cek_data = mysqli_num_rows($cek_data_query);
     }
 
     .thead-pn{ background:var(--pn-green); color:#fff; }
+
+    /* =======================================================
+       UPDATE: GARIS GOLD DI BAWAH HEADER KOLOM TABEL (THEAD)
+       (Cuma ini yang ditambah sesuai permintaan)
+       ======================================================= */
+    #dataTableLibur thead th{
+        border-bottom: 4px solid var(--pn-gold) !important;  /* garis gold */
+    }
+    /* biar garisnya rapih dan nggak ketutup styling lain */
+    #dataTableLibur{
+        border-collapse: separate !important;
+        border-spacing: 0;
+    }
 
     .btn-pn{
         background:var(--pn-green);
@@ -198,7 +211,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
                             <label class="font-weight-bold text-dark small">JENIS LIBUR</label>
                             <select name="jenis_libur" class="form-control" required>
                                 <option value="nasional">🔴 Libur Nasional</option>
-                                <option value="cuti_bersama">🟡 Cuti Bersama</option> 
+                                <option value="cuti_bersama">🟡 Cuti Bersama</option>
                             </select>
                         </div>
 
@@ -236,7 +249,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
                         </div>
 
                         <?php if($cek_data > 0): ?>
-                            <button type="button" 
+                            <button type="button"
                                     onclick="konfirmasiHapusSemua('index.php?page=manage_libur&hapus_semua=true')"
                                     class="btn btn-danger btn-reset shadow-sm">
                                 <i class="fas fa-trash-alt mr-1"></i>Reset
@@ -261,7 +274,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
                                 <?php
                                 $no = 1;
                                 $qry = mysqli_query($koneksi, "SELECT * FROM libur_nasional ORDER BY tanggal ASC");
-                                
+
                                 $hari_indo = ['Sunday'=>'Minggu','Monday'=>'Senin','Tuesday'=>'Selasa','Wednesday'=>'Rabu','Thursday'=>'Kamis','Friday'=>'Jumat','Saturday'=>'Sabtu'];
                                 $bulan_indo = ['01'=>'Januari','02'=>'Februari','03'=>'Maret','04'=>'April','05'=>'Mei','06'=>'Juni','07'=>'Juli','08'=>'Agustus','09'=>'September','10'=>'Oktober','11'=>'November','12'=>'Desember'];
 
@@ -286,8 +299,8 @@ $cek_data = mysqli_num_rows($cek_data_query);
                                     </td>
                                     <td class="text-dark"><?= $d['keterangan'] ?></td>
                                     <td class="text-center">
-                                        <a href="javascript:void(0);" 
-                                           onclick="konfirmasiHapus('index.php?page=manage_libur&hapus=<?= $d['id_libur'] ?>')" 
+                                        <a href="javascript:void(0);"
+                                           onclick="konfirmasiHapus('index.php?page=manage_libur&hapus=<?= $d['id_libur'] ?>')"
                                            class="btn btn-light btn-sm text-danger shadow-sm border" style="border-radius:10px;">
                                             <i class="fas fa-trash"></i>
                                         </a>
