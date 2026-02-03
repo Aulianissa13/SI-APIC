@@ -1,9 +1,7 @@
 <?php
-// 1. AMBIL DATA USER & SISA CUTI
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
 
-// Variabel Default
 $total_tahunan = 0;
 $sisa_sakit    = 0;
 $nama_lengkap  = $_SESSION['nama_lengkap']; 
@@ -12,30 +10,25 @@ if(mysqli_num_rows($query_user) > 0){
     $user = mysqli_fetch_assoc($query_user);
     $nama_lengkap = $user['nama_lengkap']; 
 
-    // MENGHITUNG TOTAL CUTI TAHUNAN (N + N-1 + N-2)
     $n  = isset($user['sisa_cuti_n'])  ? $user['sisa_cuti_n']  : 0;
     $n1 = isset($user['sisa_cuti_n1']) ? $user['sisa_cuti_n1'] : 0;
     $n2 = isset($user['sisa_cuti_n2']) ? $user['sisa_cuti_n2'] : 0;
     
     $total_tahunan = $n + $n1 + $n2;
 
-    // MENGAMBIL SISA CUTI SAKIT
     $sisa_sakit = isset($user['kuota_cuti_sakit']) ? $user['kuota_cuti_sakit'] : 0;
 }
 
-// 2. LOGIKA TAHUN
 $thn_skrg = date('Y');      
 $thn_min1 = $thn_skrg - 1;  
 $thn_min2 = $thn_skrg - 2;  
 
-// 3. HITUNG STATUS PENGAJUAN
 $query_menunggu = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti WHERE id_user='$id_user' AND status='diajukan'");
 $jml_menunggu = mysqli_num_rows($query_menunggu);
 
 $query_setuju = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti WHERE id_user='$id_user' AND status='Disetujui' AND YEAR(tgl_mulai)='$thn_skrg'");
 $jml_setuju = mysqli_num_rows($query_setuju);
 
-// Ambil Data Hari Libur
 $query_libur = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
 $libur_data = [];
 while($row = mysqli_fetch_assoc($query_libur)) {
@@ -46,7 +39,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         'allDay' => true
     ];
 }
-// Filter hanya untuk tahun 2026
 $libur_data = array_filter($libur_data, function($item) {
     $item_year = date('Y', strtotime($item['start']));
     return $item_year == 2026;
@@ -73,43 +65,47 @@ $libur_data = array_filter($libur_data, function($item) {
 
             <div class="row">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card py-2 border-left-success shadow-sm h-100" style="border-left: 5px solid #006837 !important;">
+                    <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #006837 !important;">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Sisa Tahunan</div>
+                            <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Sisa Cuti<br>Tahunan</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $total_tahunan; ?></div>
-                            <div class="mt-2 text-xs font-weight-bold text-muted" style="background: #f8f9fc; padding: 4px; border-radius: 5px;">
+                            <div class="mt-2 text-xs font-weight-bold text-muted" style="background: #f8f9fc; padding: 2px 4px; border-radius: 5px; display: inline-block;">
                                 <?php echo substr($thn_skrg, 2); ?>:<b><?php echo $n; ?></b> | <?php echo substr($thn_min1, 2); ?>:<b><?php echo $n1; ?></b> | <?php echo substr($thn_min2, 2); ?>:<b><?php echo $n2; ?></b>
                             </div>
+                            <i class="fas fa-clipboard-check stat-icon-bg text-success"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card py-2 border-left-info shadow-sm h-100" style="border-left: 5px solid #36b9cc !important;">
+                    <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #36b9cc !important;">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sisa Cuti Sakit</div>
+                            <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sisa Cuti<br>Sakit</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $sisa_sakit; ?></div>
-                            <div class="mt-2 text-xs text-muted">Sisa saat ini</div>
+                            <div class="mt-1 text-xs text-muted">Sisa saat ini</div>
+                            <i class="fas fa-first-aid stat-icon-bg text-info"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card py-2 border-left-warning shadow-sm h-100" style="border-left: 5px solid #F9A825 !important;">
+                     <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #F9A825 !important;">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Sedang Diproses</div>
+                            <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Sedang<br>Diproses</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $jml_menunggu; ?></div>
-                            <div class="mt-2 text-xs text-muted">Menunggu approval</div>
+                            <div class="mt-1 text-xs text-muted">Menunggu approval</div>
+                            <i class="fas fa-hourglass-half stat-icon-bg text-warning"></i>
                         </div>
                     </div>
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card py-2 border-left-primary shadow-sm h-100" style="border-left: 5px solid #4e73df !important;">
+                    <div class="card stat-card py-1 border-left-primary shadow-sm h-100" style="border-left: 5px solid #4e73df !important;">
                         <div class="card-body">
-                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1">Disetujui</div>
+                            <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"> Cuti<br>Disetujui</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $jml_setuju; ?></div>
-                            <div class="mt-2 text-xs text-muted">Kali pengambilan</div>
+                            <div class="mt-1 text-xs text-muted">Kali pengambilan</div>
+                            <i class="fas fa-check-circle stat-icon-bg text-primary"></i>
                         </div>
                     </div>
                 </div>
@@ -156,8 +152,7 @@ $libur_data = array_filter($libur_data, function($item) {
     body { font-family: 'Poppins', sans-serif; background-color: var(--soft-bg); }
     .card-modern { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); display: flex; flex-direction: column; }
     
-    /* STYLE KALENDER ASLI KAMU */
-    #calendar { border: none !important; font-size: 0.9rem; max-height: 250px; }
+    #calendar { border: none !important; font-size: 0.9rem; max-height: 260px; }
     .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid { border: none !important; }
     .fc-daygrid-day-frame { display: flex; align-items: center; justify-content: center; min-height: 15px !important; position: relative; }
     
@@ -180,15 +175,77 @@ $libur_data = array_filter($libur_data, function($item) {
     .libur-item { font-size: 0.7rem; padding: 5px 8px; margin-bottom: 4px; border-radius: 6px; display: flex; align-items: center; }
     .dot { width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
 
-    /* Ukuran Kalender disesuaikan agar sejajar dengan Kotak Info */
-    .calendar-card-fix { height: calc(232px + 140px + 15px) !important; }
+    .calendar-card-fix { height: 360px !important; }
 </style>
+
+<style>
+  .stat-card.py-1 {
+    min-height: px !important; 
+    transition: all 0.25s ease;
+    cursor: default;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+
+  .stat-card.py-1 .card-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;     
+    justify-content: center; 
+    text-align: center;
+    position: relative;
+    padding: 8px 5px !important; 
+  }
+
+  .stat-card.py-1 .h2.mb-0 {
+    font-size: 2.5rem !important; 
+    font-weight: 800 !important;
+    line-height: 1 !important;
+    margin: 5px 0 !important;
+  }
+
+  .stat-card.py-1 .text-xs {
+    font-size: 0.9rem !important; 
+    font-weight: 700 !important;
+    margin-bottom: 0px;
+    line-height: 1.1;
+  }
+
+  .stat-card.py-1 .text-muted {
+    font-size: 0.85rem !important;
+    margin-top: 6px;
+  }
+
+  .stat-card.py-1 .text-xs.font-weight-bold.text-muted {
+    font-size: 0.8rem !important;
+    padding: 1px 4px;
+    margin-top: 8px;
+  }
+
+  .stat-card.py-1 .stat-icon-bg {
+    position: absolute;
+    right: 10px;
+    bottom: 5px;
+    font-size: 1.8rem;
+    opacity: 0.15;
+    pointer-events: none;
+  }
+
+  .stat-card.py-1:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 10px rgba(0,0,0,0.1) !important;
+  }
+
+  @media (max-width: 768px) {
+    .stat-card.py-1 { margin-bottom: 10px; }
+  }
+</style>
+
 
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
 
 <script>
-// SCRIPT KALENDER ASLI KAMU
 const dataLibur = <?php echo json_encode($libur_data); ?>;
 document.addEventListener('DOMContentLoaded', function() {
     var calendarEl = document.getElementById('calendar');
