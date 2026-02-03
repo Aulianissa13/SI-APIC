@@ -1,25 +1,18 @@
 <?php
 /** @var mysqli $koneksi */
 
-// =========================================================
-// 1. CONFIG PAGINATION & SEARCH (LOGIKA TIDAK DIUBAH)
-// =========================================================
-
 $batas   = 10; 
 $halaman = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
-
-// Setup Pencarian
 $keyword = "";
 $where_clause = ""; 
 
 if (isset($_GET['cari'])) {
     $keyword = mysqli_real_escape_string($koneksi, $_GET['cari']);
-    // Cari berdasarkan Nama, Tanggal, atau Status
     $where_clause = " AND (users.nama_lengkap LIKE '%$keyword%' OR pengajuan_cuti.tgl_pengajuan LIKE '%$keyword%' OR pengajuan_cuti.status LIKE '%$keyword%')";
 }
 
-// Hitung Total Data (Untuk Pagination)
+
 $query_count_str = "SELECT count(id_pengajuan) as jumlah 
                     FROM pengajuan_cuti 
                     JOIN users ON pengajuan_cuti.id_user = users.id_user 
@@ -29,7 +22,7 @@ $data_count  = mysqli_fetch_assoc($query_count);
 $jumlah_data = $data_count['jumlah'];
 $total_halaman = ceil($jumlah_data / $batas);
 
-// Query Data Utama
+
 $query_utama = "SELECT pengajuan_cuti.*, 
                         users.nama_lengkap, users.nip, 
                         users.sisa_cuti_n, users.sisa_cuti_n1, users.kuota_cuti_sakit, 
@@ -50,7 +43,7 @@ $nomor = $halaman_awal + 1;
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-    /* STYLE UTAMA KONSISTEN (PN THEME) */
+  
     :root { 
         --pn-green: #004d00; 
         --pn-gold: #F9A825; 
@@ -59,7 +52,7 @@ $nomor = $halaman_awal + 1;
     
     body { font-family: 'Poppins', sans-serif; }
 
-    /* CARD STYLE */
+
     .card-pn { 
         border: none; 
         border-radius: 12px; 
@@ -74,7 +67,6 @@ $nomor = $halaman_awal + 1;
         padding: 18px 25px; 
     }
 
-    /* PAGE TITLE */
     .page-title-pn { 
         font-weight: 700; 
         border-left: 5px solid var(--pn-gold); 
@@ -83,7 +75,7 @@ $nomor = $halaman_awal + 1;
         font-size: 1.5rem;
     }
 
-    /* TABLE STYLE */
+
     .table-pn-head {
         background-color: var(--pn-green);
         color: #fff;
@@ -101,20 +93,16 @@ $nomor = $halaman_awal + 1;
         background-color: rgba(0, 77, 0, 0.03) !important;
     }
     
-    /* BADGES - UPDATE: Lebih bulat (pill shape) */
     .badge-status { 
-        border-radius: 50px; /* Diubah jadi 50px agar bulat */
+        border-radius: 50px;
         padding: 6px 12px; 
         font-weight: 600; 
         font-size: 12px; 
         letter-spacing: 0.5px; 
     }
-
-    /* PAGINATION */
     .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
     .page-link { color: var(--pn-green); }
 
-    /* SEARCH BAR CUSTOM */
     .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
         width: 100%;
@@ -185,19 +173,14 @@ $nomor = $halaman_awal + 1;
                             while($row = mysqli_fetch_array($query)){ 
                                 $raw_status = strtolower(trim($row['status'])); 
                                 $bg_row = "";
-
-                                // UPDATE LOGIKA BADGE: Semua menggunakan style transparan (latar terang, teks gelap)
                                 if ($raw_status == 'disetujui') {
-                                    // Hijau Transparan
                                     $badge = '<span class="badge badge-status" style="background-color: #d4edda; color: #155724;"><i class="fas fa-check mr-1"></i>DISETUJUI</span>';
                                 } elseif ($raw_status == 'ditolak') {
-                                    // Merah Transparan
                                     $badge = '<span class="badge badge-status" style="background-color: #f8d7da; color: #721c24;"><i class="fas fa-times mr-1"></i>DITOLAK</span>';
-                                    $bg_row = "style='background-color: #fff5f5;'"; // Baris kemerahan
+                                    $bg_row = "style='background-color: #fff5f5;'"; 
                                 } else {
-                                    // Kuning Transparan
                                     $badge = '<span class="badge badge-status" style="background-color: #fff3cd; color: #856404;"><i class="fas fa-clock mr-1"></i>MENUNGGU</span>';
-                                    $bg_row = "style='background-color: #fffdf0;'"; // Baris kekuningan
+                                    $bg_row = "style='background-color: #fffdf0;'"; 
                                 }
                             ?>
                             <tr <?php echo $bg_row; ?>>
@@ -279,18 +262,14 @@ $nomor = $halaman_awal + 1;
 </div>
 
 <script>
-    // 1. LIVE SEARCH (JQUERY .load)
     $(document).ready(function() {
         $('#keyword').on('keyup', function() {
             var keyword = $(this).val();
-            // Load ulang #area_tabel dengan parameter pencarian baru
             $('#area_tabel').load('index.php?page=validasi_cuti&cari=' + encodeURIComponent(keyword) + ' #area_tabel', function() {
-                // Callback function jika diperlukan
             });
         });
     });
 
-    // 2. SWEETALERT NOTIFIKASI SESSION
     <?php if (isset($_SESSION['swal'])) { ?>
         Swal.fire({
             icon: '<?php echo $_SESSION['swal']['icon']; ?>',
@@ -302,7 +281,6 @@ $nomor = $halaman_awal + 1;
         <?php unset($_SESSION['swal']); ?>
     <?php } ?>
 
-    // 3. FUNGSI KONFIRMASI TOMBOL
     function konfirmasiValidasi(aksi, id, nama) {
         let judul, teks, warnaTombol, textTombol;
 
@@ -329,7 +307,6 @@ $nomor = $halaman_awal + 1;
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Redirect ke file proses
                 window.location.href = 'pages/admin/proses_validasi.php?aksi=' + aksi + '&id=' + id;
             }
         });

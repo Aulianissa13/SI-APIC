@@ -1,15 +1,12 @@
 <?php
 /** @var mysqli $koneksi */
 
-// 1. KONEKSI
 include '../../config/database.php'; 
 
-// 2. INPUT
 $bulan = isset($_GET['bulan']) ? $_GET['bulan'] : date('m');
 $tahun = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
 $id_jenis = isset($_GET['id_jenis']) ? $_GET['id_jenis'] : '1'; 
 
-// 3. VARIABEL BANTU
 $nama_bulan_arr = ['01'=>'JANUARI','02'=>'FEBRUARI','03'=>'MARET','04'=>'APRIL','05'=>'MEI','06'=>'JUNI','07'=>'JULI','08'=>'AGUSTUS','09'=>'SEPTEMBER','10'=>'OKTOBER','11'=>'NOVEMBER','12'=>'DESEMBER'];
 $nama_bulan = $nama_bulan_arr[$bulan];
 $jumlah_hari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
@@ -20,13 +17,11 @@ $jenis_label = ($id_jenis == '1') ? 'TAHUNAN' : 'SAKIT';
 $timestamp = date('His'); 
 $filename = "Rekap_Cuti_" . $jenis_label . "_$bulan-$tahun" . "_$timestamp.xls";
 
-// 4. HEADER DOWNLOAD EXCEL
 header("Content-type: application/vnd-ms-excel");
 header("Content-Disposition: attachment; filename=$filename");
 header("Pragma: no-cache");
 header("Expires: 0");
 
-// STYLE CSS (PENYESUAIAN PRESISI)
 $style_header = "border: 1px solid #000; font-weight: bold; text-align: center; vertical-align: middle; background-color: #f2f2f2;";
 $style_judul  = "font-weight: bold; font-size: 14pt; text-align: center; vertical-align: middle;";
 $style_blok_hitam = "border: 1px solid #000; background-color: #000; color: #000;";
@@ -50,7 +45,7 @@ $cols = ($id_jenis == '1') ? 35 : 34;
     <style>
         table { border-collapse: collapse; }
         td { height: 25px; font-family: Arial; font-size: 9pt; }
-        .tgl { width: 23px; min-width: 23px; } /* Lebar kolom tanggal yang lebih compact */
+        .tgl { width: 23px; min-width: 23px; } 
     </style>
 </head>
 <body>

@@ -3,8 +3,6 @@
 
 $bln = date('m');
 $thn = date('Y');
-
-// Query preview: 5 data TERBARU, status Disetujui, bulan ini
 $query_preview = "SELECT p.*, u.nama_lengkap, u.nip, j.nama_jenis
                   FROM pengajuan_cuti p
                   JOIN users u ON p.id_user = u.id_user
@@ -16,7 +14,6 @@ $query_preview = "SELECT p.*, u.nama_lengkap, u.nip, j.nama_jenis
                   LIMIT 5";
 $result_preview = mysqli_query($koneksi, $query_preview);
 
-// Map nama bulan
 $nama_bulan = [
   '01' => 'Januari', '02' => 'Februari', '03' => 'Maret',
   '04' => 'April',   '05' => 'Mei',      '06' => 'Juni',
@@ -28,11 +25,9 @@ $nama_bulan = [
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 
 <style>
-    /* --- STYLE KONSISTEN PN GREEN --- */
     :root { --pn-green: #004d00; --pn-gold: #F9A825; --text-dark: #2c3e50; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
     
-    /* JUDUL HALAMAN (HIJAU PN) */
     .page-header-title { 
         border-left: 5px solid var(--pn-gold); 
         padding-left: 15px; 
@@ -41,7 +36,6 @@ $nama_bulan = [
         font-size: 1.6rem; 
     }
     
-    /* Card Custom */
     .card-pn-custom { 
         border: none; 
         border-radius: 12px; 
@@ -59,7 +53,6 @@ $nama_bulan = [
         align-items: center; 
     }
     
-    /* Tombol Solid (Download) */
     .btn-pn-solid {
         background-color: var(--pn-green);
         color: white;
@@ -82,7 +75,6 @@ $nama_bulan = [
         box-shadow: 0 4px 10px rgba(0, 77, 0, 0.3);
     }
 
-    /* Form Inputs */
     .form-control-pn {
         border-radius: 8px;
         height: 44px;
@@ -95,7 +87,6 @@ $nama_bulan = [
     }
     label { font-weight: 600; color: var(--text-dark); margin-bottom: 8px; }
 
-    /* --- TABLE CUSTOM STYLE --- */
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
     
     .thead-pn {
@@ -116,18 +107,15 @@ $nama_bulan = [
     .table-custom tbody tr { background-color: white; transition: 0.2s; }
     .table-custom tbody tr:hover { background-color: #f1f8e9; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     
-    /* GLOBAL TD STYLE (Supaya Font Konsisten) */
     .table-custom td { 
         padding: 12px 15px; 
         vertical-align: middle !important;
         border-bottom: 1px solid #eee; 
-        font-size: 0.9rem; /* Ukuran standar agar konsisten */
+        font-size: 0.9rem; 
         color: #444; 
     }
 
     .text-pn { color: var(--pn-green) !important; }
-    
-    /* --- BADGE CUTI (Hijau, Pill Shape, 1 Baris) --- */
     .badge-jenis-cuti {
         background-color: #e9f5e9;
         color: var(--pn-green);
@@ -239,8 +227,6 @@ $nama_bulan = [
                         $no = 1;
                         if ($result_preview && mysqli_num_rows($result_preview) > 0) {
                             while ($row = mysqli_fetch_assoc($result_preview)) {
-
-                                // Logika hitung hari
                                 $total_hari = isset($row['lama_hari']) ? (int)$row['lama_hari'] : 0;
                                 if ($total_hari <= 0) {
                                     $tgl1 = new DateTime($row['tgl_mulai']);

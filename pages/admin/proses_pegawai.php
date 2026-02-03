@@ -6,13 +6,11 @@ include '../../config/database.php';
 
 $act = $_POST['act'] ?? $_GET['act'];
 
-// 1. TAMBAH PEGAWAI
 if ($act == 'tambah') {
     $nama     = $_POST['nama_lengkap'];
     $role     = $_POST['role'];
     $telp     = $_POST['no_telepon'];
-    
-    // GANTI USERNAME -> NIP
+
     $nip      = $_POST['nip'];
     $pass     = password_hash($_POST['password'], PASSWORD_DEFAULT); 
     
@@ -20,7 +18,6 @@ if ($act == 'tambah') {
     $cuti_n1  = $_POST['sisa_cuti_n1'];
     $cuti_skt = $_POST['kuota_cuti_sakit'];
 
-    // Cek NIP kembar
     $cek = mysqli_query($koneksi, "SELECT nip FROM users WHERE nip='$nip'");
     if(mysqli_num_rows($cek) > 0){
         $_SESSION['alert'] = ['type' => 'danger', 'text' => 'Gagal! NIP sudah terdaftar.'];
@@ -28,7 +25,6 @@ if ($act == 'tambah') {
         exit;
     }
 
-    // Query INSERT pakai NIP
     $query = "INSERT INTO users (nama_lengkap, role, no_telepon, nip, password, sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit) 
               VALUES ('$nama', '$role', '$telp', '$nip', '$pass', '$cuti_n', '$cuti_n1', '$cuti_skt')";
 
@@ -39,21 +35,15 @@ if ($act == 'tambah') {
     }
     header("Location: ../../index.php?page=data_pegawai");
 
-// 2. EDIT PEGAWAI
 } elseif ($act == 'edit') {
     $id       = $_POST['id_user'];
     $nama     = $_POST['nama_lengkap'];
     $role     = $_POST['role'];
     $telp     = $_POST['no_telepon'];
-    
-    // GANTI USERNAME -> NIP
     $nip      = $_POST['nip'];
-    
     $cuti_n   = $_POST['sisa_cuti_n'];
     $cuti_n1  = $_POST['sisa_cuti_n1'];
     $cuti_skt = $_POST['kuota_cuti_sakit'];
-
-    // Query Update pakai NIP
     $query = "UPDATE users SET 
               nama_lengkap='$nama', role='$role', no_telepon='$telp', nip='$nip',
               sisa_cuti_n='$cuti_n', sisa_cuti_n1='$cuti_n1', kuota_cuti_sakit='$cuti_skt'";
@@ -72,7 +62,6 @@ if ($act == 'tambah') {
     }
     header("Location: ../../index.php?page=data_pegawai");
 
-// 3. HAPUS PEGAWAI
 } elseif ($act == 'hapus') {
     $id = $_GET['id'];
     

@@ -1,7 +1,6 @@
 <?php
 /** @var mysqli $koneksi */
 
-// Cek apakah mode EDIT atau TAMBAH
 if (isset($_GET['id'])) {
     $id_user = $_GET['id'];
     $query = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
@@ -11,7 +10,6 @@ if (isset($_GET['id'])) {
     $pass_help = "Kosongkan jika tidak ingin mengubah password.";
     $btn_text = "Update Data";
 } else {
-    // Mode TAMBAH: Set Default Value (Ganti 'username' jadi 'nip')
     $data = [
         'id_user' => '', 'nama_lengkap' => '', 'nip' => '', 
         'role' => 'pegawai', 'no_telepon' => '',

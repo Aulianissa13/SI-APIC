@@ -1,8 +1,6 @@
 <?php
 /** @var mysqli $koneksi */
 
-// --- 1. LOGIKA PHP PENGAMBILAN DATA (REAL TIME) ---
-
 $get_pegawai = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users WHERE role='user'");
 $d_pegawai = mysqli_fetch_assoc($get_pegawai);
 
@@ -18,7 +16,6 @@ $d_tolak = mysqli_fetch_assoc($get_tolak);
 $query_latest = "SELECT c.*, u.nama_lengkap, u.jabatan, c.created_at FROM pengajuan_cuti c JOIN users u ON c.id_user = u.id_user ORDER BY c.created_at DESC LIMIT 5";
 $sql_latest = mysqli_query($koneksi, $query_latest);
 
-// Ambil Data Hari Libur (FILTER 2026 DIHAPUS AGAR DINAMIS)
 $query_libur = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
 $libur_data = [];
 while($row = mysqli_fetch_assoc($query_libur)) {
@@ -73,7 +70,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
     .fc-day-today { background-color: transparent !important; }
     .fc-day-today .fc-daygrid-day-number { background-color: var(--pn-green) !important; color: white !important; }
 
-    /* CSS Selektor penanda */
     .holiday-nasional .fc-daygrid-day-number { background-color: #d9534f !important; color: white !important; }
     .holiday-cuti-bersama .fc-daygrid-day-number { background-color: var(--pn-gold) !important; color: white !important; }
 
@@ -152,7 +148,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
 <script>
 const dataLibur = <?php echo json_encode($libur_data); ?>;
-// FILTER 2026 DIHAPUS AGAR JS BISA BACA SEMUA DATA TAHUN
 const currentYear = <?php echo date('Y'); ?>;
 
 new Chart(document.getElementById("myAreaChart"), {
@@ -175,7 +170,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const currentMonth = info.view.currentStart.getMonth();
             const currentYearInView = info.view.currentStart.getFullYear();
 
-            // FILTER DINAMIS MENGIKUTI TAHUN DAN BULAN YANG SEDANG DILIHAT
             let filtered = dataLibur.filter(item => {
                 const itemDate = new Date(item.start);
                 return itemDate.getFullYear() === currentYearInView && itemDate.getMonth() === currentMonth;
@@ -196,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
 
-            // Penanda lingkaran warna di angka tanggal (Dinamis untuk semua tahun)
             document.querySelectorAll('.fc-daygrid-day').forEach(dayEl => {
                 const dateStr = dayEl.getAttribute('data-date');
                 if (dateStr) {

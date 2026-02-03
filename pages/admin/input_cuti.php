@@ -1,15 +1,10 @@
 <?php
 /** @var mysqli $koneksi */
 
-// --- FILE: pages/admin/cuti/input_cuti.php ---
-// LOGIKA PHP ORIGINAL (TIDAK ADA YANG DIUBAH)
-
-// 1. DATA PENDUKUNG (Libur & Users)
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 while ($row = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $row['tanggal']; }
 
-// DATA USER & ATASAN
 $list_pegawai = [];
 $list_atasan  = [];
 $q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
@@ -18,7 +13,6 @@ while ($u = mysqli_fetch_assoc($q_u)) {
     if ($u['is_atasan'] == '1') { $list_atasan[] = $u; }
 }
 
-// --- LOGIKA GENERATE NO SURAT ---
 $thn_now = date('Y');
 $bln_now = date('n');
 $romawi  = [1=>"I", 2=>"II", 3=>"III", 4=>"IV", 5=>"V", 6=>"VI", 7=>"VII", 8=>"VIII", 9=>"IX", 10=>"X", 11=>"XI", 12=>"XII"];
@@ -31,7 +25,6 @@ if (mysqli_num_rows($q_last) > 0) {
 }
 $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bln_now]."/".$thn_now;
 
-// Fungsi Hitung Hari Kerja
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
@@ -48,7 +41,6 @@ function hitungHariKerja($start, $end, $libur_arr) {
 
 $swal_script = "";
 
-// 2. PROSES PENYIMPANAN
 if (isset($_POST['simpan_cuti'])) {
     $id_user   = $_POST['id_user_hidden']; 
     $id_atasan = $_POST['id_atasan_hidden']; 
@@ -126,17 +118,14 @@ if (isset($_POST['simpan_cuti'])) {
         --input-bg: #fff;
     }
 
-    /* FONT CONSISTENCY RULE */
     body, input, select, textarea, button, .form-control { 
         font-family: 'Poppins', sans-serif !important; 
     }
 
-    /* CARD CONTAINER */
     .card-pn-modern { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; }
     .card-header-green { background: linear-gradient(135deg, #004d00 0%, #003300 100%); color: white; padding: 18px 25px; border-bottom: 4px solid var(--pn-gold); border-radius: 12px 12px 0 0; }
     .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.5rem; }
 
-    /* FORM LABELS - UKURAN KONSISTEN */
     .form-label-std { 
         font-size: 14px; 
         font-weight: 500; 
@@ -145,7 +134,6 @@ if (isset($_POST['simpan_cuti'])) {
         display: block; 
     }
 
-    /* INPUT WRAPPERS */
     .input-wrapper { 
         display: flex; 
         align-items: center; 
@@ -164,20 +152,18 @@ if (isset($_POST['simpan_cuti'])) {
     .input-icon { color: #aaa; margin-right: 10px; font-size: 16px; }
     .input-wrapper:focus-within .input-icon { color: var(--pn-green); }
 
-    /* INPUT FIELD CLEAN */
     .form-control-clean { 
         border: none; 
         height: 100%; 
         width: 100%; 
         outline: none; 
-        font-size: 15px; /* Ukuran font input seragam */
+        font-size: 15px; 
         color: #333; 
         background: transparent; 
         padding-right: 12px;
     }
     .form-control-clean::placeholder { color: #bbb; font-weight: 400; }
 
-    /* DURASI BOX (KEMBALI KE DESAIN AWAL) */
     .durasi-box-wrapper {
         background-color: #fffde7; 
         border: 1px solid #ffe082;
@@ -192,7 +178,6 @@ if (isset($_POST['simpan_cuti'])) {
         cursor: default;
     }
     
-    /* SECTION TITLE */
     .form-section {
         font-size: 13px;
         text-transform: uppercase;
@@ -205,13 +190,11 @@ if (isset($_POST['simpan_cuti'])) {
         margin-bottom: 20px;
     }
 
-    /* BUTTONS */
     .btn-pn-solid { background-color: var(--pn-green); color: white; border-radius: 8px; padding: 12px 30px; border: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
     .btn-pn-solid:hover { background-color: #003800; transform: translateY(-1px); box-shadow: 0 5px 10px rgba(0,0,0,0.15); color: #fff; }
     .btn-link-cancel { color: #666; font-weight: 500; text-decoration: none; padding: 10px 20px; font-size: 15px; }
     .btn-link-cancel:hover { color: #333; text-decoration: underline; }
 
-    /* SIDEBAR */
     .info-sidebar { background: #fff; border-radius: 12px; padding: 25px; border-left: 5px solid var(--pn-gold); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
     .info-list li { font-size: 14px; margin-bottom: 12px; position: relative; padding-left: 25px; line-height: 1.5; color: #555; }
     .info-list li::before { content: '\f05a'; font-family: "Font Awesome 5 Free"; font-weight: 900; position: absolute; left: 0; top: 2px; color: var(--pn-gold); }
@@ -359,7 +342,6 @@ if (isset($_POST['simpan_cuti'])) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // 1. AUTOCOMPLETE
     function setupAutocomplete(inputId, listId, hiddenId) {
         const inputEl = document.getElementById(inputId);
         const hiddenEl = document.getElementById(hiddenId);
@@ -378,7 +360,6 @@ if (isset($_POST['simpan_cuti'])) {
     setupAutocomplete('input_pegawai', 'list_pegawai', 'id_user_hidden');
     setupAutocomplete('input_atasan', 'list_atasan', 'id_atasan_hidden');
 
-    // 2. HITUNG HARI
     const holidays = <?php echo json_encode($libur_nasional); ?>;
     const tglMulai = document.getElementById('tgl_mulai');
     const tglSelesai = document.getElementById('tgl_selesai');

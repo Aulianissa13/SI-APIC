@@ -1,25 +1,18 @@
 <?php
 /** @var mysqli $koneksi */
 
-// Include config database
 include '../../config/database.php';
 
-// Ambil data dari URL (GET)
 $tgl_awal  = $_GET['tgl_awal'];
 $tgl_akhir = $_GET['tgl_akhir'];
 $status    = $_GET['status'];
 
-// QUERY YANG SUDAH DIPERBAIKI (JOIN 3 TABEL)
-// 1. p = pengajuan_cuti
-// 2. u = users (untuk ambil nama & nip)
-// 3. j = jenis_cuti (untuk ambil nama_jenis)
 $query_sql = "SELECT p.*, u.nama_lengkap, u.nip, j.nama_jenis 
               FROM pengajuan_cuti p
               JOIN users u ON p.id_user = u.id_user
               JOIN jenis_cuti j ON p.id_jenis = j.id_jenis 
               WHERE (p.tgl_pengajuan BETWEEN '$tgl_awal' AND '$tgl_akhir')";
 
-// Filter Status
 if ($status != "Semua") {
     $query_sql .= " AND p.status = '$status'";
 }
@@ -69,7 +62,6 @@ $result = mysqli_query($koneksi, $query_sql);
         <tbody>
             <?php
             $no = 1;
-            // Cek apakah query berhasil dan ada datanya
             if($result && mysqli_num_rows($result) > 0){
                 while ($row = mysqli_fetch_assoc($result)) {
                     $tgl_mulai = date('d/m/Y', strtotime($row['tgl_mulai']));
@@ -98,7 +90,6 @@ $result = mysqli_query($koneksi, $query_sql);
             <?php 
                 }
             } else {
-                // Jika data kosong atau query error
                 echo "<tr><td colspan='8' class='text-center'>Tidak ada data pada periode ini.</td></tr>";
             }
             ?>
@@ -106,7 +97,7 @@ $result = mysqli_query($koneksi, $query_sql);
     </table>
 
     <div class="ttd">
-        <p>Mengetahui,<br>Kepala Bagian / HRD</p>
+        <p>Mengetahui,<br>Kepala Bagian</p>
         <br><br><br>
         <p>______________________</p>
     </div>

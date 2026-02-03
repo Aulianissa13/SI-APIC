@@ -1,11 +1,6 @@
 <?php
 /** @var mysqli $koneksi */
 
-// =========================================================
-// A. PROSES PHP (LOGIKA TETAP SAMA)
-// =========================================================
-
-// 1. Tambah Libur
 if (isset($_POST['tambah_libur'])) {
     $tanggal     = $_POST['tanggal'];
     $keterangan  = htmlspecialchars($_POST['keterangan']);
@@ -31,7 +26,6 @@ if (isset($_POST['tambah_libur'])) {
     }
 }
 
-// 2. Hapus Satu
 if (isset($_GET['hapus'])) {
     $id = $_GET['hapus'];
     $hapus = mysqli_query($koneksi, "DELETE FROM libur_nasional WHERE id_libur='$id'");
@@ -45,7 +39,6 @@ if (isset($_GET['hapus'])) {
     }
 }
 
-// 3. Hapus Semua
 if (isset($_GET['hapus_semua'])) {
     $reset = mysqli_query($koneksi, "TRUNCATE TABLE libur_nasional");
     if ($reset) {
@@ -58,7 +51,6 @@ if (isset($_GET['hapus_semua'])) {
     }
 }
 
-// Hitung data awal untuk tombol reset
 $cek_data_query = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
 $cek_data = mysqli_num_rows($cek_data_query);
 ?>
@@ -69,7 +61,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
 <style>
     :root{
         --pn-green:#004d00;
-        --pn-gold:#f6c23e; /* Warna Gold Baru */
+        --pn-gold:#f6c23e; 
         --bg:#f8f9fc;
         --text:#1f2937;
     }
@@ -122,7 +114,6 @@ $cek_data = mysqli_num_rows($cek_data_query);
         height:44px;
     }
 
-    /* Badge Khusus Cuti Bersama (Gold) */
     .badge-cuti-pn {
         background-color: var(--pn-gold) !important;
         color: #fff !important;
@@ -165,7 +156,6 @@ $cek_data = mysqli_num_rows($cek_data_query);
     .table td, .table th{ padding:.75rem .75rem; vertical-align:middle; border-color: #f0f0f0; }
     .table-hover tbody tr:hover{ background:#f7fbf7; }
 
-    /* DataTables Overrides */
     .dataTables_filter, .dataTables_length { display:none !important; }
     .dataTables_info{ color:#6b7280; font-size:12px; padding-top:15px; }
     .dataTables_wrapper .dataTables_paginate{ padding-top:10px; }

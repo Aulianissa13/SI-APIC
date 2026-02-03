@@ -6,7 +6,6 @@ if (session_status() == PHP_SESSION_NONE) {
 }
 $swal_script = "";
 
-// --- LOGIKA SIMPAN PEJABAT ---
 if(isset($_POST['simpan_pejabat'])){
     $ketua_nama = mysqli_real_escape_string($koneksi, $_POST['ketua_nama']);
     $ketua_nip  = mysqli_real_escape_string($koneksi, $_POST['ketua_nip']);
@@ -32,7 +31,6 @@ $query_set   = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE 
 $set_instansi = mysqli_fetch_array($query_set);
 if(!$set_instansi) { $set_instansi = ['ketua_nama' => '', 'ketua_nip' => '', 'wakil_nama' => '', 'wakil_nip' => '']; }
 
-// --- LOGIKA TAMBAH USER ---
 if (isset($_POST['tambah'])) {
     $nip          = htmlspecialchars($_POST['nip']);
     $nama_lengkap = htmlspecialchars($_POST['nama_lengkap']);
@@ -60,7 +58,6 @@ if (isset($_POST['tambah'])) {
     }
 }
 
-// --- LOGIKA EDIT USER ---
 if (isset($_POST['edit'])) {
     $id_user      = $_POST['id_user'];
     $nip          = htmlspecialchars($_POST['nip']);
@@ -89,7 +86,6 @@ if (isset($_POST['edit'])) {
     }
 }
 
-// --- LOGIKA TOGGLE STATUS ---
 if (isset($_GET['toggle_status'])) {
     $id = $_GET['toggle_status'];
     $cek = mysqli_query($koneksi, "SELECT status_akun FROM users WHERE id_user='$id'");
@@ -99,7 +95,6 @@ if (isset($_GET['toggle_status'])) {
     echo "<script>window.location='index.php?page=data_pegawai';</script>";
 }
 
-// --- PENCARIAN & PAGINATION ---
 $batas = 10;
 $halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
@@ -129,8 +124,7 @@ $nomor = $halaman_awal + 1;
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
     
     .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.6rem; }
-    
-    /* Card Custom */
+
     .card-pn-custom { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; overflow: hidden; }
     .card-header-green { background-color: #1b5e20; color: white; padding: 15px 25px; border-bottom: 4px solid var(--pn-gold); display: flex; justify-content: space-between; align-items: center; }
     
@@ -138,14 +132,12 @@ $nomor = $halaman_awal + 1;
     .header-search-input { width: 100%; border-radius: 20px; border: none; padding: 6px 15px 6px 35px; font-size: 0.9rem; outline: none; }
     .header-search-icon { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999; font-size: 0.9rem; }
 
-    /* Buttons */
     .btn-pn-outline { background-color: transparent; color: var(--pn-green); border: 2px solid var(--pn-green); font-weight: 600; border-radius: 8px; padding: 8px 15px; transition: all 0.3s ease; }
     .btn-pn-outline:hover { background-color: var(--pn-green); color: white; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 77, 0, 0.2); }
 
     .btn-pn-solid { background-color: var(--pn-green); color: white; border: 2px solid var(--pn-green); font-weight: 600; border-radius: 8px; padding: 8px 15px; transition: all 0.3s ease; }
     .btn-pn-solid:hover { background-color: #003800; color: var(--pn-gold); border-color: #003800; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 77, 0, 0.3); }
 
-    /* TABLE CUSTOM STYLE */
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
     
     .thead-pn { background-color: var(--pn-green); color: white; }
@@ -162,8 +154,7 @@ $nomor = $halaman_awal + 1;
 
     .table-custom tbody tr { background-color: white; transition: 0.2s; }
     .table-custom tbody tr:hover { background-color: #f1f8e9; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
-    
-    /* PENGATURAN FONT & KOLOM TABEL */
+
     .table-custom td { 
         padding: 12px 15px; 
         vertical-align: middle !important;
@@ -172,7 +163,6 @@ $nomor = $halaman_awal + 1;
         color: #333; 
     }
 
-    /* Kelas khusus untuk kolom Nomor */
     .col-fixed-no {
         width: 60px;
         min-width: 60px;
@@ -183,13 +173,12 @@ $nomor = $halaman_awal + 1;
 
     .text-pn { color: var(--pn-green) !important; }
     
-    /* --- EDIT: BADGES PILL SHAPE (DIKECILKAN BIAR SAMA DENGAN ATASAN) --- */
     .badge-status-active { 
         background-color: #d4edda; 
         color: #155724; 
-        padding: 3px 10px; /* Diubah dari 5px 12px */
+        padding: 3px 10px; 
         border-radius: 50px; 
-        font-size: 0.7rem; /* Diubah dari 0.75rem */
+        font-size: 0.7rem; 
         font-weight: 600; 
         border: 1px solid #c3e6cb; 
         display: inline-block;
@@ -198,9 +187,9 @@ $nomor = $halaman_awal + 1;
     .badge-status-inactive { 
         background-color: #f8d7da; 
         color: #721c24; 
-        padding: 3px 10px; /* Diubah dari 5px 12px */
+        padding: 3px 10px;
         border-radius: 50px; 
-        font-size: 0.7rem; /* Diubah dari 0.75rem */
+        font-size: 0.7rem; 
         font-weight: 600; 
         border: 1px solid #f5c6cb; 
         display: inline-block;
@@ -215,9 +204,7 @@ $nomor = $halaman_awal + 1;
         font-size: 0.7rem; 
         display: inline-block; 
     }
-    /* ------------------------------------------------------------------- */
 
-    /* Action Buttons */
     .btn-action-edit { background: #fff3cd; color: #856404; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
     .btn-action-off { background: #ffebee; color: #c62828; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
     .btn-action-on { background: #e8f5e9; color: #2e7d32; border:none; border-radius: 8px; padding: 6px 12px; transition: 0.2s; }
@@ -272,7 +259,6 @@ $nomor = $halaman_awal + 1;
                         </thead>
                         <tbody>
                             <?php
-                            // EDIT: ORDER BY ASC (Dari ID terkecil/User Lama ke Baru)
                             $query_string = "SELECT u.* FROM users u $where_clause ORDER BY u.id_user ASC LIMIT $halaman_awal, $batas";
                             $query_pegawai = mysqli_query($koneksi, $query_string);
                             $data_users_search = []; 
@@ -287,13 +273,11 @@ $nomor = $halaman_awal + 1;
                                     $is_active = ($data['status_akun'] == 'aktif');
                                     $pangkat_text = isset($data['pangkat']) && !empty($data['pangkat']) ? $data['pangkat'] : '-';
 
-                                    // --- LOGIKA ICON ADMIN ---
                                     $icon_admin = "";
                                     $role_check = strtolower(trim($data['role']));
                                     if ($role_check === '1' || strpos($role_check, 'admin') !== false) {
                                         $icon_admin = '<i class="fas fa-user-shield ml-2" style="color: var(--pn-gold); font-size: 0.9rem;" title="Administrator"></i>';
                                     }
-                                    // ------------------------
                             ?>
                             <tr class="align-middle" <?php echo !$is_active ? 'style="background-color: #f8f9fa; opacity: 0.8;"' : ''; ?>>
                                 
@@ -622,7 +606,6 @@ function konfirmasiStatus(id, aksi, nama) {
     })
 }
 
-// FIX AJAX SEARCH
 $(document).ready(function() {
     $('#keyword').on('keyup', function() {
         var keyword = $(this).val();
