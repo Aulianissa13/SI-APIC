@@ -32,10 +32,6 @@ if(isset($_POST['login'])){
             if($data['status_akun'] != 'aktif') {
                 $error_msg = "Akun Anda telah dinonaktifkan/diblokir. Silakan hubungi Administrator.";
             } else {
-                // --- PERBAIKAN UTAMA DI SINI ---
-                
-                // Ambil role dari database dan ubah jadi huruf kecil semua
-                // Misal DB isinya "Admin", "ADMIN", "Administrator" -> jadi "admin"
                 $level_user = strtolower($data['role']); 
 
                 // Buat Session
@@ -44,13 +40,10 @@ if(isset($_POST['login'])){
                 $_SESSION['id_user']      = $data['id_user'];
                 $_SESSION['is_pejabat']   = $data['is_pejabat'];
                 $_SESSION['status']       = "login";
-
-                // PENTING: Simpan sebagai 'level' agar terbaca di cetak_cuti.php
                 $_SESSION['level']        = $level_user; 
-                // Simpan juga sebagai 'role' untuk jaga-jaga jika file lain butuh
                 $_SESSION['role']         = $level_user; 
 
-                // Redirect sesuai role (pakai variabel yang sudah dikecilkan hurufnya)
+                // Redirect sesuai role
                 if($level_user == "admin" || $level_user == "administrator"){
                     header("location:index.php?page=dashboard_admin");
                 }else{
@@ -93,8 +86,18 @@ if(isset($_POST['login'])){
 
         body {
             background-color: var(--bg-color);
-            background-image: radial-gradient(#e0e7e4 1px, transparent 1px);
-            background-size: 20px 20px;
+            
+            /* --- BACKGROUND IMAGE SETTING --- */
+            /* Menggunakan Linear Gradient hitam transparan (0.6) di atas gambar agar tulisan lebih terbaca */
+            background-image: linear-gradient(rgba(0, 50, 20, 0.7), rgba(0, 50, 20, 0.7)), url('assets/img/pn-yk.jpg');
+            
+            /* Agar gambar memenuhi layar dan responsive */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            /* -------------------------------- */
+
             font-family: 'Poppins', sans-serif;
             height: 100vh; 
             width: 100vw;
@@ -107,11 +110,14 @@ if(isset($_POST['login'])){
 
         /* --- CARD LOGIN --- */
         .login-container {
-            background: #ffffff;
+            /* Sedikit transparansi pada card agar menyatu background, tapi tetap terbaca (opsional) */
+            background: rgba(255, 255, 255, 0.95);
             width: 90%;
             max-width: 500px;
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            /* Efek backdrop blur (blur background di belakang kaca) */
+            backdrop-filter: blur(5px); 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); /* Shadow lebih gelap sedikit */
             position: relative;
             overflow: hidden;
             display: flex;
