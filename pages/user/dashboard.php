@@ -39,10 +39,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         'allDay' => true
     ];
 }
-$libur_data = array_filter($libur_data, function($item) {
-    $item_year = date('Y', strtotime($item['start']));
-    return $item_year == 2026;
-});
 ?>
 
 <div class="container-fluid">
@@ -257,16 +253,14 @@ document.addEventListener('DOMContentLoaded', function() {
         datesSet: function(info) {
             const listContainer = document.getElementById('libur-list-container');
             listContainer.innerHTML = '';
+
             const currentMonth = info.view.currentStart.getMonth();
             const currentYearInView = info.view.currentStart.getFullYear();
 
-            let filtered = [];
-            if (currentYearInView === 2026) {
-                filtered = dataLibur.filter(item => {
-                    const itemDate = new Date(item.start);
-                    return itemDate.getFullYear() === 2026 && itemDate.getMonth() === currentMonth;
-                }).sort((a,b) => new Date(a.start) - new Date(b.start));
-            }
+            let filtered = dataLibur.filter(item => {
+                const itemDate = new Date(item.start);
+                return itemDate.getFullYear() === currentYearInView && itemDate.getMonth() === currentMonth;
+            }).sort((a,b) => new Date(a.start) - new Date(b.start));
 
             if(filtered.length === 0) {
                 listContainer.innerHTML = '<div class="text-center text-muted small py-2">Tidak ada libur</div>';

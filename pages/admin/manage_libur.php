@@ -61,7 +61,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
 <style>
     :root{
         --pn-green:#004d00;
-        --pn-gold:#f6c23e;
+        --pn-gold:#F9A825;
         --bg:#f8f9fc;
         --text:#1f2937;
     }
