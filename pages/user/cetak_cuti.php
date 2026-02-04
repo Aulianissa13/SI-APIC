@@ -179,7 +179,7 @@ if (!function_exists('tgl_indo')) {
     <title>Cetak Cuti - <?php echo $data['nomor_surat']; ?></title>
     <style>
         @page { size: 215mm 330mm; margin: 1cm 1.5cm 1cm 1.5cm; }
-        body { font-family: 'Times New Roman', Times, serif; font-size: 10pt; color: #000; margin: 0; padding: 0; line-height: 1; }
+        body { font-family: Arial, sans-serif; font-size: 12pt; color: #000; margin: 0; padding: 0; line-height: 1; }
         .container { width: 100%; }
         .header-lampiran { text-align: right; font-size: 8pt; margin-bottom: 5px; margin-top: 5px; }
         .tgl-lokasi { text-align: right; margin-bottom: 5px; font-size: 10pt; }
@@ -260,7 +260,7 @@ if (!function_exists('tgl_indo')) {
         <table>
             <tr><td colspan="6" class="font-bold">IV. LAMANYA CUTI</td></tr>
             <tr>
-                <td width="15%">Selama</td><td width="20%"><?php echo $data['lama_hari']; ?> (Hari)*</td>
+                <td width="15%">Selama</td><td width="20%"><?php echo $data['lama_hari']; ?> Hari</td>
                 <td width="15%" class="text-center">mulai tanggal</td>
                 <td width="20%" class="text-center"><?php echo date('d-m-Y', strtotime($data['tgl_mulai'])); ?></td>
                 <td width="5%" class="text-center">s/d</td>
