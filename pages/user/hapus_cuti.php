@@ -14,19 +14,15 @@ foreach ($paths as $path) {
 if (!$koneksi) { die("Error Fatal: Database tidak ditemukan. Cek path file config."); }
 
 $id_pengajuan  = $_GET['id'];
-$id_user_login = $_SESSION['id_user']; // Validasi keamanan
+$id_user_login = $_SESSION['id_user']; 
 
-// 2. AMBIL DATA
 $cek = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti WHERE id_pengajuan='$id_pengajuan' AND id_user='$id_user_login'");
 $data = mysqli_fetch_array($cek);
 
 if ($data) {
-    // Validasi: Hanya status 'Diajukan' atau 'Menunggu' yang boleh dihapus
     $status = strtolower($data['status']);
     
     if ($status == 'diajukan' || $status == 'menunggu') {
-        
-        // --- PROSES PENGEMBALIAN KUOTA (REFUND) ---
         $id_jenis = $data['id_jenis'];
         $lama     = $data['lama_hari'];
         
@@ -36,8 +32,7 @@ if ($data) {
         $kembali_n1 = (int) $data['dipotong_n1']; 
         $kembali_n  = (int) $data['dipotong_n'];
 
-        if ($id_jenis == '1') { // Cuti Tahunan
-            
+        if ($id_jenis == '1') { 
             $n_baru  = $u['sisa_cuti_n'] + $kembali_n;
             $n1_baru = $u['sisa_cuti_n1'] + $kembali_n1;
             
@@ -48,16 +43,14 @@ if ($data) {
             
             mysqli_query($koneksi, $query_restore);
 
-        } else if ($id_jenis == '2') { // Cuti Sakit
+        } else if ($id_jenis == '2') { 
             $sakit_baru = $u['kuota_cuti_sakit'] + $lama;
             mysqli_query($koneksi, "UPDATE users SET kuota_cuti_sakit='$sakit_baru' WHERE id_user='$id_user_login'");
         }
 
-        // Hapus data
         $hapus = mysqli_query($koneksi, "DELETE FROM pengajuan_cuti WHERE id_pengajuan='$id_pengajuan'");
 
         if ($hapus) {
-            // [PENTING] Ubah ke 'swal' agar terbaca di index.php
             $_SESSION['swal'] = [
                 'icon' => 'success',
                 'title' => 'Dibatalkan',
@@ -86,7 +79,6 @@ if ($data) {
     ];
 }
 
-// Balik ke halaman riwayat
 header("Location: ../../index.php?page=riwayat_cuti");
 exit;
 ?>

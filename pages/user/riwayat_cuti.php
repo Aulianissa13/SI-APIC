@@ -38,19 +38,14 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
 <style>
     :root { --pn-green: #004d00; --pn-gold: #F9A825; --text-dark: #2c3e50; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
-    
-    /* Judul Halaman */
     .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.6rem; }
-    
-    /* Card Custom */
+
     .card-pn-custom { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; overflow: hidden; }
     .card-header-green { background-color: #1b5e20; color: white; padding: 15px 25px; border-bottom: 4px solid var(--pn-gold); display: flex; justify-content: space-between; align-items: center; }
-    
-    /* Button Styles */
+
     .btn-pn-solid { background-color: var(--pn-green); color: white; border: 2px solid var(--pn-green); font-weight: 600; border-radius: 8px; padding: 8px 15px; transition: all 0.3s ease; }
     .btn-pn-solid:hover { background-color: #003800; color: var(--pn-gold); border-color: #003800; transform: translateY(-2px); box-shadow: 0 4px 10px rgba(0, 77, 0, 0.3); }
 
-    /* Table Styles */
     .table-custom { width: 100%; border-collapse: separate; border-spacing: 0 5px; }
     .thead-pn { background-color: var(--pn-green); color: white; }
     .thead-pn th {
@@ -66,20 +61,16 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
     .table-custom tbody tr { background-color: white; transition: 0.2s; }
     .table-custom tbody tr:hover { background-color: #f1f8e9; transform: translateY(-1px); box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
     .table-custom td { padding: 12px 15px; vertical-align: middle !important; border-bottom: 1px solid #eee; font-size: 0.95rem; color: #333; }
-
-    /* Badges Status (Pill Shape) */
     .badge-status-ok { background-color: #d4edda; color: #155724; padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; border: 1px solid #c3e6cb; }
     .badge-status-no { background-color: #f8d7da; color: #721c24; padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; border: 1px solid #f5c6cb; }
     .badge-status-wait { background-color: #fff3cd; color: #856404; padding: 5px 12px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; border: 1px solid #ffeeba; }
 
-    /* Action Buttons (Circle) */
     .btn-circle-action { width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; }
     .btn-print { background-color: #e3f2fd; color: #0d47a1; }
     .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
     .btn-delete { background-color: #ffebee; color: #c62828; }
     .btn-delete:hover { background-color: #ffcdd2; transform: scale(1.1); }
 
-    /* Pagination CSS */
     .pagination .page-link { color: var(--pn-green); border-radius: 5px; margin: 0 3px; }
     .pagination .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
     .pagination .page-item.disabled .page-link { color: #6c757d; }

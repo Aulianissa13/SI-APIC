@@ -2,13 +2,9 @@
 /** @var mysqli $koneksi */
 
 session_start();
-
-// --- MODE DEBUGGING ---
 ini_set('display_errors', 1);
 ini_set('display_startup_errors', 1);
 error_reporting(E_ALL);
-
-// --- 1. KONEKSI DATABASE ---
 $path_db1 = '../../assets/config/database.php';
 $path_db2 = '../../config/database.php';
 $path_db3 = '../config/database.php'; 
@@ -27,7 +23,6 @@ if (empty($koneksi)) {
     die("<h3>ERROR KONEKSI:</h3> <p>Variabel <code>\$koneksi</code> kosong/gagal.</p>");
 }
 
-// --- 2. KEAMANAN ---
 if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) {
      die("<h3>AKSES DITOLAK:</h3> <p>Harap login terlebih dahulu.</p>");
 }
@@ -36,7 +31,11 @@ if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) {
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi = ($q_instansi) ? mysqli_fetch_array($q_instansi) : null;
 if(!$instansi) {
-    $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
+    // Fallback default
+    $instansi = [
+        'ketua_nama' => '..................', 'ketua_nip' => '..................',
+        'wakil_nama' => '..................', 'wakil_nip' => '..................'
+    ];
 }
 
 // --- 4. AMBIL DATA PENGAJUAN ---
@@ -181,6 +180,27 @@ if ($id_atasan_terpilih > 0) {
         $nip_atasan  = $bos['nip'];
     }
 }
+
+// --- LOGIC PEJABAT BERWENANG (SECTION VIII) ---
+// Default ke 'ketua' jika tidak ada di DB
+$tipe_ttd = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : 'ketua'; 
+
+// Variabel default (Ketua)
+$label_pejabat = "Ketua,";
+// Cek berbagai kemungkinan nama kolom di database (ketua_nama atau nama_ketua)
+$nama_pejabat  = isset($instansi['ketua_nama']) ? $instansi['ketua_nama'] : (isset($instansi['nama_ketua']) ? $instansi['nama_ketua'] : '..................');
+$nip_pejabat   = isset($instansi['ketua_nip']) ? $instansi['ketua_nip'] : (isset($instansi['nip_ketua']) ? $instansi['nip_ketua'] : '..................');
+
+if ($tipe_ttd == 'wakil') {
+    $label_pejabat = "Wakil Ketua,";
+    // Cek kemungkinan nama kolom wakil
+    $nama_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : (isset($instansi['nama_wakil']) ? $instansi['nama_wakil'] : '..................');
+    $nip_pejabat   = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : (isset($instansi['nip_wakil']) ? $instansi['nip_wakil'] : '..................');
+} elseif ($tipe_ttd == 'plh') {
+    $label_pejabat = "";
+    $nama_pejabat  = "";
+    $nip_pejabat   = "";
+}
 ?>
 
 <!DOCTYPE html>
@@ -210,7 +230,16 @@ if ($id_atasan_terpilih > 0) {
         .cell-alamat { height: auto !important; padding: 5px !important; vertical-align: top; }
         .col-right-fixed { width: 6cm !important; min-width: 6cm !important; max-width: 6cm !important; }
         .box-ttd-fixed { height: 3cm; width: 100%; position: relative; box-sizing: border-box; padding: 5px; }
-        .nip-bottom { position: absolute; bottom: 5px; left: 5px; right: 5px; border-top: 2px solid #000; font-weight: bold; padding-top: 2px; text-align: left; }
+        .nip-bottom { position: absolute; 
+            bottom: 5px; 
+            left: 5px; 
+            right: 5px; 
+            border-top: 2px solid #000; 
+            font-weight: bold; 
+            padding-top: 2px; 
+            text-align: left;
+            letter-spacing: 0.8px; /* Angka NIP jadi berjarak */
+        }
         .small-text { font-size: 8pt; }
         @media print { .no-print { display: none !important; } }
     </style>
@@ -325,7 +354,7 @@ if ($id_atasan_terpilih > 0) {
                 <td colspan="2" class="col-right-fixed" style="padding: 0;">
                     <div class="box-ttd-fixed">
                         <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $data['nama_lengkap']; ?></div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $data['nama_lengkap']; ?></div>
                         <div class="nip-bottom">NIP. <?php echo $data['nip']; ?></div>
                     </div>
                 </td>
@@ -340,7 +369,7 @@ if ($id_atasan_terpilih > 0) {
                 <td colspan="3" class="no-border"></td>
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nama_atasan; ?></div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nama_atasan; ?></div>
                         <div class="nip-bottom">NIP. <?php echo $nip_atasan; ?></div>
                     </div>
                 </td>
@@ -355,9 +384,9 @@ if ($id_atasan_terpilih > 0) {
                 <td colspan="3" class="no-border"></td>
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="text-align: center; margin-top: 5px;">Ketua,</div>
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $instansi['ketua_nama']; ?></div>
-                        <div class="nip-bottom">NIP. <?php echo $instansi['ketua_nip']; ?></div>
+                        <div style="text-align: center; margin-top: 5px;"><?php echo $label_pejabat; ?></div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nama_pejabat; ?></div>
+                        <div class="nip-bottom">NIP. <?php echo $nip_pejabat; ?></div>
                     </div>
                 </td>
             </tr>

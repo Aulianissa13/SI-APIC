@@ -1,27 +1,28 @@
 <?php
 /** @var mysqli $koneksi */
+// Pastikan session sudah start di header utama
+// session_start();
 
-// --- 1. LOGIKA PHP (TIDAK BERUBAH) ---
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
 $user = mysqli_fetch_array($query_user);
-
-// Hitung total kuota tahunan
 $total_kuota_tahunan = $user['sisa_cuti_n'] + $user['sisa_cuti_n1'];
 
-$query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
+// --- Query Instansi & Pejabat ---
+$q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
+$instansi   = mysqli_fetch_array($q_instansi);
 
-// Mengambil user yang is_atasan = 1
+$query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_atasan = '1' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
 
-// Ambil data libur
+// --- Array Libur Nasional (Untuk JS) ---
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 while ($row = mysqli_fetch_assoc($q_libur)) {
     $libur_nasional[] = $row['tanggal'];
 }
 
-// Generate Nomor Surat Otomatis
+// --- Penomoran Surat Otomatis ---
 $tahun_ini = date('Y');
 $bulan_ini = date('n');
 $romawi    = [ 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", 10 => "X", 11 => "XI", 12 => "XII" ];
@@ -37,12 +38,11 @@ if ($row_no) {
 } else {
     $urut = 1;
 }
-
 $no_urut_format = sprintf("%03d", $urut); 
 $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
     :root { 
@@ -55,7 +55,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
     
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
 
-    /* Header Styles */
+    /* --- HEADER STYLES --- */
     .card-header-pn {
         background-color: var(--pn-green);
         color: white;
@@ -65,7 +65,6 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
         justify-content: space-between;
         align-items: center;
     }
-
     .page-header-title { 
         border-left: 5px solid var(--pn-gold);
         padding-left: 15px; 
@@ -74,7 +73,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
         font-size: 1.6rem; 
     }
 
-    /* --- FORM STYLES --- */
+    /* --- GENERAL FORM STYLES --- */
     .form-label-pn { 
         font-size: 0.85rem; 
         font-weight: 600; 
@@ -82,30 +81,25 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
         margin-top: 10px; 
     }
 
-    /* Wrapper utama Input + Ikon */
+    /* Standard Input Wrapper (Tinggi Konsisten) */
     .input-group-clean {
         display: flex;
         align-items: center;
         border: 1px solid var(--border-color);
-        border-radius: 8px;
+        border-radius: 6px; 
         background-color: #fff;
         transition: all 0.3s ease;
         overflow: hidden;
-        height: 50px; /* Default Height tetap 50px */
+        height: 42px; /* TINGGI STANDARD */
         width: 100%;
         position: relative;
     }
-
-    /* Efek saat input diklik/fokus */
     .input-group-clean:focus-within {
         border-color: var(--pn-green);
-        box-shadow: 0 0 0 4px rgba(0, 77, 0, 0.1);
-        transform: translateY(-1px);
+        box-shadow: 0 0 0 3px rgba(0, 77, 0, 0.1);
     }
-
-    /* Bagian Ikon */
     .input-icon-clean {
-        width: 50px;
+        width: 45px;
         height: 100%;
         display: flex;
         align-items: center;
@@ -113,112 +107,91 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
         color: var(--pn-green);
         background-color: #f8f9fc;
         border-right: 1px solid #eaecf4;
-        font-size: 1.1rem;
+        font-size: 1rem;
         flex-shrink: 0; 
     }
-
-    /* Bagian Input Field (General) */
     .form-control-clean {
         flex: 1;
         border: none;
         height: 100%;
         width: 100%;
         padding: 0 15px;
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         color: #495057;
         background: transparent;
         outline: none;
     }
-    .form-control-clean:focus { box-shadow: none; background: transparent; }
-
-    /* --- KHUSUS DROPDOWN / SELECT (Agar Teks di Tengah) --- */
-    select.form-control-clean {
-        height: 100%;
-        line-height: normal;
-        padding-top: 14px;    /* Padding atas bawah disamakan */
-        padding-bottom: 14px;
-        cursor: pointer;
-        -webkit-appearance: none; /* Menghilangkan style default browser */
-        -moz-appearance: none;
-        appearance: none;
-        background-color: transparent;
-        position: relative;
-        z-index: 10;
-    }
+    .form-control-clean:focus { box-shadow: none; }
     
-    /* Warna placeholder opsi pertama (Pilih...) */
-    select.form-control-clean option:first-child {
-        color: #858796;
-    }
-
-    /* --- KHUSUS TEXTAREA (Agar Icon di Tengah) --- */
-    .input-group-clean.textarea-group {
-        height: auto !important; 
-        align-items: stretch; 
-    }
-
-    .input-group-clean.textarea-group .input-icon-clean {
-        height: auto;
-        min-height: 80px; 
-        padding-top: 0; 
-        display: flex;
-        align-items: center;     /* Vertikal Center */
-        justify-content: center; /* Horizontal Center */
-    }
+    /* Select & Textarea Specific */
+    select.form-control-clean { cursor: pointer; -webkit-appearance: none; -moz-appearance: none; appearance: none; }
+    .input-group-clean.textarea-group { height: auto !important; align-items: stretch; }
+    .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
+    textarea.form-control-clean { padding-top: 10px; padding-bottom: 10px; line-height: 1.5; }
     
-    textarea.form-control-clean {
-        padding-top: 15px;
-        padding-bottom: 15px;
-        align-self: center;
-        line-height: 1.5;
-    }
+    /* Readonly State */
+    .input-group-clean.readonly { background-color: #eaecf4; border-color: #d1d3e2; }
+    .input-group-clean.readonly .input-icon-clean { color: #6c757d; background-color: #dfe2e9; }
+    .input-group-clean.readonly .form-control-clean { color: #5a5c69; font-weight: 500; }
 
-    /* --- KHUSUS READONLY --- */
-    /* Hanya jika parent memiliki class 'readonly', maka background abu-abu */
-    .input-group-clean.readonly { background-color: #e9ecef; border-color: #dee2e6; }
-    .input-group-clean.readonly .input-icon-clean { color: #6c757d; background-color: #e2e6ea; }
-
-    /* Wrapper Panah Tanggal */
-    .date-arrow-wrapper {
-        height: 50px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 100%;
-    }
-
-    /* Helper Label (Mulai tgl / Sampai tgl) */
-    .helper-label {
-        font-size: 0.75rem;
+    /* =========================================
+       REVISI FIXED: TEXT VISIBILITY
+       ========================================= */
+    
+    /* Label Helper */
+    .label-helper {
+        font-size: 0.7rem;
         font-weight: 700;
         color: #858796;
-        text-align: center;
-        margin-top: 5px;
+        margin-bottom: 3px;
+        display: block;
         text-transform: uppercase;
         letter-spacing: 0.5px;
     }
 
-    /* Quota Box Styles */
-    .quota-box { 
-        transition: all 0.3s ease; 
-        border: 1px solid #e0e0e0; 
-        background-color: #fff;
-        opacity: 0.8; 
+    /* Date Inputs */
+    input[type="date"].form-control-clean {
+        position: relative;
+        text-align: center;
+        z-index: 2;
     }
-    .quota-active { 
-        opacity: 1 !important; 
-        transform: scale(1.02); 
-        box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; 
-        border: 2px solid var(--pn-gold) !important;
-        background-color: #fff !important;
+    input[type="date"]::-webkit-calendar-picker-indicator {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        width: 100%; height: 100%;
+        opacity: 0; /* Area klik penuh */
+        cursor: pointer;
     }
 
-    /* Section Divider */
+    /* Durasi Input FIXED */
+    .durasi-input {
+        text-align: center !important;
+        font-weight: 750 !important;
+        color: #2b500a !important; /* HITAM PEKAT */
+        font-size: 0,8rem !important; /* Adjust this value */
+        background-color: transparent !important;
+        opacity: 1 !important;
+        padding-right: 35px !important; /* Space for 'HARI' label */
+    }
+    
+    .durasi-suffix {
+        position: absolute;
+        right: 10px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        color: #858796;
+        pointer-events: none;
+        background: transparent;
+    }
+
+    /* --- LAYOUT LAIN --- */
+    .quota-box { transition: all 0.3s ease; border: 1px solid #e0e0e0; background-color: #fff; opacity: 0.8; }
+    .quota-active { opacity: 1 !important; transform: scale(1.02); box-shadow: 0 5px 15px rgba(0,0,0,0.1) !important; border: 2px solid var(--pn-gold) !important; background-color: #fff !important; }
+
     .section-divider { display: flex; align-items: center; margin: 30px 0 20px 0; }
     .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
     .section-divider hr { flex-grow: 1; border-top: 2px solid #e3e6f0; margin-left: 15px; }
 
-    /* Buttons */
     .btn-pn-solid { background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); color: white; border: none; font-weight: 600; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: 0.3s; }
     .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
     .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
@@ -254,7 +227,6 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="flex-grow-1 ml-3">
                                 <h6 class="font-weight-bold text-dark mb-0"><?php echo $user['nama_lengkap']; ?></h6>
                                 <div class="text-xs text-muted font-weight-bold mb-2">NIP. <?php echo $user['nip']; ?></div>
-                                
                                 <span class="badge py-2 px-3" style="background-color: #fff; color: var(--pn-green); border: 1px solid #d1d3e2; border-radius: 6px;">
                                     <i class="fas fa-briefcase mr-1" style="color: var(--pn-gold);"></i> <?php echo $user['jabatan']; ?>
                                 </span>
@@ -288,7 +260,8 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 
                         <div class="col-12">
                             <div id="box-sakit" class="quota-box p-3 rounded shadow-sm position-relative d-flex align-items-center justify-content-between"
-                                 style="border-left: 4px solid var(--pn-green);"> <div>
+                                 style="border-left: 4px solid var(--pn-green);"> 
+                                 <div>
                                     <div class="text-xs font-weight-bold text-uppercase mb-1" style="color: #5a5c69;">Kuota Sakit</div>
                                     <div class="h4 mb-0 font-weight-bold" style="color: var(--pn-green);"> <?php echo $user['kuota_cuti_sakit']; ?> <small class="text-muted" style="font-size: 12px;">Hari</small>
                                     </div>
@@ -299,7 +272,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             </div>
                         </div>
                     </div>
-
+                    
                     <div id="box-unlimited" class="alert small mt-3 mb-0 border-0 shadow-sm" 
                          style="display: none; padding: 0.75rem 1rem; background-color: #fff; border-left: 4px solid var(--pn-gold) !important; color: #5a5c69;">
                         <i class="fas fa-info-circle mr-1 text-warning"></i> Cuti ini <b>TIDAK</b> memotong kuota.
@@ -365,7 +338,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-clock"></i></div>
-                                    <input type="text" name="masa_kerja" class="form-control-clean" placeholder="Contoh: 5 Tahun 2 Bulan" required>
+                                    <input type="text" name="masa_kerja" class="form-control-clean" placeholder="Contoh: 5 Tahun 2 Bulan">
                                 </div>
                             </div>
                         </div>
@@ -385,7 +358,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-user-tie"></i></div>
-                                    <select name="id_pejabat" class="form-control-clean" required style="cursor: pointer;">
+                                    <select name="id_pejabat" class="form-control-clean" required>
                                         <option value="">-- Pilih Atasan Langsung --</option>
                                         <?php 
                                         mysqli_data_seek($query_atasan, 0);
@@ -400,6 +373,24 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             </div>
                         </div>
 
+                        <div class="form-group row">
+                            <label class="col-sm-3 col-form-label form-label-pn">Pejabat SK <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-stamp"></i></div>
+                                    <select name="ttd_pejabat" class="form-control-clean" required>
+                                        <option value="">-- Pilih Pejabat Berwenang --</option>
+                                        <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
+                                        <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
+                                        <option value="plh">PLH / KOSONG (Isi Manual Tulis Tangan)</option>
+                                    </select>
+                                </div>
+                                <small class="text-muted font-italic ml-1" style="font-size: 11px;">
+                                    *Pilih siapa yang akan menandatangani SK.
+                                </small>
+                            </div>
+                        </div>
+
                         <div class="section-divider mt-5">
                             <span>B. Detail Cuti</span><hr>
                         </div>
@@ -409,7 +400,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-list-ul"></i></div>
-                                    <select name="id_jenis" id="jenis_cuti" class="form-control-clean" required onchange="updateKalkulasi()" style="cursor: pointer;">
+                                    <select name="id_jenis" id="jenis_cuti" class="form-control-clean" required onchange="updateKalkulasi()">
                                         <option value="" data-nama="">-- Pilih Jenis Cuti --</option>
                                         <?php mysqli_data_seek($query_jenis, 0); while($j = mysqli_fetch_array($query_jenis)) { ?>
                                             <option value="<?php echo $j['id_jenis']; ?>" data-nama="<?php echo strtolower($j['nama_jenis']); ?>">
@@ -425,65 +416,48 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                         </div>
 
                         <div class="form-group row mb-4">
-                            <label class="col-sm-3 col-form-label form-label-pn" style="padding-top: 12px;">Pelaksanaan <span class="text-danger">*</span></label>
+                            <label class="col-sm-3 col-form-label form-label-pn mt-2">Pelaksanaan <span class="text-danger">*</span></label>
+                            
                             <div class="col-sm-9">
-                                <div class="row no-gutters">
-                                    <div class="col-md-5 col-12">
+                                <div class="row">
+                                    <div class="col-md-5 mb-3 mb-md-0">
+                                        <span class="label-helper">Mulai</span>
                                         <div class="input-group-clean">
                                             <div class="input-icon-clean"><i class="far fa-calendar-alt"></i></div>
-                                            <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control-clean" required onchange="updateKalkulasi()">
-                                        </div>
-                                        <div class="helper-label">Mulai Tanggal</div>
-                                    </div>
-
-                                    <div class="col-md-2 col-12">
-                                        <div class="date-arrow-wrapper">
-                                            <i class="fas fa-arrow-right text-secondary fa-lg d-none d-md-block"></i> 
-                                            <i class="fas fa-arrow-down text-secondary fa-lg d-block d-md-none"></i>  
+                                            <input type="date" name="tgl_mulai" id="tgl_mulai" 
+                                                   class="form-control-clean" 
+                                                   required onchange="updateKalkulasi()">
                                         </div>
                                     </div>
 
-                                    <div class="col-md-5 col-12">
+                                    <div class="col-md-5 mb-3 mb-md-0">
+                                        <span class="label-helper">Sampai</span>
                                         <div class="input-group-clean">
                                             <div class="input-icon-clean"><i class="far fa-calendar-check"></i></div>
-                                            <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control-clean" required onchange="updateKalkulasi()">
+                                            <input type="date" name="tgl_selesai" id="tgl_selesai" 
+                                                   class="form-control-clean" 
+                                                   required onchange="updateKalkulasi()">
                                         </div>
-                                        <div class="helper-label">Sampai Tanggal</div>
+                                    </div>
+
+                                    <div class="col-md-2">
+                                        <span class="label-helper text-center">Durasi</span>
+                                        <div class="input-group-clean readonly" style="position: relative;">
+                                            <input type="text" name="lama_hari" id="lama_hari" 
+                                                   class="form-control-clean durasi-input" 
+                                                   readonly value="0">
+                                            <span class="durasi-suffix">HARI</span>
+                                        </div>
+                                        
+                                        <div id="alert-kuota" class="position-absolute" style="display:none; width: 200px; left: -60px; top: 60px; z-index: 10;">
+                                            <div class="alert alert-danger py-1 px-2 small font-weight-bold shadow text-center" style="border-radius: 5px; font-size: 0.7rem;">
+                                                Kuota Habis!
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-
-                        <div class="form-group row align-items-center mb-4">
-                            <label class="col-sm-3 col-form-label form-label-pn">Durasi Cuti</label>
-                            
-                            <div class="col-sm-3">
-                                <div class="input-group-clean"> 
-                                    
-                                    <div class="input-icon-clean">
-                                        <i class="fas fa-hourglass-half"></i>
-                                    </div>
-                                    
-                                    <input type="text" name="lama_hari" id="lama_hari" 
-                                           class="form-control-clean font-weight-bold text-dark" 
-                                           readonly 
-                                           value="0" 
-                                           style="text-align: center; background-color: #fff;">
-                                    
-                                    <div class="px-3 d-flex align-items-center h-100 text-secondary font-weight-bold" 
-                                         style="font-size: 0.8rem; border-left: 1px solid #eaecf4; background-color: #f8f9fc;">
-                                        HARI
-                                    </div>
-                                </div>
-
-                                <div id="alert-kuota" class="mt-2 position-absolute" style="display:none; width: 300px; z-index: 10;">
-                                    <div class="alert alert-danger py-1 px-2 small font-weight-bold shadow-sm">
-                                        <i class="fas fa-times-circle mr-1"></i> Melebihi sisa kuota!
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    
 
                         <div class="form-group row mb-4">
                             <label class="col-sm-3 col-form-label form-label-pn mt-2">Alasan Lengkap <span class="text-danger">*</span></label>
@@ -532,7 +506,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
     function updateKalkulasi() {
         var tglMulai = document.getElementById("tgl_mulai").value;
         var tglSelesai = document.getElementById("tgl_selesai").value;
-        var outputHari = document.getElementById("lama_hari");
+        var inputHari = document.getElementById("lama_hari");      
         
         var selectBox = document.getElementById("jenis_cuti");
         var selectedOption = selectBox.options[selectBox.selectedIndex];
@@ -553,7 +527,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                 confirmButtonColor: '#004d00'
             });
             document.getElementById("tgl_selesai").value = "";
-            outputHari.value = 0;
+            inputHari.value = "0";
             return;
         }
 
@@ -566,13 +540,14 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
             var day = String(curDate.getDate()).padStart(2, '0');
             var dateString = `${year}-${month}-${day}`;
 
+            // Hitung hari selain Sabtu(6), Minggu(0) dan Libur Nasional
             if(dayOfWeek !== 0 && dayOfWeek !== 6 && !holidays.includes(dateString)) {
                 count++;
             }
             curDate.setDate(curDate.getDate() + 1);
         }
 
-        outputHari.value = count;
+        inputHari.value = count;
         validasiStok(namaJenis, count);
     }
 

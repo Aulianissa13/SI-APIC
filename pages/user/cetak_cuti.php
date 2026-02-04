@@ -2,43 +2,79 @@
 /** @var mysqli $koneksi */
 
 session_start();
-error_reporting(0);
-if (file_exists('../../config/database.php')) {
-    include '../../config/database.php';
+// Aktifkan error reporting agar ketahuan jika ada salah (nanti bisa diubah jadi 0 lagi kalau sudah fix)
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// --- 1. LOAD DATABASE (Coba beberapa kemungkinan path) ---
+$path_db1 = '../../config/database.php';
+$path_db2 = '../../assets/config/database.php';
+$path_db3 = '../config/database.php'; // Jaga-jaga path lain
+
+if (file_exists($path_db1)) {
+    include $path_db1;
+} elseif (file_exists($path_db2)) {
+    include $path_db2;
+} elseif (file_exists($path_db3)) {
+    include $path_db3;
 } else {
-    include '../../assets/config/database.php';
+    die("<h3>Error Fatal:</h3>File koneksi database tidak ditemukan.<br>Pastikan file 'database.php' ada di folder config.");
+}
+
+// Cek apakah variabel koneksi berhasil dibuat
+if (!isset($koneksi)) {
+    // Coba tebak nama variabel lain yang umum dipakai programmer
+    if (isset($conn)) $koneksi = $conn;
+    elseif (isset($mysqli)) $koneksi = $mysqli;
+    else die("<h3>Error Koneksi:</h3>Variabel <code>\$koneksi</code> tidak ditemukan. Cek file database.php Anda, apa nama variabel koneksinya?");
 }
 
 if (!isset($_SESSION['id_user'])) {
-    echo "<script>alert('Anda harus login terlebih dahulu!'); window.close();</script>";
+    echo "<h3>Akses Ditolak</h3><p>Anda harus login terlebih dahulu.</p>";
     exit;
 }
 
 $id_pengajuan  = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $id_user_login = $_SESSION['id_user'];
 
+if ($id_pengajuan == 0) {
+    die("<h3>Error Data:</h3> ID Pengajuan tidak ditemukan di URL (co: ?id=1).");
+}
+
+// --- 2. AMBIL DATA INSTANSI ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
+// Cek error query
+if (!$q_instansi) { die("Error Query Instansi: " . mysqli_error($koneksi)); }
+
 $instansi   = mysqli_fetch_array($q_instansi);
 if(!$instansi) {
-    $instansi = ['ketua_nama' => '..................', 'ketua_nip' => '..................'];
+    $instansi = [
+        'ketua_nama' => '..................', 'ketua_nip' => '..................',
+        'wakil_nama' => '..................', 'wakil_nip' => '..................'
+    ];
 }
-$query = mysqli_query($koneksi, "SELECT *, pengajuan_cuti.id_atasan AS id_atasan_fix 
+
+// --- 3. AMBIL DATA PENGAJUAN ---
+$query_str = "SELECT pengajuan_cuti.*, 
+    pengajuan_cuti.id_atasan AS id_atasan_fix,
+    users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.pangkat, users.no_telepon,
+    jenis_cuti.nama_jenis
     FROM pengajuan_cuti 
     JOIN users ON pengajuan_cuti.id_user = users.id_user 
     JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
-    WHERE id_pengajuan='$id_pengajuan'");
+    WHERE id_pengajuan='$id_pengajuan'";
+
+$query = mysqli_query($koneksi, $query_str);
+
+if (!$query) { die("Error Query Utama: " . mysqli_error($koneksi)); }
 
 $data = mysqli_fetch_array($query);
 
 if (!$data) { 
-    echo "<script>alert('Data tidak ditemukan!'); window.close();</script>"; 
-    exit; 
-}
-if ($data['id_user'] != $id_user_login) { 
-    echo "<script>alert('Akses Ditolak! Anda tidak berhak mencetak data orang lain.'); window.close();</script>"; 
-    exit; 
+    die("<h3>Data Kosong:</h3>Data pengajuan dengan ID $id_pengajuan tidak ditemukan."); 
 }
 
+// --- 4. LOGIKA ATASAN LANGSUNG ---
 $nama_atasan_langsung = "............................................."; 
 $nip_atasan_langsung  = ".......................";
 $id_atasan_terpilih   = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; 
@@ -51,64 +87,77 @@ if ($id_atasan_terpilih > 0) {
     }
 }
 
+// --- 5. LOGIKA PEJABAT BERWENANG ---
+$tipe_ttd    = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : 'ketua';
+$lbl_jabatan = "Ketua";
+$nm_pejabat  = $instansi['ketua_nama'];
+$nip_pejabat = $instansi['ketua_nip'];
+
+if ($tipe_ttd == 'wakil') {
+    $lbl_jabatan = "Wakil Ketua";
+    $nm_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
+    $nip_pejabat = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
+} elseif ($tipe_ttd == 'plh') {
+    $lbl_jabatan = "Plh. Ketua"; 
+    $nm_pejabat  = ".............................................";
+    $nip_pejabat = ".......................";
+}
+
+// --- 6. LOGIKA CHECKLIST JENIS CUTI ---
 $id_jenis   = $data['id_jenis']; 
 $lama_ambil = $data['lama_hari'];
-$ket_tahunan_n = "-"; $ket_tahunan_n1 = "-";
-$sisa_n_tampil = 0;   $sisa_n1_tampil = 0;
+
+$c1 = ""; $c2 = ""; $c3 = ""; $c4 = ""; $c5 = ""; $c6 = "";
+
+switch ($id_jenis) {
+    case '1': $c1 = '&#10003;'; break; 
+    case '2': $c3 = '&#10003;'; break; 
+    case '3': $c2 = '&#10003;'; break; 
+    case '4': $c4 = '&#10003;'; break; 
+    case '5': $c5 = '&#10003;'; break; 
+    case '6': $c6 = '&#10003;'; break; 
+    default:  $c1 = '&#10003;'; break; 
+}
+
+// --- 7. LOGIKA HITUNG SISA CUTI ---
+$saldo_awal_n  = (int)$data['sisa_cuti_n']; 
+$saldo_awal_n1 = (int)$data['sisa_cuti_n1'];
+$saldo_awal_n2 = 0; // Default 0
+
+$sisa_n_tampil  = $saldo_awal_n;
+$sisa_n1_tampil = $saldo_awal_n1;
+
+$ket_tahunan_n  = ""; $ket_tahunan_n1 = "";
 $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
     case '1': 
-        $saldo_awal_n  = (int)$data['sisa_cuti_n']; 
-        $saldo_awal_n1 = (int)$data['sisa_cuti_n1'];
-        
         $ambil_n  = (int)$data['dipotong_n'];
         $ambil_n1 = (int)$data['dipotong_n1'];
-
-        // 3. Hitung Sisa Akhir (Prediksi setelah disetujui)
         $sisa_akhir_n  = max(0, $saldo_awal_n - $ambil_n);
         $sisa_akhir_n1 = max(0, $saldo_awal_n1 - $ambil_n1);
 
-        // 4. Set Angka untuk Ditampilkan di Kolom Tabel
-        // Di tabel surat, biasanya menampilkan SISA AWAL (sebelum potong) atau SISA AKHIR.
-        // Agar sesuai logika "Diambil X sisa Y", kita tampilkan SALDO AWAL di kolom angka,
-        // tapi di kolom Keterangan kita jelaskan sisanya.
-        // TAPI: Agar tidak membingungkan, mari kita tampilkan SISA AWAL di kolom "Sisa".
-        $sisa_n_tampil  = $saldo_awal_n; 
-        $sisa_n1_tampil = $saldo_awal_n1;
         if ($ambil_n1 > 0) {
             $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . $sisa_akhir_n1 . " hari";
         } elseif ($saldo_awal_n1 > 0) {
             $ket_tahunan_n1 = "Sisa " . $saldo_awal_n1 . " hari"; 
-            $ket_tahunan_n1 = "-";
-            $sisa_n1_tampil = 0; 
         }
+        
         if ($ambil_n > 0) {
             $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . $sisa_akhir_n . " hari";
         } else {
             $ket_tahunan_n = "Sisa " . $sisa_akhir_n . " hari";
         }
         break;
-
     case '2': 
         $sisa_sakit = max(0, (isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0));
-        $sisa_sakit_tampil = $sisa_sakit + $lama_ambil; 
-        
-        $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
+        $ket_sakit  = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari"; 
         break;
-
-    case '4': $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
-    case '5': $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
-    case '3': $ket_penting = "Diambil " . $lama_ambil . " hari"; break;
+    case '3': $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
+    case '4': $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
+    case '5': $ket_penting = "Diambil " . $lama_ambil . " hari"; break;
     case '6': $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
 }
-
-$c1 = ($id_jenis == '1') ? '&#10003;' : '';
-$c2 = ($id_jenis == '4') ? '&#10003;' : '';
-$c3 = ($id_jenis == '2') ? '&#10003;' : '';
-$c4 = ($id_jenis == '5') ? '&#10003;' : '';
-$c5 = ($id_jenis == '3') ? '&#10003;' : '';
-$c6 = ($id_jenis == '6') ? '&#10003;' : '';
 
 $tahun_n  = date('Y'); 
 $tahun_n1 = $tahun_n - 1; 
@@ -256,7 +305,7 @@ if (!function_exists('tgl_indo')) {
                 <td colspan="2" class="col-right-fixed" style="padding: 0;">
                     <div class="box-ttd-fixed">
                         <div style="text-align: center; margin-top: 5px;">Hormat saya,</div>
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $data['nama_lengkap']; ?></div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $data['nama_lengkap']; ?></div>
                         <div class="nip-bottom">NIP. <?php echo $data['nip']; ?></div>
                     </div>
                 </td>
@@ -271,7 +320,7 @@ if (!function_exists('tgl_indo')) {
                 <td colspan="3" class="no-border"></td>
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nama_atasan_langsung; ?></div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nama_atasan_langsung; ?></div>
                         <div class="nip-bottom">NIP. <?php echo $nip_atasan_langsung; ?></div>
                     </div>
                 </td>
@@ -286,9 +335,9 @@ if (!function_exists('tgl_indo')) {
                 <td colspan="3" class="no-border"></td>
                 <td class="col-right-fixed" style="border: 1px solid #000; padding: 0;">
                     <div class="box-ttd-fixed">
-                        <div style="text-align: center; margin-top: 5px;">Ketua,</div>
-                        <div style="position:absolute; bottom:30px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $instansi['ketua_nama']; ?></div>
-                        <div class="nip-bottom">NIP. <?php echo $instansi['ketua_nip']; ?></div>
+                        <div style="text-align: center; margin-top: 5px;"><?php echo $lbl_jabatan; ?>,</div>
+                        <div style="position:absolute; bottom:25px; left:0; width:100%; text-align:center; font-weight: bold;"><?php echo $nm_pejabat; ?></div>
+                        <div class="nip-bottom">NIP. <?php echo $nip_pejabat; ?></div>
                     </div>
                 </td>
             </tr>
