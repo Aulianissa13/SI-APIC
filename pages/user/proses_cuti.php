@@ -33,6 +33,26 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $no_surat      = $_POST['no_surat'];
     $masa_kerja    = $_POST['masa_kerja'];
     $ttd_pejabat   = isset($_POST['ttd_pejabat']) ? $_POST['ttd_pejabat'] : 'ketua';
+    
+    // Jika PLH dipilih, gunakan input manual, jika tidak gunakan nilai default
+    if ($ttd_pejabat == 'plh') {
+        $plh_nama = isset($_POST['plh_nama']) ? htmlspecialchars($_POST['plh_nama']) : '';
+        $plh_nip  = isset($_POST['plh_nip']) ? htmlspecialchars($_POST['plh_nip']) : '';
+        
+        if (empty($plh_nama) || empty($plh_nip)) {
+            $_SESSION['swal'] = [
+                'icon'  => 'warning',
+                'title' => 'Data PLH Belum Lengkap!',
+                'text'  => 'Mohon isi nama dan NIP PLH.'
+            ];
+            header("Location: " . $_SERVER['HTTP_REFERER']);
+            exit();
+        } else {
+            // Simpan format khusus untuk PLH: "plh|nama|nip"
+            $ttd_pejabat = 'plh|' . $plh_nama . '|' . $plh_nip;
+        }
+    }
+    
     $tgl_pengajuan = date('Y-m-d'); 
     $status        = 'diajukan'; 
     $cek_bentrok = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 

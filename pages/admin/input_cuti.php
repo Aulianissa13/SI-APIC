@@ -71,23 +71,25 @@ if (isset($_POST['simpan_cuti'])) {
         $nomor_surat  = htmlspecialchars($_POST['nomor_surat']); 
         $ttd_pejabat  = $_POST['ttd_pejabat']; 
         
-        // Ambil input masa kerja
-        $masa_kerja   = isset($_POST['masa_kerja']) ? htmlspecialchars($_POST['masa_kerja']) : '';
-
-        if ($tgl_selesai < $tgl_mulai) {
-            $swal_script = "Swal.fire({ title: 'Tanggal Salah!', text: 'Tanggal selesai lebih kecil dari mulai.', icon: 'error' });";
-        } else {
-            // Cek Bentrok
-            $cek_bentrok = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti WHERE id_user = '$id_user' AND status != 'ditolak' AND ((tgl_mulai <= '$tgl_selesai' AND tgl_selesai >= '$tgl_mulai'))");
+        // Jika PLH dipilih, gunakan input manual, jika tidak gunakan nilai default
+        if ($ttd_pejabat == 'plh') {
+            $plh_nama = isset($_POST['plh_nama']) ? htmlspecialchars($_POST['plh_nama']) : '';
+            $plh_nip  = isset($_POST['plh_nip']) ? htmlspecialchars($_POST['plh_nip']) : '';
             
-            if(mysqli_num_rows($cek_bentrok) > 0){
-                $swal_script = "Swal.fire({ title: 'Tanggal Bentrok!', text: 'Pegawai ini sudah ada pengajuan pada tanggal tersebut.', icon: 'warning' });";
+            if (empty($plh_nama) || empty($plh_nip)) {
+                $swal_script = "Swal.fire({ title: 'Data PLH Belum Lengkap!', text: 'Mohon isi nama dan NIP PLH.', icon: 'warning' });";
+                $ttd_pejabat = '';
             } else {
-                $durasi = hitungHariKerja($tgl_mulai, $tgl_selesai, $libur_nasional);
-                
-                if ($durasi <= 0) {
-                    $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0.', icon: 'warning' });";
-                } else {
+                // Simpan format khusus untuk PLH: "plh|nama|nip"
+                $ttd_pejabat = 'plh|' . $plh_nama . '|' . $plh_nip;
+            }
+        }
+        
+        $durasi = hitungHariKerja($tgl_mulai, $tgl_selesai, $libur_nasional);
+        
+        if ($durasi == 0) {
+            $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0.', icon: 'warning' });";
+        } else {
                     $q_cek_jenis = mysqli_query($koneksi, "SELECT nama_jenis FROM jenis_cuti WHERE id_jenis = '$id_jenis'");
                     $d_jenis = mysqli_fetch_assoc($q_cek_jenis);
                     $nama_jenis_cuti = $d_jenis['nama_jenis']; 
@@ -129,8 +131,8 @@ if (isset($_POST['simpan_cuti'])) {
                 }
             }
         }
-    }
-}
+    
+
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -387,12 +389,29 @@ if (isset($_POST['simpan_cuti'])) {
                                 <label class="form-label-pn">Pejabat Berwenang <span class="text-danger">*</span></label>
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-stamp"></i></div>
-                                    <select name="ttd_pejabat" class="form-control-clean" required>
+                                    <select name="ttd_pejabat" id="ttd_pejabat_select" class="form-control-clean" required>
                                         <option value="">-- Pilih Pejabat --</option>
                                         <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
                                         <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
-                                        <option value="plh">PLH / KOSONG (Manual)</option>
+                                        <option value="plh">PLH / MANUAL INPUT</option>
                                     </select>
+                                </div>
+                            </div>
+
+                            <!-- Input Manual PLH -->
+                            <div id="plh_input_container" style="display: none;" class="col-md-6 mb-3">
+                                <label class="form-label-pn">Nama PLH <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-user"></i></div>
+                                    <input type="text" name="plh_nama" id="plh_nama_input" class="form-control-clean" placeholder="Nama PLH">
+                                </div>
+                            </div>
+
+                            <div id="plh_nip_container" style="display: none;" class="col-md-6 mb-3">
+                                <label class="form-label-pn">NIP PLH <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-id-card"></i></div>
+                                    <input type="text" name="plh_nip" id="plh_nip_input" class="form-control-clean" placeholder="NIP PLH">
                                 </div>
                             </div>
                         </div>
@@ -507,21 +526,44 @@ if (isset($_POST['simpan_cuti'])) {
             while (loop <= end) {
                 let d = loop.getDay(); 
                 let dateStr = loop.toISOString().split('T')[0]; 
-                // Skip Minggu(0), Sabtu(6), dan Libur Nasional
                 if (d !== 0 && d !== 6 && !holidays.includes(dateStr)) { count++; }
                 loop.setDate(loop.getDate() + 1);
             }
-            
-            // Update UI (Langsung ke Input)
             durasiInput.value = count;
-            
-            // Show info libur jika ada perbedaan hari kalender vs hari kerja
             let totalDays = (end - start) / (1000 * 60 * 60 * 24) + 1;
             infoLibur.style.display = (count < totalDays) ? 'block' : 'none';
         }
     }
     tglMulai.addEventListener('change', hitung);
     tglSelesai.addEventListener('change', hitung);
+
+    // 3. Script Toggle PLH Input Fields
+    const ttdPejabatSelect = document.getElementById('ttd_pejabat_select');
+    const plhInputContainer = document.getElementById('plh_input_container');
+    const plhNipContainer = document.getElementById('plh_nip_container');
+    const plhNamaInput = document.getElementById('plh_nama_input');
+    const plhNipInput = document.getElementById('plh_nip_input');
+
+    function togglePlhInputs() {
+        if (ttdPejabatSelect.value === 'plh') {
+            plhInputContainer.style.display = 'block';
+            plhNipContainer.style.display = 'block';
+            plhNamaInput.required = true;
+            plhNipInput.required = true;
+        } else {
+            plhInputContainer.style.display = 'none';
+            plhNipContainer.style.display = 'none';
+            plhNamaInput.required = false;
+            plhNipInput.required = false;
+            plhNamaInput.value = '';
+            plhNipInput.value = '';
+        }
+    }
+
+    ttdPejabatSelect.addEventListener('change', togglePlhInputs);
+    
+    // Initialize on page load jika PLH sudah dipilih
+    togglePlhInputs();
 </script>
 
 <?php if (!empty($swal_script)) echo "<script>$swal_script</script>"; ?>

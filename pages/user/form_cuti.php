@@ -378,16 +378,37 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-stamp"></i></div>
-                                    <select name="ttd_pejabat" class="form-control-clean" required>
+                                    <select name="ttd_pejabat" id="ttd_pejabat_select" class="form-control-clean" required>
                                         <option value="">-- Pilih Pejabat Berwenang --</option>
                                         <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
                                         <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
-                                        <option value="plh">PLH / KOSONG (Isi Manual Tulis Tangan)</option>
+                                        <option value="plh">PLH / MANUAL INPUT</option>
                                     </select>
                                 </div>
                                 <small class="text-muted font-italic ml-1" style="font-size: 11px;">
                                     *Pilih siapa yang akan menandatangani SK.
                                 </small>
+                            </div>
+                        </div>
+
+                        <!-- Input Manual PLH -->
+                        <div id="plh_input_container" style="display: none;" class="form-group row">
+                            <label class="col-sm-3 col-form-label form-label-pn">Nama PLH <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-user"></i></div>
+                                    <input type="text" name="plh_nama" id="plh_nama_input" class="form-control-clean" placeholder="Nama PLH">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div id="plh_nip_container" style="display: none;" class="form-group row">
+                            <label class="col-sm-3 col-form-label form-label-pn">NIP PLH <span class="text-danger">*</span></label>
+                            <div class="col-sm-9">
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-id-card"></i></div>
+                                    <input type="text" name="plh_nip" id="plh_nip_input" class="form-control-clean" placeholder="NIP PLH">
+                                </div>
                             </div>
                         </div>
 
@@ -597,6 +618,32 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
             btnSubmit.style.background = ""; 
         }
     }
+
+    // Toggle PLH Input Fields
+    const ttdPejabatSelect = document.getElementById('ttd_pejabat_select');
+    const plhInputContainer = document.getElementById('plh_input_container');
+    const plhNipContainer = document.getElementById('plh_nip_container');
+    const plhNamaInput = document.getElementById('plh_nama_input');
+    const plhNipInput = document.getElementById('plh_nip_input');
+
+    function togglePlhInputs() {
+        if (ttdPejabatSelect.value === 'plh') {
+            plhInputContainer.style.display = 'block';
+            plhNipContainer.style.display = 'block';
+            plhNamaInput.required = true;
+            plhNipInput.required = true;
+        } else {
+            plhInputContainer.style.display = 'none';
+            plhNipContainer.style.display = 'none';
+            plhNamaInput.required = false;
+            plhNipInput.required = false;
+            plhNamaInput.value = '';
+            plhNipInput.value = '';
+        }
+    }
+
+    ttdPejabatSelect.addEventListener('change', togglePlhInputs);
+    togglePlhInputs();
 
     document.getElementById('formCuti').addEventListener('submit', function(e) {
         e.preventDefault();

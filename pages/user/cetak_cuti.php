@@ -163,7 +163,14 @@ if ($tipe_ttd == 'wakil') {
     $label_pejabat = "Wakil Ketua,";
     $nama_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
     $nip_pejabat   = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
+} elseif (strpos($tipe_ttd, 'plh|') === 0) {
+    // Format: "plh|nama|nip"
+    $parts = explode('|', $tipe_ttd);
+    $label_pejabat = "Plh,";
+    $nama_pejabat = isset($parts[1]) ? $parts[1] : '';
+    $nip_pejabat = isset($parts[2]) ? $parts[2] : '';
 } elseif ($tipe_ttd == 'plh') {
+    // Legacy: Empty PLH (jika ada data lama)
     $label_pejabat = ""; $nama_pejabat = ""; $nip_pejabat = "";
 }
 
