@@ -9,17 +9,20 @@ while ($row = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $row['tanggal'
 // --- 2. AMBIL DATA PEGAWAI & ATASAN ---
 $list_pegawai = [];
 $list_atasan  = [];
-$q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
+
+// SEKARANG AMAN: Kolom masa_kerja sudah ada di database
+$q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan, masa_kerja FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
+
 while ($u = mysqli_fetch_assoc($q_u)) {
     $list_pegawai[] = $u;
     if ($u['is_atasan'] == '1') { $list_atasan[] = $u; }
 }
 
-// --- 3. AMBIL DATA INSTANSI (UNTUK NAMA KETUA/WAKIL) ---
+// --- 3. AMBIL DATA INSTANSI ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
 $instansi   = mysqli_fetch_assoc($q_instansi);
 
-// --- 4. GENERATE NOMOR SURAT OTOMATIS ---
+// --- 4. GENERATE NOMOR SURAT ---
 $thn_now = date('Y');
 $bln_now = date('n');
 $romawi  = [1=>"I", 2=>"II", 3=>"III", 4=>"IV", 5=>"V", 6=>"VI", 7=>"VII", 8=>"VIII", 9=>"IX", 10=>"X", 11=>"XI", 12=>"XII"];
@@ -32,7 +35,7 @@ if (mysqli_num_rows($q_last) > 0) {
 }
 $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bln_now]."/".$thn_now;
 
-// --- FUNGSI HITUNG HARI KERJA ---
+// --- FUNGSI PHP HITUNG HARI KERJA ---
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
@@ -52,7 +55,6 @@ $swal_script = "";
 // --- PROSES SIMPAN DATA ---
 if (isset($_POST['simpan_cuti'])) {
     $id_user   = $_POST['id_user_hidden']; 
-    // Mengambil langsung dari select name="id_atasan_hidden"
     $id_atasan = $_POST['id_atasan_hidden']; 
     
     if (empty($id_user)) {
@@ -63,20 +65,26 @@ if (isset($_POST['simpan_cuti'])) {
         $id_jenis     = $_POST['id_jenis']; 
         $tgl_mulai    = $_POST['tgl_mulai'];
         $tgl_selesai  = $_POST['tgl_selesai'];
+        $durasi_input = $_POST['lama_hari']; 
         $alamat_cuti  = htmlspecialchars($_POST['alamat']); 
         $alasan       = htmlspecialchars($_POST['alasan']);
         $nomor_surat  = htmlspecialchars($_POST['nomor_surat']); 
         $ttd_pejabat  = $_POST['ttd_pejabat']; 
+        
+        // Ambil input masa kerja
+        $masa_kerja   = isset($_POST['masa_kerja']) ? htmlspecialchars($_POST['masa_kerja']) : '';
 
         if ($tgl_selesai < $tgl_mulai) {
             $swal_script = "Swal.fire({ title: 'Tanggal Salah!', text: 'Tanggal selesai lebih kecil dari mulai.', icon: 'error' });";
         } else {
+            // Cek Bentrok
             $cek_bentrok = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti WHERE id_user = '$id_user' AND status != 'ditolak' AND ((tgl_mulai <= '$tgl_selesai' AND tgl_selesai >= '$tgl_mulai'))");
+            
             if(mysqli_num_rows($cek_bentrok) > 0){
-                $data_bentrok = mysqli_fetch_assoc($cek_bentrok);
                 $swal_script = "Swal.fire({ title: 'Tanggal Bentrok!', text: 'Pegawai ini sudah ada pengajuan pada tanggal tersebut.', icon: 'warning' });";
             } else {
                 $durasi = hitungHariKerja($tgl_mulai, $tgl_selesai, $libur_nasional);
+                
                 if ($durasi <= 0) {
                     $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0.', icon: 'warning' });";
                 } else {
@@ -92,7 +100,7 @@ if (isset($_POST['simpan_cuti'])) {
                         $sisa_n = $data_user['sisa_cuti_n']; $sisa_n1 = $data_user['sisa_cuti_n1'];
                         if (($sisa_n + $sisa_n1) < $durasi) {
                             $lanjut_simpan = false;
-                            $swal_script = "Swal.fire({ title: 'Kuota Habis!', text: 'Sisa cuti tidak mencukupi.', icon: 'error' });";
+                            $swal_script = "Swal.fire({ title: 'Kuota Habis!', text: 'Sisa cuti pegawai tidak mencukupi.', icon: 'error' });";
                         } else {
                             if ($durasi <= $sisa_n1) { $potong_n1 = $durasi; } 
                             else { $potong_n1 = $sisa_n1; $potong_n = $durasi - $sisa_n1; }
@@ -108,9 +116,14 @@ if (isset($_POST['simpan_cuti'])) {
                         $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat', '$ttd_pejabat')";
                         
                         if (mysqli_query($koneksi, $query_insert)) {
-                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data disimpan.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
+                            // UPDATE PROFIL USER: Simpan masa kerja ke tabel users agar besok2 auto-fill
+                            if(!empty($masa_kerja)) {
+                                mysqli_query($koneksi, "UPDATE users SET masa_kerja='$masa_kerja' WHERE id_user='$id_user'");
+                            }
+
+                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=laporan_cuti'; });";
                         } else {
-                            $swal_script = "Swal.fire({ title: 'Error!', text: 'DB Error', icon: 'error' });";
+                            $swal_script = "Swal.fire({ title: 'Error!', text: 'Gagal menyimpan ke database.', icon: 'error' });";
                         }
                     }
                 }
@@ -120,147 +133,181 @@ if (isset($_POST['simpan_cuti'])) {
 }
 ?>
 
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
 <style>
     :root { 
         --pn-green: #004d00; 
-        --pn-gold: #F9A825; 
-        --text-color: #333;
+        --pn-dark-green: #003300;
+        --pn-gold: #FFC107; 
+        --pn-gold-dark: #F9A825;
         --border-color: #d1d3e2;
-        --input-bg: #fff;
-    }
-
-    body, input, select, textarea, button, .form-control { 
-        font-family: 'Poppins', sans-serif !important; 
-    }
-
-    .card-pn-modern { border: none; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); background: #fff; }
-    .card-header-green { background: linear-gradient(135deg, #004d00 0%, #003300 100%); color: white; padding: 18px 25px; border-bottom: 4px solid var(--pn-gold); border-radius: 12px 12px 0 0; }
-    .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.5rem; }
-
-    .form-label-std { 
-        font-size: 14px; 
-        font-weight: 500; 
-        color: #555; 
-        margin-bottom: 8px; 
-        display: block; 
-    }
-
-    .input-wrapper { 
-        display: flex; 
-        align-items: center; 
-        border: 1px solid var(--border-color); 
-        border-radius: 8px; 
-        background-color: var(--input-bg); 
-        height: 48px; /* Tinggi seragam */
-        transition: all 0.2s ease-in-out;
-        padding-left: 12px;
-    }
-    .input-wrapper:focus-within { 
-        border-color: var(--pn-green); 
-        box-shadow: 0 0 0 3px rgba(0, 77, 0, 0.1); 
     }
     
-    .input-icon { color: #aaa; margin-right: 10px; font-size: 16px; }
-    .input-wrapper:focus-within .input-icon { color: var(--pn-green); }
+    body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
 
-    .form-control-clean { 
-        border: none; 
-        height: 100%; 
-        width: 100%; 
-        outline: none; 
-        font-size: 15px; 
-        color: #333; 
-        background: transparent; 
-        padding-right: 12px;
+    /* Header Styles */
+    .card-header-pn {
+        background-color: var(--pn-green);
+        color: white;
+        border-bottom: 4px solid var(--pn-gold);
+        padding: 15px 20px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
-    .form-control-clean::placeholder { color: #bbb; font-weight: 400; }
 
-    .durasi-box-wrapper {
-        background-color: #fffde7; 
-        border: 1px solid #ffe082;
-        color: #f57f17;
-    }
-    .durasi-box-wrapper input {
-        text-align: center;
-        font-weight: 700;
-        color: #f57f17;
-        font-size: 16px;
-        background: transparent;
-        cursor: default;
-    }
-    
-    .form-section {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
+    .page-header-title { 
+        border-left: 5px solid var(--pn-gold);
+        padding-left: 15px; 
         color: var(--pn-green);
-        font-weight: 700;
-        border-bottom: 1px dashed #ddd;
-        padding-bottom: 5px;
-        margin-top: 10px;
-        margin-bottom: 20px;
+        font-weight: 700; 
+        font-size: 1.6rem; 
     }
 
-    .btn-pn-solid { background-color: var(--pn-green); color: white; border-radius: 8px; padding: 12px 30px; border: none; font-weight: 600; font-size: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); transition: 0.2s; }
-    .btn-pn-solid:hover { background-color: #003800; transform: translateY(-1px); box-shadow: 0 5px 10px rgba(0,0,0,0.15); color: #fff; }
-    .btn-link-cancel { color: #666; font-weight: 500; text-decoration: none; padding: 10px 20px; font-size: 15px; }
-    .btn-link-cancel:hover { color: #333; text-decoration: underline; }
+    /* Form Label */
+    .form-label-pn { 
+        font-size: 0.85rem; 
+        font-weight: 600; 
+        color: var(--pn-green); 
+        margin-bottom: 0.5rem;
+        display: block;
+    }
 
-    .info-sidebar { background: #fff; border-radius: 12px; padding: 25px; border-left: 5px solid var(--pn-gold); box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
-    .info-list li { font-size: 14px; margin-bottom: 12px; position: relative; padding-left: 25px; line-height: 1.5; color: #555; }
-    .info-list li::before { content: '\f05a'; font-family: "Font Awesome 5 Free"; font-weight: 900; position: absolute; left: 0; top: 2px; color: var(--pn-gold); }
+    /* Standard Input Wrapper */
+    .input-group-clean {
+        display: flex;
+        align-items: center;
+        border: 1px solid var(--border-color);
+        border-radius: 8px;
+        background-color: #fff;
+        transition: all 0.3s ease;
+        overflow: hidden;
+        height: 48px; 
+        width: 100%;
+        position: relative;
+    }
+    .input-group-clean:focus-within {
+        border-color: var(--pn-green);
+        box-shadow: 0 0 0 4px rgba(0, 77, 0, 0.1);
+        transform: translateY(-1px);
+    }
+    .input-icon-clean {
+        width: 45px;
+        height: 100%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--pn-green);
+        background-color: #f8f9fc;
+        border-right: 1px solid #eaecf4;
+        font-size: 1rem;
+        flex-shrink: 0; 
+    }
+    .form-control-clean {
+        flex: 1;
+        border: none;
+        height: 100%;
+        width: 100%;
+        padding: 0 15px;
+        font-size: 0.95rem;
+        color: #495057;
+        background: transparent;
+        outline: none;
+    }
+    .form-control-clean:focus { box-shadow: none; }
+    
+    /* Select & Textarea */
+    select.form-control-clean { padding-top: 12px; padding-bottom: 12px; cursor: pointer; }
+    .input-group-clean.textarea-group { height: auto !important; align-items: stretch; }
+    .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
+    textarea.form-control-clean { padding-top: 15px; padding-bottom: 15px; line-height: 1.5; }
+    
+    /* Readonly */
+    .input-group-clean.readonly { background-color: #e9ecef; border-color: #dee2e6; }
+    .input-group-clean.readonly .input-icon-clean { color: #6c757d; background-color: #e2e6ea; }
+    
+    .section-divider { display: flex; align-items: center; margin: 30px 0 20px 0; }
+    .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
+    .section-divider hr { flex-grow: 1; border-top: 2px solid #e3e6f0; margin-left: 15px; }
 
+    .btn-pn-solid { background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); color: white; border: none; font-weight: 600; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: 0.3s; }
+    .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
+    .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
 </style>
 
 <div class="container-fluid mb-5 mt-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="page-header-title">Input Cuti Pegawai (Admin)</h1>
-        <div class="bg-white px-3 py-2 rounded-pill shadow-sm border font-weight-bold text-secondary" style="font-size: 14px;">
-            <i class="far fa-calendar-alt text-warning mr-2"></i> <?php echo date('d F Y'); ?>
+    
+    <div class="d-sm-flex align-items-center justify-content-between mb-4">
+        <h1 class="page-header-title">Input Cuti (Admin)</h1>
+        <div class="bg-white p-2 rounded shadow-sm" style="border-left: 4px solid var(--pn-gold);">
+            <span class="small font-weight-bold" style="color: var(--pn-green);">
+                <i class="far fa-calendar-alt mr-2"></i><?php echo date('d F Y'); ?>
+            </span>
         </div>
     </div>
 
     <div class="row">
         <div class="col-lg-8">
-            <div class="card card-pn-modern">
-                <div class="card-header-green">
-                    <h5 class="m-0 font-weight-bold"><i class="fas fa-pen-nib mr-2"></i> Formulir Pengajuan</h5>
+            <div class="card card-clean mb-4 shadow-sm">
+                
+                <div class="card-header-pn">
+                    <div class="font-weight-bold"><i class="fas fa-user-cog mr-2"></i> Form Admin</div>
+                    <small class="badge badge-warning text-dark font-weight-bold shadow-sm">AUTO-APPROVE</small>
                 </div>
+                
                 <div class="card-body p-4">
                     <form method="POST" autocomplete="off">
                         
-                        <div class="form-section">A. Data Pegawai & Surat</div>
-                        
-                        <div class="row mb-3">
-                            <div class="col-md-6">
-                                <label class="form-label-std">Nama Pegawai <span class="text-danger">*</span></label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-search input-icon"></i>
-                                    <input class="form-control-clean" list="list_pegawai" id="input_pegawai" placeholder="Cari nama / NIP..." required>
-                                </div>
-                                <datalist id="list_pegawai">
-                                    <?php foreach($list_pegawai as $u) { echo "<option data-id='$u[id_user]' value='$u[nama_lengkap] (NIP: $u[nip]) | Sisa N: $u[sisa_cuti_n]'>"; } ?>
-                                </datalist>
-                                <input type="hidden" name="id_user_hidden" id="id_user_hidden">
-                            </div>
+                        <div class="section-divider mt-0">
+                            <span>A. Data Pegawai & Surat</span><hr>
+                        </div>
 
-                            <div class="col-md-6">
-                                <label class="form-label-std">Nomor Surat</label>
-                                <div class="input-wrapper" style="background-color: #f8f9fc;">
-                                    <i class="fas fa-hashtag input-icon"></i>
-                                    <input type="text" name="nomor_surat" class="form-control-clean" style="color: #444; width: 100%;" value="<?= $nomor_surat_auto ?>" readonly>
-                                </div>
+                        <div class="mb-3">
+                            <label class="form-label-pn">Nomor Surat</label>
+                            <div class="input-group-clean readonly">
+                                <div class="input-icon-clean"><i class="fas fa-hashtag"></i></div>
+                                <input type="text" name="nomor_surat" class="form-control-clean" 
+                                    value="<?= $nomor_surat_auto ?>" 
+                                    style="font-family: monospace; letter-spacing: 1px; font-weight: 700; color: #5a5c69;" 
+                                    readonly>
                             </div>
                         </div>
 
-                        <div class="form-section">B. Detail Waktu Cuti</div>
+                        <div class="mb-3">
+                            <label class="form-label-pn">Nama Pegawai <span class="text-danger">*</span></label>
+                            <div class="input-group-clean">
+                                <div class="input-icon-clean"><i class="fas fa-search"></i></div>
+                                <input class="form-control-clean" list="list_pegawai" id="input_pegawai" placeholder="Ketik nama atau NIP..." required>
+                            </div>
+                            
+                            <datalist id="list_pegawai">
+                                <?php foreach($list_pegawai as $u) { 
+                                    // Handle jika masa_kerja null
+                                    $mk = isset($u['masa_kerja']) ? $u['masa_kerja'] : '';
+                                    echo "<option data-id='$u[id_user]' data-masa='$mk' value='$u[nama_lengkap] (NIP: $u[nip]) | Sisa N: $u[sisa_cuti_n]'>"; 
+                                } ?>
+                            </datalist>
+                            <input type="hidden" name="id_user_hidden" id="id_user_hidden">
+                        </div>
 
                         <div class="mb-3">
-                            <label class="form-label-std">Jenis Cuti <span class="text-danger">*</span></label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-list-ul input-icon"></i>
-                                <select name="id_jenis" class="form-control-clean" required style="cursor: pointer;">
+                            <label class="form-label-pn">Masa Kerja <span class="small text-muted font-weight-normal">(Opsional / Boleh Kosong)</span></label>
+                            <div class="input-group-clean">
+                                <div class="input-icon-clean"><i class="fas fa-briefcase"></i></div>
+                                <input type="text" name="masa_kerja" id="input_masa_kerja" class="form-control-clean" placeholder="Contoh: 10 Tahun 3 Bulan">
+                            </div>
+                        </div>
+                        
+                        <div class="section-divider mt-4">
+                            <span>B. Detail Cuti</span><hr>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label-pn">Jenis Cuti <span class="text-danger">*</span></label>
+                            <div class="input-group-clean">
+                                <div class="input-icon-clean"><i class="fas fa-list-ul"></i></div>
+                                <select name="id_jenis" class="form-control-clean" required>
                                     <option value="">-- Pilih Jenis Cuti --</option>
                                     <?php
                                     $q_jc = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY nama_jenis ASC");
@@ -269,85 +316,98 @@ if (isset($_POST['simpan_cuti'])) {
                                 </select>
                             </div>
                         </div>
+                        
+                        <div class="row">
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label-pn">Tanggal Mulai <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="far fa-calendar-alt"></i></div>
+                                    <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control-clean" required 
+                                            onclick="this.showPicker()" onfocus="this.showPicker()">
+                                </div>
+                            </div>
 
-                        <div class="row mb-3">
-                            <div class="col-md-5">
-                                <label class="form-label-std">Tanggal Mulai</label>
-                                <div class="input-wrapper">
-                                    <i class="far fa-calendar-alt input-icon"></i>
-                                    <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control-clean" required>
+                            <div class="col-md-5 mb-3">
+                                <label class="form-label-pn">Tanggal Selesai <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="far fa-calendar-check"></i></div>
+                                    <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control-clean" required 
+                                            onclick="this.showPicker()" onfocus="this.showPicker()">
                                 </div>
                             </div>
-                            <div class="col-md-5">
-                                <label class="form-label-std">Tanggal Selesai</label>
-                                <div class="input-wrapper">
-                                    <i class="far fa-calendar-check input-icon"></i>
-                                    <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control-clean" required>
-                                </div>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label-std text-center">Durasi</label>
-                                <div class="input-wrapper durasi-box-wrapper">
-                                    <input type="text" id="durasi_hari" class="form-control-clean" value="0" readonly>
+                            
+                            <div class="col-md-2 mb-3">
+                                <label class="form-label-pn">Durasi</label>
+                                <div class="input-group-clean readonly">
+                                    <input type="text" name="lama_hari" id="lama_hari" class="form-control-clean text-center font-weight-bold" style="color: var(--pn-gold-dark); font-size: 1.1rem;" readonly value="0">
+                                    <span class="mr-3 font-weight-bold text-muted" style="font-size: 0.75rem;">HARI</span>
                                 </div>
                             </div>
                         </div>
                         
-                        <div id="info_libur" class="alert alert-warning border-0 small mb-4" style="display:none; background-color: #fff3cd; color: #856404; font-size: 13px;">
-                            <i class="fas fa-info-circle mr-1"></i> Perhitungan hari kerja (Melewati Sabtu, Minggu & Libur Nasional).
+                        <div id="info_libur" class="alert alert-warning border-0 small mt-1 shadow-sm" style="display:none; border-left: 4px solid #f6c23e !important;">
+                            <i class="fas fa-info-circle mr-1"></i> Perhitungan hari kerja (Melewati Sabtu/Minggu/Libur)
                         </div>
 
-                        <div class="form-section">C. Keterangan & Pengesahan</div>
-
-                        <div class="mb-3">
-                            <label class="form-label-std">Alamat Selama Cuti</label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-map-marker-alt input-icon"></i>
-                                <input type="text" name="alamat" class="form-control-clean" placeholder="Isi alamat lengkap..." required>
-                            </div>
+                        <div class="section-divider mt-4">
+                            <span>C. Keterangan & Pengesahan</span><hr>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label-std">Alasan Cuti</label>
-                            <div class="input-wrapper" style="height: auto; padding-top: 10px; padding-bottom: 10px;">
-                                <textarea name="alasan" class="form-control-clean" rows="2" placeholder="Jelaskan alasan pengajuan cuti..." required></textarea>
+                            <label class="form-label-pn">Alamat Selama Cuti</label>
+                            <div class="input-group-clean textarea-group">
+                                <div class="input-icon-clean"><i class="fas fa-map-marked-alt"></i></div>
+                                <textarea name="alamat" class="form-control-clean" rows="2" placeholder="Alamat lengkap..." required></textarea>
                             </div>
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label-std">Atasan Penandatangan <span class="text-danger">*</span></label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-user-tie input-icon"></i>
-                                <select name="id_atasan_hidden" class="form-control-clean" required style="cursor: pointer;">
-                                    <option value="">-- Pilih Atasan --</option>
-                                    <?php foreach($list_atasan as $u) { 
-                                        echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip])</option>"; 
-                                    } ?>
-                                </select>
+                            <label class="form-label-pn">Alasan Cuti</label>
+                            <div class="input-group-clean textarea-group">
+                                <div class="input-icon-clean"><i class="fas fa-align-left"></i></div>
+                                <textarea name="alasan" class="form-control-clean" rows="2" placeholder="Jelaskan alasan pengajuan..." required></textarea>
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label class="form-label-std">Pejabat Penandatangan (SK) <span class="text-danger">*</span></label>
-                            <div class="input-wrapper">
-                                <i class="fas fa-stamp input-icon"></i>
-                                <select name="ttd_pejabat" class="form-control-clean" required style="cursor: pointer;">
-                                    <option value="">-- Pilih Pejabat Berwenang --</option>
-                                    <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
-                                    <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
-                                    <option value="plh">PLH / KOSONG (Isi Manual Tulis Tangan)</option>
-                                </select>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label-pn">Atasan Langsung <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-user-tie"></i></div>
+                                    <select name="id_atasan_hidden" class="form-control-clean" required>
+                                        <option value="">-- Pilih Atasan --</option>
+                                        <?php foreach($list_atasan as $u) { 
+                                            echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip])</option>"; 
+                                        } ?>
+                                    </select>
+                                </div>
                             </div>
-                            <small class="text-muted font-italic ml-1" style="font-size: 11px;">
-                                *Pilih siapa yang akan menandatangani surat izin cuti.
-                            </small>
+
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label-pn">Pejabat Berwenang <span class="text-danger">*</span></label>
+                                <div class="input-group-clean">
+                                    <div class="input-icon-clean"><i class="fas fa-stamp"></i></div>
+                                    <select name="ttd_pejabat" class="form-control-clean" required>
+                                        <option value="">-- Pilih Pejabat --</option>
+                                        <option value="ketua">KETUA - <?php echo $instansi['ketua_nama']; ?></option>
+                                        <option value="wakil">WAKIL KETUA - <?php echo $instansi['wakil_nama']; ?></option>
+                                        <option value="plh">PLH / KOSONG (Manual)</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="d-flex justify-content-end align-items-center pt-3 border-top mt-4">
-                            <a href="index.php?page=laporan_cuti" class="btn-link-cancel mr-3">Batal</a>
-                            <button type="submit" name="simpan_cuti" class="btn-pn-solid">
-                                <i class="fas fa-save mr-2"></i> Simpan Data
-                            </button>
+                        <div class="row mt-4">
+                            <div class="col-6">
+                                <a href="index.php?page=laporan_cuti" class="btn btn-light border btn-block py-2 font-weight-bold text-secondary shadow-sm">
+                                    <i class="fas fa-arrow-left mr-2"></i> Batal
+                                </a>
+                            </div>
+                            <div class="col-6">
+                                <button type="submit" name="simpan_cuti" class="btn btn-pn-solid btn-block py-2">
+                                    <i class="fas fa-save mr-2"></i> Simpan Data
+                                </button>
+                            </div>
                         </div>
 
                     </form>
@@ -356,15 +416,39 @@ if (isset($_POST['simpan_cuti'])) {
         </div>
 
         <div class="col-lg-4">
-            <div class="info-sidebar">
-                <h6 class="font-weight-bold text-success mb-3" style="font-size: 16px;"><i class="fas fa-clipboard-check mr-2"></i> Ketentuan Admin</h6>
-                <ul class="list-unstyled info-list">
-                    <li><b>Cek Saldo:</b> Pastikan saldo cuti tahunan (N/N-1) mencukupi.</li>
-                    <li><b>Hari Kerja:</b> Sistem otomatis melewati Sabtu, Minggu, dan Libur Nasional.</li>
-                    <li><b>Status:</b> Pengajuan admin otomatis <b>DISETUJUI</b>.</li>
-                    <li><b>Edit:</b> Kesalahan input dapat dihapus melalui menu Laporan Cuti.</li>
-                    <li><b>TTD:</b> Pilih Pejabat (Ketua/Wakil) atau PLH untuk TTD basah.</li>
-                </ul>
+            <div class="card card-clean mb-4 shadow-sm" style="border-left: 5px solid var(--pn-gold);">
+                
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
+                     data-toggle="collapse" href="#collapseKetentuan" role="button" aria-expanded="false" 
+                     style="cursor: pointer;">
+                    <h6 class="font-weight-bold text-dark m-0">
+                        <i class="fas fa-info-circle text-warning mr-2"></i> Ketentuan Admin
+                    </h6>
+                    <i class="fas fa-chevron-down text-muted small"></i>
+                </div>
+
+                <div class="collapse" id="collapseKetentuan">
+                    <div class="card-body pt-0 pb-3">
+                        <ul class="list-unstyled small text-muted mb-0" style="line-height: 1.6;">
+                            <li class="mb-2 d-flex">
+                                <i class="fas fa-wallet text-primary mt-1 mr-2" style="width:15px;"></i>
+                                <span><b>Cek Saldo:</b> Pastikan kuota cuti (N/N-1) mencukupi.</span>
+                            </li>
+                            <li class="mb-2 d-flex">
+                                <i class="fas fa-calendar-times text-danger mt-1 mr-2" style="width:15px;"></i>
+                                <span><b>Hari Kerja:</b> Sabtu, Minggu, & Libur Nasional otomatis dilewati.</span>
+                            </li>
+                            <li class="mb-2 d-flex">
+                                <i class="fas fa-stamp text-success mt-1 mr-2" style="width:15px;"></i>
+                                <span><b>Status:</b> Input via admin otomatis <b>DISETUJUI</b>.</span>
+                            </li>
+                            <li class="d-flex">
+                                <i class="fas fa-trash-alt text-secondary mt-1 mr-2" style="width:15px;"></i>
+                                <span><b>Edit:</b> Jika salah, hapus data via menu Laporan Cuti.</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -372,28 +456,38 @@ if (isset($_POST['simpan_cuti'])) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
+    // 1. Script Autocomplete Nama Pegawai & Auto-fill Masa Kerja
     function setupAutocomplete(inputId, listId, hiddenId) {
         const inputEl = document.getElementById(inputId);
         const hiddenEl = document.getElementById(hiddenId);
+        const masaKerjaEl = document.getElementById('input_masa_kerja'); // Target input masa kerja
+
         inputEl.addEventListener('input', function(e) {
             var inputVal = this.value;
             var listOptions = document.querySelectorAll('#' + listId + ' option');
             hiddenEl.value = ""; 
+            if(masaKerjaEl) masaKerjaEl.value = ""; // Reset jika nama dihapus
+
             for (var i = 0; i < listOptions.length; i++) {
                 if (listOptions[i].value === inputVal) {
                     hiddenEl.value = listOptions[i].getAttribute('data-id');
+                    
+                    // Ambil masa kerja dari data-masa dan isi ke input visible
+                    if(masaKerjaEl) {
+                        masaKerjaEl.value = listOptions[i].getAttribute('data-masa');
+                    }
                     break;
                 }
             }
         });
     }
-    // Hanya setup untuk pegawai (yang masih pakai ketik/datalist)
     setupAutocomplete('input_pegawai', 'list_pegawai', 'id_user_hidden');
 
+    // 2. Script Hitung Tanggal
     const holidays = <?php echo json_encode($libur_nasional); ?>;
     const tglMulai = document.getElementById('tgl_mulai');
     const tglSelesai = document.getElementById('tgl_selesai');
-    const durasiTxt = document.getElementById('durasi_hari');
+    const durasiInput = document.getElementById('lama_hari'); // Input Text
     const infoLibur = document.getElementById('info_libur');
 
     function hitung() {
@@ -403,16 +497,25 @@ if (isset($_POST['simpan_cuti'])) {
             let count = 0;
             let loop = new Date(start);
 
-            if (end < start) { durasiTxt.value = "Err"; return; }
+            if (end < start) { 
+                Swal.fire('Tanggal Invalid', 'Tanggal selesai tidak boleh mundur.', 'error');
+                tglSelesai.value = "";
+                durasiInput.value = 0;
+                return; 
+            }
 
             while (loop <= end) {
                 let d = loop.getDay(); 
                 let dateStr = loop.toISOString().split('T')[0]; 
+                // Skip Minggu(0), Sabtu(6), dan Libur Nasional
                 if (d !== 0 && d !== 6 && !holidays.includes(dateStr)) { count++; }
                 loop.setDate(loop.getDate() + 1);
             }
-            durasiTxt.value = count;
             
+            // Update UI (Langsung ke Input)
+            durasiInput.value = count;
+            
+            // Show info libur jika ada perbedaan hari kalender vs hari kerja
             let totalDays = (end - start) / (1000 * 60 * 60 * 24) + 1;
             infoLibur.style.display = (count < totalDays) ? 'block' : 'none';
         }
