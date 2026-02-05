@@ -310,6 +310,10 @@ $cek_data = mysqli_num_rows($cek_data_query);
                             </tbody>
                         </table>
                     </div>
+
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3">
+                        <div id="pagination-info" class="text-muted small mb-2 mb-md-0"></div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -320,9 +324,18 @@ $cek_data = mysqli_num_rows($cek_data_query);
 <script>
 $(document).ready(function() {
     var table = $('#dataTableLibur').DataTable({
-        "language": { "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json" },
+        "language": {
+            "url": "//cdn.datatables.net/plug-ins/1.10.24/i18n/Indonesian.json"
+        },
         "pageLength": 10,
-        "dom": 'rtip'
+        "dom": 'rtp',
+        "drawCallback": function( settings ) {
+            var info = table.page.info();
+            var currentPage = info.page + 1;
+            var totalPages = info.pages;
+            var total = info.recordsTotal;
+            $('#pagination-info').html('Halaman ' + currentPage + ' dari ' + totalPages + '. total: ' + total + ' hari libur');
+        }
     });
     $('#customSearchBox').keyup(function() { table.search($(this).val()).draw(); });
 });

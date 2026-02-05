@@ -43,7 +43,6 @@ $nomor = $halaman_awal + 1;
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-  
     :root { 
         --pn-green: #004d00; 
         --pn-gold: #F9A825; 
@@ -51,7 +50,6 @@ $nomor = $halaman_awal + 1;
     }
     
     body { font-family: 'Poppins', sans-serif; }
-
 
     .card-pn { 
         border: none; 
@@ -74,7 +72,6 @@ $nomor = $halaman_awal + 1;
         color: var(--pn-green) !important; 
         font-size: 1.5rem;
     }
-
 
     .table-pn-head {
         background-color: var(--pn-green);
@@ -100,8 +97,36 @@ $nomor = $halaman_awal + 1;
         font-size: 12px; 
         letter-spacing: 0.5px; 
     }
-    .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
-    .page-link { color: var(--pn-green); }
+
+    /* === CUSTOM PAGINATION STYLE === */
+    .pagination { margin-top: 10px; }
+    .pagination .page-item .page-link {
+        padding: .4rem .9rem !important;
+        margin-left: 6px !important;
+        border-radius: 10px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: var(--pn-green) !important;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--pn-green) !important;
+        color: #fff !important;
+        border: 1px solid var(--pn-green) !important;
+    }
+    .pagination .page-item .page-link:hover {
+        background: #f0fdf4 !important;
+        border-color: var(--pn-green) !important;
+        transform: translateY(-2px);
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #9ca3af !important;
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        transform: none;
+    }
 
     .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
@@ -125,7 +150,6 @@ $nomor = $halaman_awal + 1;
 </style>
 
 <div class="container-fluid mb-5 mt-4">
-    
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
         <h1 class="page-title-pn mb-0">Validasi Permohonan Cuti</h1>
     </div>
@@ -147,7 +171,6 @@ $nomor = $halaman_awal + 1;
         </div>
 
         <div class="card-body">
-            
             <div id="area_tabel">
                 <?php if(mysqli_num_rows($query) == 0) { ?>
                     <div class="alert alert-light text-center border shadow-sm" style="border-radius: 12px;">
@@ -238,11 +261,14 @@ $nomor = $halaman_awal + 1;
                     </table>
                 </div>
 
-                <div class="d-flex justify-content-end mt-3">
+                <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3">
+                    <div class="text-muted small mb-2 mb-md-0">
+                        Halaman <?php echo $halaman; ?> dari <?php echo $total_halaman; ?>. total: <?php echo $jumlah_data; ?> pengajuan
+                    </div>
                     <nav>
-                        <ul class="pagination">
+                        <ul class="pagination mb-0">
                             <li class="page-item <?php if($halaman <= 1) echo 'disabled'; ?>">
-                                <a class="page-link" href="<?php if($halaman > 1){ echo "?page=validasi_cuti&hal=".($halaman-1)."&cari=$keyword"; } ?>">Previous</a>
+                                <a class="page-link" href="<?php if($halaman > 1){ echo "?page=validasi_cuti&hal=".($halaman-1)."&cari=$keyword"; } ?>"><i class="fas fa-chevron-left"></i></a>
                             </li>
                             <?php for($x = 1; $x <= $total_halaman; $x++): ?>
                                 <li class="page-item <?php if($halaman == $x) echo 'active'; ?>">
@@ -250,7 +276,7 @@ $nomor = $halaman_awal + 1;
                                 </li>
                             <?php endfor; ?>
                             <li class="page-item <?php if($halaman >= $total_halaman) echo 'disabled'; ?>">
-                                <a class="page-link" href="<?php if($halaman < $total_halaman){ echo "?page=validasi_cuti&hal=".($halaman+1)."&cari=$keyword"; } ?>">Next</a>
+                                <a class="page-link" href="<?php if($halaman < $total_halaman){ echo "?page=validasi_cuti&hal=".($halaman+1)."&cari=$keyword"; } ?>"><i class="fas fa-chevron-right"></i></a>
                             </li>
                         </ul>
                     </nav>
