@@ -173,18 +173,34 @@ $cek_data = mysqli_num_rows($cek_data_query);
     .dataTables_info{ color:#6b7280; font-size:12px; padding-top:15px; }
     .dataTables_wrapper .dataTables_paginate{ padding-top:10px; }
     .dataTables_wrapper .dataTables_paginate .paginate_button{
-        padding:.25rem .75rem !important;
+        padding:.4rem .9rem !important;
         margin-left:6px !important;
         border-radius:10px !important;
         border:1px solid #e5e7eb !important;
         background:#fff !important;
         color:var(--pn-green) !important;
+        font-weight:600;
+        font-size:13px;
+        transition: all 0.3s ease;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current{
         background:var(--pn-green) !important;
         color:#fff !important;
         border:1px solid var(--pn-green) !important;
     }
+    .dataTables_wrapper .dataTables_paginate .paginate_button:hover{
+        background:#f0fdf4 !important;
+        border-color:var(--pn-green) !important;
+        transform:translateY(-2px);
+    }
+    .dataTables_wrapper .dataTables_paginate .paginate_button.disabled{
+        color:#9ca3af !important;
+        background:#f9fafb !important;
+        border-color:#e5e7eb !important;
+        transform:none;
+    }
+
+    #pagination-info { color: var(--pn-green); font-size: 12px; }
 </style>
 
 <div class="container-fluid">

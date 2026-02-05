@@ -211,8 +211,34 @@ $nomor = $halaman_awal + 1;
     
     .btn-action-edit:hover, .btn-action-off:hover, .btn-action-on:hover { opacity: 0.8; transform: scale(1.05); }
 
-    .pagination .page-link { color: var(--pn-green); border-radius: 5px; margin: 0 3px; }
-    .pagination .page-item.active .page-link { background-color: var(--pn-green); border-color: var(--pn-green); color: white; }
+    .pagination { margin-top: 10px; }
+    .pagination .page-item .page-link {
+        padding: .4rem .9rem !important;
+        margin-left: 6px !important;
+        border-radius: 10px !important;
+        border: 1px solid #e5e7eb !important;
+        background: #fff !important;
+        color: var(--pn-green) !important;
+        font-weight: 600;
+        font-size: 13px;
+        transition: all 0.3s ease;
+    }
+    .pagination .page-item.active .page-link {
+        background: var(--pn-green) !important;
+        color: #fff !important;
+        border: 1px solid var(--pn-green) !important;
+    }
+    .pagination .page-item .page-link:hover {
+        background: #f0fdf4 !important;
+        border-color: var(--pn-green) !important;
+        transform: translateY(-2px);
+    }
+    .pagination .page-item.disabled .page-link {
+        color: #9ca3af !important;
+        background: #f9fafb !important;
+        border-color: #e5e7eb !important;
+        transform: none;
+    }
 </style>
 
 <div class="container-fluid mb-5">
@@ -355,18 +381,18 @@ $nomor = $halaman_awal + 1;
                         <nav aria-label="Page navigation">
                             <ul class="pagination pagination-sm m-0">
                                 <?php if($halaman > 1): ?>
-                                    <li class="page-item"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman - 1; ?><?php echo $url_pencarian; ?>">&laquo;</a></li>
+                                    <li class="page-item"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman - 1; ?><?php echo $url_pencarian; ?>"><i class="fas fa-chevron-left"></i></a></li>
                                 <?php else: ?>
-                                    <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
+                                    <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
                                 <?php endif; ?>
                                 <?php for($x = 1; $x <= $total_halaman; $x++): 
                                     $active_class = ($x == $halaman) ? 'active' : ''; ?>
                                     <li class="page-item <?php echo $active_class; ?>"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $x; ?><?php echo $url_pencarian; ?>"><?php echo $x; ?></a></li>
                                 <?php endfor; ?>
                                 <?php if($halaman < $total_halaman): ?>
-                                    <li class="page-item"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman + 1; ?><?php echo $url_pencarian; ?>">&raquo;</a></li>
+                                    <li class="page-item"><a class="page-link" href="index.php?page=data_pegawai&halaman=<?php echo $halaman + 1; ?><?php echo $url_pencarian; ?>"><i class="fas fa-chevron-right"></i></a></li>
                                 <?php else: ?>
-                                    <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
+                                    <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
                                 <?php endif; ?>
                             </ul>
                         </nav>
