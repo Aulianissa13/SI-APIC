@@ -141,7 +141,7 @@ if (isset($_POST['simpan_cuti'])) {
     :root { 
         --pn-green: #004d00; 
         --pn-dark-green: #003300;
-        --pn-gold: #FFC107; 
+        --pn-gold: #F9A825; 
         --pn-gold-dark: #F9A825;
         --border-color: #d1d3e2;
     }

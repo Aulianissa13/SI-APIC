@@ -2,24 +2,15 @@
 /** @var mysqli $koneksi */
 
 session_start();
-ini_set('display_errors', 1);
-ini_set('display_startup_errors', 1);
-error_reporting(E_ALL);
+require_once '../../config/database.php';
 
-// --- KONFIGURASI KONEKSI ---
-$path_db1 = '../../assets/config/database.php';
-$path_db2 = '../../config/database.php';
-$path_db3 = '../config/database.php'; 
+if (empty($koneksi)) { 
+    die("<h3>ERROR KONEKSI:</h3> <p>Database tidak terhubung. Periksa konfigurasi database.php</p>"); 
+}
+if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) { 
+    die("<h3>AKSES DITOLAK:</h3> <p>Harap login terlebih dahulu.</p>"); 
+}
 
-if (file_exists($path_db1)) { include $path_db1; } 
-elseif (file_exists($path_db2)) { include $path_db2; } 
-elseif (file_exists($path_db3)) { include $path_db3; } 
-else { die("<h3>ERROR FATAL: File database.php tidak ditemukan!</h3>"); }
-
-if (empty($koneksi)) { die("<h3>ERROR KONEKSI:</h3> <p>Variabel <code>\$koneksi</code> kosong/gagal.</p>"); }
-if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) { die("<h3>AKSES DITOLAK:</h3> <p>Harap login terlebih dahulu.</p>"); }
-
-// --- AMBIL DATA SETTING INSTANSI ---
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi = ($q_instansi) ? mysqli_fetch_array($q_instansi) : null;
 if(!$instansi) {
@@ -29,7 +20,6 @@ if(!$instansi) {
     ];
 }
 
-// --- AMBIL DATA PENGAJUAN ---
 if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>"); }
 $id_pengajuan = (int)$_GET['id'];
 
@@ -52,7 +42,7 @@ $data = mysqli_fetch_array($query);
 
 if (!$data) { die("<h3>DATA TIDAK DITEMUKAN:</h3> <p>ID Pengajuan: $id_pengajuan tidak valid.</p>"); }
 
-// --- LOGIC HITUNG HISTORY SALDO ---
+//LOGIC HITUNG HISTORY SALDO
 $saldo_n_realtime  = (int)$data['u_sisa_n_realtime'];
 $saldo_n1_realtime = (int)$data['u_sisa_n1_realtime'];
 $potongan_ini_n    = (int)$data['dipotong_n'];
@@ -286,8 +276,8 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
 <body>
 
     <div class="no-print" style="position:fixed; top:10px; right:10px; z-index:9999;">
-        <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#006B3F; color:white; border:none; border-radius:4px;">CETAK</button>
-        <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#d33; color:white; border:none; border-radius:4px;">TUTUP</button>
+        <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#004d00; color:white; border:none; border-radius:4px;">CETAK</button>
+        <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#dc3545; color:white; border:none; border-radius:4px;">TUTUP</button>
     </div>
 
     <div class="page-container page-1-content">
