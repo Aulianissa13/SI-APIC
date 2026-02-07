@@ -97,8 +97,14 @@ $nomor = $halaman_awal + 1;
         font-size: 12px; 
         letter-spacing: 0.5px; 
     }
-
-    /* === CUSTOM PAGINATION STYLE === */
+    
+    .btn-circle-action { width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; }
+    .btn-print { background-color: #e3f2fd; color: #0d47a1; }
+    .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
+    .btn-approve { background-color: #e8f5e9; color: #2e7d32; }
+    .btn-approve:hover { background-color: #c8e6c9; transform: scale(1.1); }
+    .btn-delete { background-color: #ffebee; color: #c62828; }
+    .btn-delete:hover { background-color: #ffcdd2; transform: scale(1.1); }
     .pagination { margin-top: 10px; }
     .pagination .page-item .page-link {
         padding: .4rem .9rem !important;
@@ -236,24 +242,25 @@ $nomor = $halaman_awal + 1;
                                 <td class="text-center align-middle"><?php echo $badge; ?></td>
                                 
                                 <td class="text-center align-middle">
-                                    <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn btn-info btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;" title="Cetak Surat">
-                                        <i class="fas fa-print"></i>
-                                    </a>
+                                    <div class="d-flex justify-content-center">
+                                        <a href="pages/admin/cetak_cuti_admin.php?id=<?php echo $row['id_pengajuan']; ?>" target="_blank" class="btn-circle-action btn-print shadow-sm mr-2" title="Cetak Surat">
+                                            <i class="fas fa-print fa-sm"></i>
+                                        </a>
 
-                                    <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
-                                        <span class="mx-1 text-muted">|</span>
-                                        <button class="btn btn-success btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;"
-                                                onclick="konfirmasiValidasi('setuju', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
-                                                title="Setujui">
-                                            <i class="fas fa-check"></i>
-                                        </button>
-                                        
-                                        <button class="btn btn-danger btn-sm shadow-sm rounded-circle" style="width: 32px; height: 32px; padding: 0; line-height: 32px;"
-                                                onclick="konfirmasiValidasi('tolak', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
-                                                title="Tolak">
-                                            <i class="fas fa-times"></i>
-                                        </button>
-                                    <?php } ?>
+                                        <?php if(strpos($raw_status, 'menunggu') !== false || $raw_status == 'diajukan' || $raw_status == '') { ?>
+                                            <button class="btn-circle-action btn-approve shadow-sm mr-2"
+                                                    onclick="konfirmasiValidasi('setuju', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
+                                                    title="Setujui">
+                                                <i class="fas fa-check fa-sm"></i>
+                                            </button>
+                                            
+                                            <button class="btn-circle-action btn-delete shadow-sm"
+                                                    onclick="konfirmasiValidasi('tolak', <?php echo $row['id_pengajuan']; ?>, '<?php echo $row['nama_lengkap']; ?>')" 
+                                                    title="Tolak">
+                                                <i class="fas fa-times fa-sm"></i>
+                                            </button>
+                                        <?php } ?>
+                                    </div>
                                 </td>
                             </tr>
                             <?php } ?>

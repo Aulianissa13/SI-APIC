@@ -211,6 +211,14 @@ $nomor = $halaman_awal + 1;
     
     .btn-action-edit:hover, .btn-action-off:hover, .btn-action-on:hover { opacity: 0.8; transform: scale(1.05); }
 
+    .btn-circle-action { width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; }
+    .btn-edit { background-color: #fff3cd; color: #856404; }
+    .btn-edit:hover { background-color: #ffe699; transform: scale(1.1); }
+    .btn-off { background-color: #ffebee; color: #c62828; }
+    .btn-off:hover { background-color: #ffcdd2; transform: scale(1.1); }
+    .btn-on { background-color: #e8f5e9; color: #2e7d32; }
+    .btn-on:hover { background-color: #c8e6c9; transform: scale(1.1); }
+
     .pagination { margin-top: 10px; }
     .pagination .page-item .page-link {
         padding: .4rem .9rem !important;
@@ -352,16 +360,16 @@ $nomor = $halaman_awal + 1;
                                 </td>
                                 
                                 <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn-action-edit mr-1 shadow-sm" data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
+                                    <div class="d-flex justify-content-center">
+                                        <button type="button" class="btn-circle-action btn-edit shadow-sm mr-2" data-toggle="modal" data-target="#modalEdit<?php echo $data['id_user']; ?>" title="Edit Data">
                                             <i class="fas fa-pen fa-sm"></i>
                                         </button>
                                         <?php if($is_active): ?>
-                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-off shadow-sm" title="Nonaktifkan Akun">
+                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'nonaktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-circle-action btn-off shadow-sm" title="Nonaktifkan Akun">
                                                 <i class="fas fa-power-off fa-sm"></i>
                                             </button>
                                         <?php else: ?>
-                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-action-on shadow-sm" title="Aktifkan Akun">
+                                            <button onclick="konfirmasiStatus('<?php echo $data['id_user']; ?>', 'aktifkan', '<?php echo addslashes($data['nama_lengkap']); ?>')" class="btn-circle-action btn-on shadow-sm" title="Aktifkan Akun">
                                                 <i class="fas fa-check fa-sm"></i>
                                             </button>
                                         <?php endif; ?>

@@ -66,6 +66,11 @@ $cek_data = mysqli_num_rows($cek_data_query);
         --text:#1f2937;
     }
 
+    body, html {
+        height: 100%;
+        overflow: hidden;
+    }
+
     .page-title-pn{
         font-weight:800;
         border-left:5px solid var(--pn-gold);
@@ -121,6 +126,11 @@ $cek_data = mysqli_num_rows($cek_data_query);
         font-weight:800;
         white-space:nowrap;
     }
+
+    .btn-circle-action { width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; }
+    .btn-delete { background-color: #ffebee; color: #c62828; }
+    .btn-delete:hover { background-color: #ffcdd2; transform: scale(1.1); }
+    .btn-reset-action { background-color: #ffebee; color: #c62828; border: none; border-radius: 8px; font-weight: 700; padding: 8px 16px; transition: 0.2s; cursor: pointer; }
 
     .form-control{
         border-radius:12px;
@@ -182,6 +192,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
         font-weight:600;
         font-size:13px;
         transition: all 0.3s ease;
+        cursor: pointer;
     }
     .dataTables_wrapper .dataTables_paginate .paginate_button.current{
         background:var(--pn-green) !important;
@@ -198,9 +209,104 @@ $cek_data = mysqli_num_rows($cek_data_query);
         background:#f9fafb !important;
         border-color:#e5e7eb !important;
         transform:none;
+        cursor: not-allowed;
     }
 
     #pagination-info { color: var(--pn-green); font-size: 12px; }
+
+    .dataTables_wrapper .dataTables_paginate {
+        margin-top: 0;
+        float: none;
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .container-fluid {
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+        padding: 0.5rem 1rem;
+        overflow: hidden;
+    }
+
+    .manage-libur-wrapper {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .manage-libur-header {
+        flex-shrink: 0;
+        margin-bottom: 0.5rem;
+    }
+
+    .manage-libur-content {
+        flex: 1;
+        display: flex;
+        gap: 1rem;
+        overflow: hidden;
+    }
+
+    .manage-libur-form {
+        flex: 0 0 30%;
+        overflow-y: auto;
+        padding-right: 0.5rem;
+    }
+
+    .manage-libur-form::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .manage-libur-form::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .manage-libur-form::-webkit-scrollbar-thumb {
+        background: var(--pn-gold);
+        border-radius: 10px;
+    }
+
+    .manage-libur-form::-webkit-scrollbar-thumb:hover {
+        background: #d48e1a;
+    }
+
+    .manage-libur-table {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+    }
+
+    .manage-libur-table .card-body {
+        flex: 1;
+        overflow-y: auto;
+        padding: 0.75rem;
+    }
+
+    .manage-libur-table .card-body::-webkit-scrollbar {
+        width: 6px;
+    }
+
+    .manage-libur-table .card-body::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 10px;
+    }
+
+    .manage-libur-table .card-body::-webkit-scrollbar-thumb {
+        background: var(--pn-gold);
+        border-radius: 10px;
+    }
+
+    .manage-libur-table .card-body::-webkit-scrollbar-thumb:hover {
+        background: #d48e1a;
+    }
+
+    .manage-libur-pagination {
+        flex-shrink: 0;
+        padding: 0.5rem 0.75rem;
+    }
 </style>
 
 <div class="container-fluid">
@@ -267,7 +373,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
                         <?php if($cek_data > 0): ?>
                             <button type="button"
                                     onclick="konfirmasiHapusSemua('index.php?page=manage_libur&hapus_semua=true')"
-                                    class="btn btn-danger btn-reset shadow-sm">
+                                    class="btn-reset-action shadow-sm">
                                 <i class="fas fa-trash-alt mr-1"></i>Reset
                             </button>
                         <?php endif; ?>
@@ -317,8 +423,8 @@ $cek_data = mysqli_num_rows($cek_data_query);
                                     <td class="text-center">
                                         <a href="javascript:void(0);"
                                            onclick="konfirmasiHapus('index.php?page=manage_libur&hapus=<?= $d['id_libur'] ?>')"
-                                           class="btn btn-light btn-sm text-danger shadow-sm border" style="border-radius:10px;">
-                                            <i class="fas fa-trash"></i>
+                                           class="btn-circle-action btn-delete shadow-sm" title="Hapus">
+                                            <i class="fas fa-trash fa-sm"></i>
                                         </a>
                                     </td>
                                 </tr>
@@ -327,8 +433,15 @@ $cek_data = mysqli_num_rows($cek_data_query);
                         </table>
                     </div>
 
-                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3">
-                        <div id="pagination-info" class="text-muted small mb-2 mb-md-0"></div>
+                    <div class="row mt-3 align-items-center">
+                        <div class="col-md-6">
+                            <div id="pagination-info" class="text-secondary small mb-0"></div>
+                        </div>
+                        <div class="col-md-6 d-flex justify-content-end">
+                            <div id="dataTableLibur_wrapper" style="width: 100%; position: relative;">
+                                <!-- DataTables pagination akan di-inject di sini -->
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
