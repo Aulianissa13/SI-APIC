@@ -293,7 +293,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         <br><br>
         <div style="margin-bottom: 30px;">
             Kepada Yth.<br>
-            Bapak Ketua Pengadilan Negeri Yogyakarta<br>
+            Ketua Pengadilan Negeri Yogyakarta<br>
             di-<br>
             <span style="margin-left: 30px;">Yogyakarta</span>
         </div>
@@ -330,7 +330,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <?php echo $data['alasan']; ?>.
         </div>
 
-        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenan Bapak diucapkan terima kasih.</p>
+        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenananya saya ucapkan terima kasih.</p>
 
         <div class="ttd-wrapper">
             Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?><br>
@@ -415,7 +415,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <tr><td colspan="6" class="font-bold">V. CATATAN CUTI***</td></tr>
             <tr>
                 <td colspan="3" width="40%">1. CUTI TAHUNAN</td><td width="15%" class="text-center">PARAF PETUGAS CUTI</td>
-                <td width="35%">2. CUTI BESAR</td><td width="10%"></td> 
+                <td width="35%">2. CUTI BESAR</td><td width="10%" class="text-center" style="font-size: 8pt;"><?php echo $ket_besar; ?></td> 
             </tr>
             <tr>
                 <td width="10%" class="text-center">Tahun</td><td width="10%" class="text-center">Sisa</td><td width="20%" class="text-center">Keterangan</td>

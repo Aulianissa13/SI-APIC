@@ -195,6 +195,20 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
     .btn-pn-solid { background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); color: white; border: none; font-weight: 600; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: 0.3s; }
     .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
     .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
+
+    /* PLH Input Containers */
+    #plh_input_container,
+    #plh_nip_container {
+        margin-bottom: 1.5rem;
+    }
+    #plh_input_container.hidden,
+    #plh_nip_container.hidden {
+        display: none !important;
+        margin: 0;
+        height: 0;
+        overflow: hidden;
+        padding: 0;
+    }
 </style>
 
 <div class="container-fluid mb-5">
@@ -248,7 +262,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                                     <div class="h4 mb-0 font-weight-bold" style="color: var(--pn-green);">
                                         <?php echo $total_kuota_tahunan; ?> <small class="text-muted" style="font-size: 12px;">Hari</small>
                                     </div>
-                                    <small class="text-muted font-italic" style="font-size: 10px;">(N: <?php echo $user['sisa_cuti_n']; ?> | N-1: <?php echo $user['sisa_cuti_n1']; ?>)</small>
+                                    <small class="text-muted font-italic" style="font-size: 10px;">(Tahun Ini: <?php echo $user['sisa_cuti_n']; ?> | Tahun Lalu: <?php echo $user['sisa_cuti_n1']; ?>)</small>
                                 </div>
                                 <div class="p-2 rounded-circle d-flex align-items-center justify-content-center" 
                                      style="width: 45px; height: 45px; background-color: var(--pn-green);">
@@ -354,7 +368,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                         </div>
 
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label form-label-pn">Atasan Langsung</label>
+                            <label class="col-sm-3 col-form-label form-label-pn">Atasan Langsung <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-user-tie"></i></div>
@@ -374,7 +388,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                         </div>
 
                         <div class="form-group row">
-                            <label class="col-sm-3 col-form-label form-label-pn">Pejabat SK <span class="text-danger">*</span></label>
+                            <label class="col-sm-3 col-form-label form-label-pn">Pejabat Penandatangan <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="fas fa-stamp"></i></div>
@@ -385,14 +399,11 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                                         <option value="plh">PLH / MANUAL INPUT</option>
                                     </select>
                                 </div>
-                                <small class="text-muted font-italic ml-1" style="font-size: 11px;">
-                                    *Pilih siapa yang akan menandatangani SK.
-                                </small>
                             </div>
                         </div>
 
                         <!-- Input Manual PLH -->
-                        <div id="plh_input_container" style="display: none;" class="form-group row">
+                        <div id="plh_input_container" class="form-group row hidden">
                             <label class="col-sm-3 col-form-label form-label-pn">Nama PLH <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
@@ -402,7 +413,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             </div>
                         </div>
 
-                        <div id="plh_nip_container" style="display: none;" class="form-group row">
+                        <div id="plh_nip_container" class="form-group row hidden">
                             <label class="col-sm-3 col-form-label form-label-pn">NIP PLH <span class="text-danger">*</span></label>
                             <div class="col-sm-9">
                                 <div class="input-group-clean">
@@ -431,7 +442,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                                     </select>
                                 </div>
                                 <div id="alert-sakit-reminder" class="alert alert-warning mt-2 py-2 shadow-sm" style="display:none; font-size: 0.85rem; border-left: 4px solid #f6c23e;">
-                                    <i class="fas fa-exclamation-triangle mr-2"></i> Wajib melampirkan <b>Surat Keterangan Dokter</b>.
+                                    <i class="fas fa-exclamation-triangle mr-2"></i> Wajib menyerahkan <b>Surat Keterangan Dokter</b> ke Bagian Kepegawaian.
                                 </div>
                             </div>
                         </div>
@@ -485,7 +496,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean textarea-group">
                                     <div class="input-icon-clean"><i class="fas fa-align-left"></i></div>
-                                    <textarea name="alasan" class="form-control-clean" rows="3" required placeholder="Jelaskan alasan pengajuan cuti secara rinci..." style="resize: none; line-height: 1.5;"></textarea>
+                                    <textarea name="alasan" class="form-control-clean" rows="3" required placeholder="Jelaskan alasan pengajuan cuti..." style="resize: none; line-height: 1.5;"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -628,13 +639,13 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 
     function togglePlhInputs() {
         if (ttdPejabatSelect.value === 'plh') {
-            plhInputContainer.style.display = 'block';
-            plhNipContainer.style.display = 'block';
+            plhInputContainer.classList.remove('hidden');
+            plhNipContainer.classList.remove('hidden');
             plhNamaInput.required = true;
             plhNipInput.required = true;
         } else {
-            plhInputContainer.style.display = 'none';
-            plhNipContainer.style.display = 'none';
+            plhInputContainer.classList.add('hidden');
+            plhNipContainer.classList.add('hidden');
             plhNamaInput.required = false;
             plhNipInput.required = false;
             plhNamaInput.value = '';
