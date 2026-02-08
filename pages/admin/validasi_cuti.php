@@ -137,22 +137,20 @@ $nomor = $halaman_awal + 1;
     .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
         width: 100%;
-        padding-right: 40px !important;
-        padding-left: 15px !important;
-        border-radius: 50px !important;
-        border: 1px solid #ddd;
-        background-color: #f8f9fc;
+        padding: 6px 35px 6px 15px !important;
+        border-radius: 20px !important;
+        border: none;
+        background-color: #fff;
         transition: all 0.3s ease;
-        height: 40px;
-        font-size: 14px;
+        font-size: 0.9rem;
+        outline: none;
     }
     .search-input-inside:focus {
         background-color: #fff;
-        border-color: var(--pn-green);
-        box-shadow: 0 0 0 3px rgba(0, 77, 0, 0.1);
+        box-shadow: 0 0 0 0.2rem rgba(0, 77, 0, 0.18);
         outline: none;
     }
-    .search-icon-inside { position: absolute; right: 15px; top: 50%; transform: translateY(-50%); color: #aaa; pointer-events: none; }
+    .search-icon-inside { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
 </style>
 
 <div class="container-fluid mb-5 mt-4">

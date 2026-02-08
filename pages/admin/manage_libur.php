@@ -150,30 +150,28 @@ $cek_data = mysqli_num_rows($cek_data_query);
         text-transform: uppercase;
     }
 
-    .search-wrap{ position:relative; }
+    .search-wrap{ position: relative; width: 300px; }
     .header-search{
-        border-radius:999px;
-        border:1px solid #e5e7eb;
-        background:#fff;
-        color:#333;
-        padding:10px 44px 10px 16px;
-        font-size:.95rem;
-        height:40px;
-        width:280px;
-        transition:.2s;
+        width: 100%;
+        border-radius: 20px;
+        border: none;
+        padding: 6px 35px 6px 15px;
+        font-size: 0.9rem;
+        outline: none;
+        transition: 0.2s;
     }
     .header-search:focus{
-        outline:none;
-        border-color:#006837;
-        box-shadow:0 0 0 .2rem rgba(0,104,55,.18);
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(0, 104, 55, 0.18);
     }
     .search-ico{
-        position:absolute;
-        right:14px;
-        top:50%;
-        transform:translateY(-50%);
-        color:#9aa0a6;
-        pointer-events:none;
+        position: absolute;
+        right: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: #999;
+        font-size: 0.9rem;
+        pointer-events: none;
     }
 
     .table td, .table th{ padding:.75rem .75rem; vertical-align:middle; border-color: #f0f0f0; }
@@ -433,15 +431,15 @@ $cek_data = mysqli_num_rows($cek_data_query);
                         </table>
                     </div>
 
-                    <div class="row mt-3 align-items-center">
-                        <div class="col-md-6">
-                            <div id="pagination-info" class="text-secondary small mb-0"></div>
+                    <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3">
+                        <div class="text-muted small mb-2 mb-md-0">
+                            <span id="pagination-info"></span>
                         </div>
-                        <div class="col-md-6 d-flex justify-content-end">
-                            <div id="dataTableLibur_wrapper" style="width: 100%; position: relative;">
+                        <nav>
+                            <ul class="pagination mb-0" id="dataTableLibur_paginate_wrapper">
                                 <!-- DataTables pagination akan di-inject di sini -->
-                            </div>
-                        </div>
+                            </ul>
+                        </nav>
                     </div>
                 </div>
             </div>
