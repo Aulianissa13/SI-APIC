@@ -1,124 +1,250 @@
 <?php
-/** @var mysqli $koneksi */
+// --- 1. SETTING ANTI-CRASH & MEMORY ---
+error_reporting(0);
+ini_set('display_errors', 0);
+ini_set('memory_limit', '512M');
+set_time_limit(300);
 
-include '../../config/database.php'; 
+require '../../vendor/autoload.php';
+include '../../config/database.php';
 
-$bulan = isset($_GET['bulan']) ? $_GET['bulan'] : date('m');
-$tahun = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
-$id_jenis = isset($_GET['id_jenis']) ? $_GET['id_jenis'] : '1'; 
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\PageSetup;
+use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
 
-$nama_bulan_arr = ['01'=>'JANUARI','02'=>'FEBRUARI','03'=>'MARET','04'=>'APRIL','05'=>'MEI','06'=>'JUNI','07'=>'JULI','08'=>'AGUSTUS','09'=>'SEPTEMBER','10'=>'OKTOBER','11'=>'NOVEMBER','12'=>'DESEMBER'];
-$nama_bulan = $nama_bulan_arr[$bulan];
-$jumlah_hari = cal_days_in_month(CAL_GREGORIAN, $bulan, $tahun);
+// --- 2. PERSIAPAN DATA ---
+$bulan    = isset($_GET['bulan']) ? $_GET['bulan'] : date('m');
+$tahun    = isset($_GET['tahun']) ? $_GET['tahun'] : date('Y');
+$id_jenis = isset($_GET['id_jenis']) ? $_GET['id_jenis'] : '1';
 
-$libur_nasional = ["$tahun-01-01", "$tahun-05-01", "$tahun-06-01", "$tahun-08-17", "$tahun-12-25"];
-
+$nama_bulan_arr = [
+    '01'=>'JANUARI','02'=>'FEBRUARI','03'=>'MARET','04'=>'APRIL','05'=>'MEI','06'=>'JUNI',
+    '07'=>'JULI','08'=>'AGUSTUS','09'=>'SEPTEMBER','10'=>'OKTOBER','11'=>'NOVEMBER','12'=>'DESEMBER'
+];
+$nama_bulan  = $nama_bulan_arr[$bulan] ?? strtoupper(date('F'));
+$jumlah_hari = cal_days_in_month(CAL_GREGORIAN, (int)$bulan, (int)$tahun);
 $jenis_label = ($id_jenis == '1') ? 'TAHUNAN' : 'SAKIT';
-$timestamp = date('His'); 
-$filename = "Rekap_Cuti_" . $jenis_label . "_$bulan-$tahun" . "_$timestamp.xls";
 
-header("Content-type: application/vnd-ms-excel");
-header("Content-Disposition: attachment; filename=$filename");
-header("Pragma: no-cache");
-header("Expires: 0");
+// Libur Nasional
+$libur_nasional = [];
+$q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional WHERE MONTH(tanggal) = '$bulan' AND YEAR(tanggal) = '$tahun'");
+if ($q_libur) {
+    while ($r = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $r['tanggal']; }
+}
+if(empty($libur_nasional)) {
+    $libur_nasional = ["$tahun-01-01", "$tahun-08-17", "$tahun-12-25"];
+}
 
-$style_header = "border: 1px solid #000; font-weight: bold; text-align: center; vertical-align: middle; background-color: #f2f2f2;";
-$style_judul  = "font-weight: bold; font-size: 14pt; text-align: center; vertical-align: middle;";
-$style_blok_hitam = "border: 1px solid #000; background-color: #000; color: #000;";
-$style_tengah = "border: 1px solid #000; text-align: center; vertical-align: middle;";
-$style_kiri   = "border: 1px solid #000; text-align: left; vertical-align: middle; white-space: nowrap; padding-left: 5px;";
-$style_bold_tengah = "border: 1px solid #000; text-align: center; font-weight: bold; vertical-align: middle;";
+// --- 3. MULAI BUAT EXCEL ---
+$spreadsheet = new Spreadsheet();
+$sheet = $spreadsheet->getActiveSheet();
 
-$cols = ($id_jenis == '1') ? 35 : 34; 
-?>
+// --- SETUP HALAMAN (LEGAL LANDSCAPE & CENTER) ---
+$sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
+$sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_LEGAL);
+$sheet->getPageSetup()->setHorizontalCentered(true);
+$sheet->getPageSetup()->setVerticalCentered(false);
+$sheet->getPageMargins()->setTop(0.4)->setRight(0.5)->setLeft(0.5)->setBottom(0.2);
+$sheet->getPageSetup()->setFitToWidth(1);
+$sheet->getPageSetup()->setFitToHeight(0);
+$sheet->setShowGridlines(false);
 
-<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-<head>
-    <meta charset="UTF-8">
-                        </x:Print>
-                    </x:WorksheetOptions>
-                </x:ExcelWorksheet>
-            </x:ExcelWorksheets>
-        </x:ExcelWorkbook>
-    </xml>
-    <![endif]-->
-    <style>
-        table { border-collapse: collapse; }
-        td { height: 25px; font-family: Arial; font-size: 9pt; }
-        .tgl { width: 23px; min-width: 23px; } 
-    </style>
-</head>
-<body>
+$last_col_str = 'AI'; 
 
-<table>
-    <tr>
-        <td colspan="<?php echo $cols; ?>" style="<?php echo $style_judul; ?> height: 45px;">
-            REKAPITULASI SISA CUTI <?php echo $jenis_label; ?> SAMPAI BULAN <?php echo $nama_bulan; ?> <?php echo $tahun; ?>
-        </td>
-    </tr>
+// URUTAN INI PENTING: JURUSITA -> JURUSITA PENGGANTI
+$kategori_list = [
+    'HAKIM KARIR DAN AD HOC', 
+    'PANITERA DAN PANMUD', 
+    'SEKRETARIS DAN KASUBBAG',
+    'PANITERA PENGGANTI', 
+    'JURUSITA', 
+    'JURUSITA PENGGANTI', 
+    'STAF'
+];
 
-    <tr>
-        <th rowspan="2" style="<?php echo $style_header; ?>" width="30">NO.</th>
-        <th rowspan="2" style="<?php echo $style_header; ?>" width="240">NAMA PEGAWAI</th> <?php if($id_jenis == '1'): ?>
-            <th rowspan="2" style="<?php echo $style_header; ?>" width="55">SISA <?php echo $tahun-1; ?></th>
-            <th rowspan="2" style="<?php echo $style_header; ?>" width="55">SISA <?php echo $tahun; ?></th>
-        <?php else: ?>
-            <th rowspan="2" style="<?php echo $style_header; ?>" width="80">SISA SAKIT</th>
-        <?php endif; ?>
+$row_curr = 1;
+$first_page = true;
 
-        <th colspan="31" style="<?php echo $style_header; ?>">TANGGAL</th>
-    </tr>
+foreach ($kategori_list as $kategori) {
+    $qUsers = mysqli_query($koneksi, "SELECT * FROM users WHERE TRIM(kategori_laporan) = '$kategori' ORDER BY nama_lengkap ASC");
+    if (mysqli_num_rows($qUsers) == 0) continue;
 
-    <tr>
-        <?php for($d=1; $d<=31; $d++): ?>
-            <th class="tgl" style="<?php echo ($d > $jumlah_hari) ? $style_blok_hitam : $style_header; ?>">
-                <?php echo ($d > $jumlah_hari) ? '' : $d; ?>
-            </th>
-        <?php endfor; ?>
-    </tr>
-
-    <?php
-    $no = 1;
-    $query = mysqli_query($koneksi, "SELECT * FROM users ORDER BY nama_lengkap ASC");
-    while($row = mysqli_fetch_assoc($query)) {
-        echo "<tr>";
-        echo "<td style='$style_tengah'>$no</td>";
-        echo "<td style='$style_kiri'>".strtoupper($row['nama_lengkap'])."</td>";
-        
-        if($id_jenis == '1'){
-            echo "<td style='$style_tengah'>".$row['sisa_cuti_n1']."</td>";
-            echo "<td style='$style_tengah'>".$row['sisa_cuti_n']."</td>";
+    // --- LOGIKA PAGE BREAK SPESIAL ---
+    if (!$first_page) {
+        if ($kategori == 'JURUSITA PENGGANTI') {
+            // KHUSUS JURUSITA PENGGANTI: JANGAN PAGE BREAK
+            // Cukup kasih jarak 2 baris dari tabel atasnya
+            $row_curr += 2; 
         } else {
-            echo "<td style='$style_tengah'>".(isset($row['kuota_cuti_sakit']) ? $row['kuota_cuti_sakit'] : '-')."</td>";
+            // SELAIN ITU: WAJIB PAGE BREAK (GANTI HALAMAN)
+            $sheet->setBreak('A' . ($row_curr - 1), \PhpOffice\PhpSpreadsheet\Worksheet\Worksheet::BREAK_ROW);
+        }
+    }
+    $first_page = false;
+
+    // --- JUDUL UTAMA ---
+    $sheet->mergeCells("A$row_curr:$last_col_str$row_curr");
+    $sheet->setCellValue("A$row_curr", "REKAPITULASI SISA CUTI $jenis_label SAMPAI BULAN $nama_bulan $tahun");
+    $sheet->getStyle("A$row_curr")->getFont()->setBold(true)->setSize(14)->setName('Arial');
+    $sheet->getStyle("A$row_curr")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+    $sheet->getStyle("A$row_curr")->getAlignment()->setVertical(Alignment::VERTICAL_CENTER);
+    $sheet->getRowDimension($row_curr)->setRowHeight(30); 
+    $row_curr++; 
+
+    // --- HEADER TABEL ---
+    $start_row = $row_curr;
+    
+    // Header Kiri
+    $sheet->mergeCells("A$row_curr:A".($row_curr+1))->setCellValue("A$row_curr", "NO");
+    $sheet->mergeCells("B$row_curr:B".($row_curr+1))->setCellValue("B$row_curr", $kategori);
+    
+    if($id_jenis == '1') {
+        $sheet->mergeCells("C$row_curr:C".($row_curr+1))->setCellValue("C$row_curr", "SISA\n".($tahun-1));
+        $sheet->mergeCells("D$row_curr:D".($row_curr+1))->setCellValue("D$row_curr", "SISA\n$tahun");
+    } else {
+        $sheet->mergeCells("C$row_curr:D".($row_curr+1))->setCellValue("C$row_curr", "SISA\nSAKIT");
+    }
+
+    // Header Tanggal
+    $sheet->mergeCells("E$row_curr:$last_col_str$row_curr")->setCellValue("E$row_curr", "TANGGAL");
+    
+    // Styling Header
+    $styleHeader = [
+        'font' => ['bold' => true, 'name' => 'Arial', 'size' => 10],
+        'alignment' => [
+            'horizontal' => Alignment::HORIZONTAL_CENTER,
+            'vertical' => Alignment::VERTICAL_CENTER,
+            'wrapText' => true
+        ],
+        'fill' => [
+            'fillType' => Fill::FILL_SOLID,
+            'startColor' => ['argb' => 'FFEEEEEE'] 
+        ]
+    ];
+    $sheet->getStyle("A$row_curr:$last_col_str".($row_curr+1))->applyFromArray($styleHeader);
+
+    // Baris 2 Header (Angka 1-31)
+    $row_tgl = $row_curr + 1;
+    $col_idx = 5; 
+    
+    for($d=1; $d<=31; $d++) {
+        $col_str = Coordinate::stringFromColumnIndex($col_idx);
+        
+        $tgl_cek = sprintf("%04d-%02d-%02d", $tahun, $bulan, $d);
+        $is_weekend = (date('N', strtotime($tgl_cek)) >= 6);
+        $is_libur   = in_array($tgl_cek, $libur_nasional);
+        $is_invalid = ($d > $jumlah_hari); 
+        
+        if ($is_invalid || $is_weekend || $is_libur) {
+            $val = ""; 
+        } else {
+            $val = $d;
         }
 
-        for($d=1; $d<=31; $d++){
+        $sheet->setCellValue($col_str . $row_tgl, $val);
+        
+        if($is_invalid || $is_weekend || $is_libur) {
+            $sheet->getStyle($col_str . $row_tgl)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF000000');
+        } else {
+            $sheet->getStyle($col_str . $row_tgl)->getFill()->setFillType(Fill::FILL_NONE);
+        }
+
+        $sheet->getColumnDimension($col_str)->setAutoSize(false);
+        $sheet->getColumnDimension($col_str)->setWidth(2.7);
+
+        $col_idx++;
+    }
+    
+    $row_curr += 2; 
+    
+    // --- ISI DATA PEGAWAI ---
+    $no = 1;
+    while($row = mysqli_fetch_assoc($qUsers)) {
+        $sheet->setCellValue("A$row_curr", $no);
+        $sheet->setCellValue("B$row_curr", strtoupper($row['nama_lengkap']));
+        
+        if($id_jenis == '1') {
+            $sheet->setCellValue("C$row_curr", $row['sisa_cuti_n1'] ?? 0);
+            $sheet->setCellValue("D$row_curr", $row['sisa_cuti_n'] ?? 0);
+        } else {
+             $sheet->mergeCells("C$row_curr:D$row_curr");
+             $sheet->setCellValue("C$row_curr", $row['kuota_cuti_sakit'] ?? '-');
+        }
+        
+        // Loop Cuti
+        $col_idx = 5;
+        for($d=1; $d<=31; $d++) {
+            $col_str = Coordinate::stringFromColumnIndex($col_idx);
             $tgl_cek = sprintf("%04d-%02d-%02d", $tahun, $bulan, $d);
             $is_weekend = (date('N', strtotime($tgl_cek)) >= 6);
-            $is_nasional = in_array($tgl_cek, $libur_nasional);
-            $is_libur = ($is_weekend || $is_nasional);
+            $is_libur   = in_array($tgl_cek, $libur_nasional);
+            $is_invalid = ($d > $jumlah_hari);
             
-            $current_style = $style_tengah; 
-            $content = "";
-
-            if($d > $jumlah_hari || $is_libur) {
-                $current_style = $style_blok_hitam;
+            if($is_invalid || $is_weekend || $is_libur) {
+                $sheet->setCellValue($col_str . $row_curr, ""); 
+                $sheet->getStyle($col_str . $row_curr)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF000000');
             } else {
                 $q_cuti = mysqli_query($koneksi, "SELECT id_pengajuan FROM pengajuan_cuti 
-                          WHERE id_user='{$row['id_user']}' AND id_jenis='$id_jenis' 
-                          AND status='Disetujui' AND '$tgl_cek' BETWEEN tgl_mulai AND tgl_selesai");
+                    WHERE id_user='{$row['id_user']}' AND id_jenis='$id_jenis' AND status='Disetujui'
+                    AND '$tgl_cek' BETWEEN tgl_mulai AND tgl_selesai LIMIT 1");
+                
                 if(mysqli_num_rows($q_cuti) > 0) {
-                    $content = "v"; 
-                    $current_style = $style_bold_tengah; 
+                    $sheet->setCellValue($col_str . $row_curr, "v"); 
+                    $sheet->getStyle($col_str . $row_curr)->getFont()->setBold(true);
+                    $sheet->getStyle($col_str . $row_curr)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 }
             }
-            echo "<td class='tgl' style='$current_style'>$content</td>";
+            $col_idx++;
         }
-        echo "</tr>";
+        
+        $sheet->getRowDimension($row_curr)->setRowHeight(18);
+        $row_curr++;
         $no++;
     }
-    ?>
-</table>
+    
+    // --- BORDER ---
+    $last_row = $row_curr - 1;
+    $styleBorder = [
+        'borders' => [
+            'allBorders' => [
+                'borderStyle' => Border::BORDER_THIN,
+                'color' => ['argb' => 'FF000000'],
+            ],
+        ],
+        'alignment' => [
+            'vertical' => Alignment::VERTICAL_CENTER,
+            'horizontal' => Alignment::HORIZONTAL_CENTER
+        ],
+        'font' => ['name' => 'Arial', 'size' => 10]
+    ];
+    $sheet->getStyle("A$start_row:$last_col_str$last_row")->applyFromArray($styleBorder);
+    
+    // Rata Kiri Nama + Indent
+    $sheet->getStyle("B".($start_row+2).":B$last_row")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_LEFT);
+    $sheet->getStyle("B".($start_row+2).":B$last_row")->getAlignment()->setIndent(1);
 
-</body>
-</html>
+    // Spasi utk iterasi selanjutnya (Kalau kena page break, spasi ini diabaikan Excel)
+    $row_curr += 2;
+}
+
+// --- FINAL SIZE KOLOM UTAMA ---
+$sheet->getColumnDimension('A')->setWidth(5);   
+$sheet->getColumnDimension('B')->setWidth(40);  
+$sheet->getColumnDimension('C')->setWidth(8);   
+$sheet->getColumnDimension('D')->setWidth(8);   
+
+// --- OUTPUT ---
+$filename = "Rekap_Cuti_{$jenis_label}_{$nama_bulan}_{$tahun}.xlsx";
+
+ob_end_clean(); 
+header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+header('Content-Disposition: attachment;filename="'.$filename.'"');
+header('Cache-Control: max-age=0');
+
+$writer = new Xlsx($spreadsheet);
+$writer->save('php://output');
+exit;
