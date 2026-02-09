@@ -1,9 +1,12 @@
 <?php
 // --- 1. SETTING ANTI-CRASH & MEMORY ---
+/** @var mysqli $koneksi */
+ob_start();
 error_reporting(0);
 ini_set('display_errors', 0);
 ini_set('memory_limit', '512M');
 set_time_limit(300);
+
 
 require '../../vendor/autoload.php';
 include '../../config/database.php';
@@ -240,11 +243,13 @@ $sheet->getColumnDimension('D')->setWidth(8);
 // --- OUTPUT ---
 $filename = "Rekap_Cuti_{$jenis_label}_{$nama_bulan}_{$tahun}.xlsx";
 
-ob_end_clean(); 
+ob_end_clean();
 header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
-header('Content-Disposition: attachment;filename="'.$filename.'"');
+header('Content-Disposition: attachment; filename="' . $filename . '"');
 header('Cache-Control: max-age=0');
+header('Pragma: public');
+header('Expires: 0');
 
 $writer = new Xlsx($spreadsheet);
 $writer->save('php://output');
-exit;
+exit();
