@@ -123,7 +123,7 @@ if (isset($_POST['simpan_cuti'])) {
                                 mysqli_query($koneksi, "UPDATE users SET masa_kerja='$masa_kerja' WHERE id_user='$id_user'");
                             }
 
-                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=laporan_cuti'; });";
+                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
                         } else {
                             $swal_script = "Swal.fire({ title: 'Error!', text: 'Gagal menyimpan ke database.', icon: 'error' });";
                         }
@@ -418,7 +418,7 @@ if (isset($_POST['simpan_cuti'])) {
 
                         <div class="row mt-4">
                             <div class="col-6">
-                                <a href="index.php?page=laporan_cuti" class="btn btn-light border btn-block py-2 font-weight-bold text-secondary shadow-sm">
+                                <a href="index.php?page=validasi_cuti" class="btn btn-light border btn-block py-2 font-weight-bold text-secondary shadow-sm">
                                     <i class="fas fa-arrow-left mr-2"></i> Batal
                                 </a>
                             </div>
