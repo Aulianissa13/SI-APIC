@@ -2,8 +2,8 @@
 -- version 5.2.1
 -- https://www.phpmyadmin.net/
 --
--- Host: 127.0.0.1:3306
--- Generation Time: Feb 09, 2026 at 02:21 AM
+-- Host: 127.0.0.1
+-- Generation Time: Feb 11, 2026 at 02:12 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -20,6 +20,31 @@ SET time_zone = "+00:00";
 --
 -- Database: `db_siapic`
 --
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `izin_keluar`
+--
+
+CREATE TABLE `izin_keluar` (
+  `id_izin` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `id_atasan` int(11) DEFAULT NULL,
+  `tgl_izin` date NOT NULL,
+  `jam_keluar` time NOT NULL,
+  `jam_kembali` time NOT NULL,
+  `keperluan` text NOT NULL,
+  `status` enum('Diajukan','Disetujui','Ditolak') DEFAULT 'Disetujui',
+  `created_at` datetime DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `izin_keluar`
+--
+
+INSERT INTO `izin_keluar` (`id_izin`, `id_user`, `id_atasan`, `tgl_izin`, `jam_keluar`, `jam_kembali`, `keperluan`, `status`, `created_at`) VALUES
+(1, 3, 295, '2026-02-09', '09:23:00', '13:24:00', 'Ke Kampus', 'Disetujui', '2026-02-09 20:24:14');
 
 -- --------------------------------------------------------
 
@@ -231,7 +256,7 @@ INSERT INTO `users` (`id_user`, `nip`, `masa_kerja`, `password`, `nama_lengkap`,
 (248, '197701192002121004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'REZA TYRAMA, SH', 'Hakim Madya Muda', 'HAKIM KARIR DAN AD HOC', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '81339456870', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (249, '197807152003121002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'PURNOMO WIBOWO, SH.,MH', 'Hakim Madya Muda', 'HAKIM KARIR DAN AD HOC', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '85216443344', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (250, '197901272003121001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'DJOKO WIRYONO BUDHI S, SH', 'Hakim Madya Muda', 'HAKIM KARIR DAN AD HOC', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '85702054136', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
-(251, '197303151992032001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'ANA CAROLINA LEKBILA, S.IP.,SH', 'Panitera', 'PANITERA DAN PANMUD', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '82144567924', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
+(251, '197303151992032001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'JOHANA CAROLINA LEKBILA, S.IP.,SH', 'Panitera', 'PANITERA DAN PANMUD', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '82144567924', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (252, '197807082006042001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'DIAN UMAWATI,SH., MH', 'Panitera Muda Khusus PHI', 'PANITERA DAN PANMUD', 'Pembina (IV/a)', 'Pengadilan Negeri Yogyakarta', '81226333474', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (253, '197207092006042002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'VIRONIKA SRI YULIATI, S.Sos.,SH.,MH', 'Panitera Muda Pidana', 'PANITERA DAN PANMUD', 'Pembina (IV/a)', 'Pengadilan Negeri Yogyakarta', '81328599889', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (254, '198010092008051002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'ANDANG CATUR PRASETYA, SH., MH', 'Panitera Muda Hukum', 'PANITERA DAN PANMUD', 'Pembina (IV/a)', 'Pengadilan Negeri Yogyakarta', '82227322732', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
@@ -274,8 +299,8 @@ INSERT INTO `users` (`id_user`, `nip`, `masa_kerja`, `password`, `nama_lengkap`,
 (291, '197601011995101001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'DOMINGOS DOUTEL', 'JSP / Staf Sub Bag Umum dan Keu', 'JURUSITA PENGGANTI', 'Penata Muda Tk.I (III/b)', 'Pengadilan Negeri Yogyakarta', '81227962272', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (292, '196812211990031002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'MOHAMAD SAID IDUL FITRI', 'JSP / Staf Kepan Perdata', 'JURUSITA PENGGANTI', 'Penata Muda Tk.I (III/b)', 'Pengadilan Negeri Yogyakarta', '87738087730', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (293, '197308161994031001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'TASIMAN, SH.,MH', 'Sekretaris', 'SEKRETARIS DAN KASUBBAG', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '81328424336', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
-(294, '198404102009042016', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'YENNY VIKKY EFFENDY,ST.SH.M.Eng', 'Ka.Sub Bab PTIP', 'SEKRETARIS DAN KASUBBAG', 'Pembina (IV/a)', 'Pengadilan Negeri Yogyakarta', '87838370023', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
-(295, '198103302006041004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'EVENDI NUGROHO,ST', 'Ka.Sub Bag.Kepeg. Ortalak', 'SEKRETARIS DAN KASUBBAG', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '85711685685', 'admin', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
+(294, '198404102009042016', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'YENNY VIKKY EFFENDY,ST.SH.M.Eng', 'Kepala Sub Bagian PTIP', 'SEKRETARIS DAN KASUBBAG', 'Pembina (IV/a)', 'Pengadilan Negeri Yogyakarta', '87838370023', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
+(295, '198103302006041004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'EVENDI NUGROHO,ST', 'Kepala Sub Bagian Kepegawaian Ortala', 'SEKRETARIS DAN KASUBBAG', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '85711685685', 'admin', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (296, '198607242011011005', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'KUNCORO SETYA R,SE.,MM', 'Analis APBN', 'STAF', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '87878321018', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (297, '199102032019031005', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'NUGRAHA ABDILLAH, S.Kom', 'Pranata Komp.Ahli Pertama', 'STAF', 'Penata Muda (III/a)', 'Pengadilan Negeri Yogyakarta', '87880101733', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (298, '199509072020121004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'MUHAMMAD NUR FIRDAUS S, A.Md', 'Arsiparis Terampil', 'STAF', 'Pengatur Tk.I (II/d)', 'Pengadilan Negeri Yogyakarta', '85875803132', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
@@ -334,6 +359,12 @@ INSERT INTO `users` (`id_user`, `nip`, `masa_kerja`, `password`, `nama_lengkap`,
 --
 
 --
+-- Indexes for table `izin_keluar`
+--
+ALTER TABLE `izin_keluar`
+  ADD PRIMARY KEY (`id_izin`);
+
+--
 -- Indexes for table `jenis_cuti`
 --
 ALTER TABLE `jenis_cuti`
@@ -369,6 +400,12 @@ ALTER TABLE `users`
 --
 -- AUTO_INCREMENT for dumped tables
 --
+
+--
+-- AUTO_INCREMENT for table `izin_keluar`
+--
+ALTER TABLE `izin_keluar`
+  MODIFY `id_izin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
 -- AUTO_INCREMENT for table `jenis_cuti`

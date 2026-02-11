@@ -63,7 +63,7 @@ $sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1_future + $potongan_ini_n1;
 // --- LOGIC TAMPILAN KETERANGAN (FORM PAGE 2) ---
 $id_jenis   = (int)$data['id_jenis']; 
 $lama_ambil = (int)$data['lama_hari'];
-$ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
+$ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = ""; $ket_besar = "";
 
 switch ($id_jenis) {
    case 1: // CUTI TAHUNAN
@@ -324,7 +324,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <?php echo $data['alasan']; ?>.
         </div>
 
-        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenananya saya ucapkan terima kasih.</p>
+        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenannya dihaturkan terima kasih.</p>
 
         <div class="ttd-wrapper">
             Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?><br>
@@ -349,7 +349,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
 
         <div style="margin-bottom: 5px; font-size: 10pt; font-family: Arial;">
             Kepada :<br>
-            Yth. Ketua Pengadilan Negeri, HI dan Tipikor Yogyakarta Kelas IA<br>
+            Yth. Ketua Pengadilan Negeri<br>
             di - <br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;YOGYAKARTA.
         </div>

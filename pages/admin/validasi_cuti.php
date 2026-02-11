@@ -97,6 +97,20 @@ $nomor = $halaman_awal + 1;
         font-size: 12px; 
         letter-spacing: 0.5px; 
     }
+
+    /* --- STYLE BARU UNTUK JENIS CUTI --- */
+    .badge-jenis-cuti {
+        background-color: #e9f5e9;
+        color: var(--pn-green);
+        border: 1px solid #c3e6cb;
+        padding: 5px 12px;
+        border-radius: 50px; 
+        font-size: 0.75rem;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+        display: inline-block;
+        white-space: nowrap; 
+    }
     
     .btn-circle-action { width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; }
     .btn-print { background-color: #e3f2fd; color: #0d47a1; }
@@ -216,7 +230,13 @@ $nomor = $halaman_awal + 1;
                                     <div class="font-weight-bold text-dark" style="font-size: 15px;"><?php echo $row['nama_lengkap']; ?></div>
                                     <small class="text-muted"><i class="fas fa-id-badge mr-1"></i>NIP: <?php echo $row['nip']; ?></small>
                                 </td>
-                                <td class="align-middle text-center"><?php echo $row['nama_jenis']; ?></td>
+                                
+                                <td class="align-middle text-center">
+                                    <span class="badge-jenis-cuti">
+                                        <?php echo $row['nama_jenis']; ?>
+                                    </span>
+                                </td>
+
                                 <td class="align-middle">
                                     <div class="font-weight-bold text-primary"><?php echo $row['lama_hari']; ?> Hari Kerja</div>
                                     <small class="text-dark d-block mt-1">

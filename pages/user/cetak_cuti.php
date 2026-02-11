@@ -264,7 +264,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             .page-container { margin: 0; border: none; width: 100%; height: auto; page-break-after: always; }
         }
 
-        /* Prevent breaking small blocks (like notes) across printed pages */
         .no-break {
             page-break-inside: avoid;
             break-inside: avoid;
@@ -321,7 +320,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <?php echo $data['alasan']; ?>.
         </div>
 
-        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenananya saya ucapkan terima kasih.</p>
+        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenannya dihaturkan terima kasih.</p>
 
         <div class="ttd-wrapper">
             Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?><br>
@@ -346,7 +345,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
 
         <div style="margin-bottom: 5px; font-size: 10pt; font-family: Arial;">
             Kepada :<br>
-            Yth. Ketua Pengadilan Negeri Yogyakarta Kelas IA<br>
+            Yth. Ketua Pengadilan Negeri Yogyakarta  <br>
             di - <br>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;YOGYAKARTA.
         </div>

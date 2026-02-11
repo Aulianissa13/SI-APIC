@@ -114,6 +114,16 @@ else if($page == "laporan_cuti" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/laporan_cuti.php';
 }
 
+// --- FITUR BARU: IZIN KELUAR (Admin & User) ---
+else if($page == "izin_keluar") {
+    // Cek Role untuk menentukan file mana yang diambil
+    if($_SESSION['role'] == 'admin'){
+        include 'pages/admin/izin_keluar.php';
+    } else {
+        include 'pages/user/izin_keluar.php';
+    }
+}
+
 // --- AREA USER ---
 else if($page == "dashboard_user") {
     include 'pages/user/dashboard.php';

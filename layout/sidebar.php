@@ -115,7 +115,7 @@
 
     <hr class="sidebar-divider">
 
-    <div class="sidebar-heading">Laporan</div>
+    <div class="sidebar-heading">Laporan & Cuti</div>
     <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'laporan_cuti') ? 'active' : ''; ?>">
         <a class="nav-link" href="index.php?page=laporan_cuti">
             <i class="fas fa-fw fa-print"></i>
@@ -134,6 +134,15 @@
         <a class="nav-link" href="index.php?page=validasi_cuti">
             <i class="fas fa-fw fa-check-double"></i>
             <span>Persetujuan Cuti</span>
+        </a>
+    </li>
+
+    <hr class="sidebar-divider">
+    <div class="sidebar-heading">Izin Insidentil</div>
+    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_keluar') ? 'active' : ''; ?>">
+        <a class="nav-link" href="index.php?page=izin_keluar">
+            <i class="fas fa-fw fa-door-open" style="color: #F9A825;"></i>
+            <span>Izin Keluar Kantor</span>
         </a>
     </li>
 
@@ -168,6 +177,15 @@
         <a class="nav-link" href="index.php?page=riwayat_cuti">
             <i class="fas fa-fw fa-history"></i>
             <span>Riwayat</span>
+        </a>
+    </li>
+
+    <hr class="sidebar-divider">
+    <div class="sidebar-heading">Izin Insidentil</div>
+    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_keluar') ? 'active' : ''; ?>">
+        <a class="nav-link" href="index.php?page=izin_keluar">
+            <i class="fas fa-fw fa-print" style="color: #F9A825;"></i>
+            <span>Cetak Izin Keluar</span>
         </a>
     </li>
 
