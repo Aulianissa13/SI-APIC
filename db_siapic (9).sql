@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Feb 11, 2026 at 02:12 AM
+-- Generation Time: Feb 12, 2026 at 06:27 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -45,6 +45,31 @@ CREATE TABLE `izin_keluar` (
 
 INSERT INTO `izin_keluar` (`id_izin`, `id_user`, `id_atasan`, `tgl_izin`, `jam_keluar`, `jam_kembali`, `keperluan`, `status`, `created_at`) VALUES
 (1, 3, 295, '2026-02-09', '09:23:00', '13:24:00', 'Ke Kampus', 'Disetujui', '2026-02-09 20:24:14');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `izin_pulang`
+--
+
+CREATE TABLE `izin_pulang` (
+  `id_izin_pulang` int(11) NOT NULL,
+  `id_user` int(11) NOT NULL,
+  `id_atasan` int(11) NOT NULL,
+  `tgl_izin` date NOT NULL,
+  `jam_pulang` time NOT NULL,
+  `keperluan` text NOT NULL,
+  `status` int(1) NOT NULL DEFAULT 0 COMMENT '0=Pending, 1=ACC, 2=Tolak',
+  `tgl_input` datetime NOT NULL DEFAULT current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+--
+-- Dumping data for table `izin_pulang`
+--
+
+INSERT INTO `izin_pulang` (`id_izin_pulang`, `id_user`, `id_atasan`, `tgl_izin`, `jam_pulang`, `keperluan`, `status`, `tgl_input`) VALUES
+(1, 3, 295, '2026-02-12', '15:00:00', 'Acara', 1, '2026-02-12 11:13:36'),
+(2, 3, 295, '2026-02-12', '15:00:00', 'Acara', 0, '2026-02-12 11:14:57');
 
 -- --------------------------------------------------------
 
@@ -177,7 +202,11 @@ INSERT INTO `pengajuan_cuti` (`id_pengajuan`, `id_user`, `jenis_cuti`, `id_atasa
 (100, 3, NULL, 295, 1, '027/KPN/W13.U1/KP.05.3/II/2026', '2026-02-04', '2025-11-03', '2025-11-05', 3, 'Acara Keluarga', NULL, NULL, 'Magelang', 'Disetujui', NULL, '2026-02-04 00:59:16', 0, 0, 2, 1, 0, 'ketua'),
 (101, 3, NULL, 254, 3, '028/KPN/W13.U1/KP.05.3/II/2026', '2026-02-04', '2026-02-23', '2026-02-24', 2, 'Cuti Besar', NULL, NULL, 'Magelang', 'Disetujui', NULL, '2026-02-04 01:04:04', 0, 0, 0, 0, 0, 'plh'),
 (106, 3, NULL, 293, 4, '029/KPN/W13.U1/KP.05.3/II/2026', '2026-02-04', '2026-09-01', '2026-10-25', 39, 'Melahirkan', NULL, '', 'Magelang', 'Ditolak', NULL, '2026-02-04 03:22:25', 11, 0, 0, 0, 0, 'ketua'),
-(107, 3, NULL, 256, 5, '030/KPN/W13.U1/KP.05.3/II/2026', '2026-02-04', '2026-11-17', '2026-11-19', 3, 'Alasan Penting', NULL, '', 'Magelang', 'Disetujui', NULL, '2026-02-04 03:26:30', 11, 0, 0, 0, 0, 'wakil');
+(107, 3, NULL, 256, 5, '030/KPN/W13.U1/KP.05.3/II/2026', '2026-02-04', '2026-11-17', '2026-11-19', 3, 'Alasan Penting', NULL, '', 'Magelang', 'Disetujui', NULL, '2026-02-04 03:26:30', 11, 0, 0, 0, 0, 'wakil'),
+(108, 298, NULL, 295, 1, '201/KPN/W13.U1/KP.05.3/II/2026', '2026-02-12', '2026-02-13', '2026-02-18', 2, 'Acara Keluarga', NULL, NULL, 'Yogyakarta', 'Disetujui', NULL, '2026-02-12 01:20:20', 0, 0, 2, 0, 0, 'wakil'),
+(109, 299, NULL, 295, 1, '202/KPN/W13.U1/KP.05.3/II/2026', '2026-02-12', '2026-02-09', '2026-02-12', 4, 'Acara keluarga', NULL, NULL, 'Wonosobo', 'Disetujui', NULL, '2026-02-12 01:43:43', 0, 0, 4, 0, 0, 'wakil'),
+(110, 3, NULL, 295, 5, '203/KPN/W13.U1/KP.05.3/II/2026', '2026-02-12', '2026-04-06', '2026-04-10', 5, 'hal penting', NULL, '2 Tahun 3 Bulan', 'yogyakarta', 'Diajukan', NULL, '2026-02-12 02:08:15', 11, 0, 0, 0, 0, 'ketua'),
+(111, 233, NULL, 233, 1, '204/KPN/W13.U1/KP.05.3/II/2026', '2026-02-12', '2026-02-09', '2026-02-18', 6, 'Acara Keluarga', NULL, NULL, 'Jakarta', 'Disetujui', NULL, '2026-02-12 02:19:57', 0, 0, 6, 0, 0, 'ketua');
 
 -- --------------------------------------------------------
 
@@ -238,7 +267,7 @@ CREATE TABLE `users` (
 INSERT INTO `users` (`id_user`, `nip`, `masa_kerja`, `password`, `nama_lengkap`, `jabatan`, `kategori_laporan`, `pangkat`, `unit_kerja`, `no_telepon`, `role`, `is_atasan_langsung`, `sisa_cuti_n`, `sisa_cuti_n1`, `sisa_cuti_n2`, `kuota_cuti_sakit`, `created_at`, `status_akun`, `id_atasan`, `is_atasan`) VALUES
 (1, 'admin', NULL, '$2y$10$Hz8R7a0J4bGIuHB4Ygu.LeYjaZG2aQRO5JqfQDX3dw2Iqp3nYMDcS', 'Administrator Ortala', 'Kepala Sub Bagian', 'STAF', '', 'Pengadilan Negeri Yogyakarta', NULL, 'admin', 0, 12, 6, 0, 14, '2026-01-15 02:30:50', 'aktif', 0, '0'),
 (3, '124230050', NULL, '$2y$10$8BG/A/1OTFtCEuZmtKqyY.pi/nnKQiLwli56itJxFB6y/HjpZvT42', 'Nissa Aulia', 'Panitera', 'STAF', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '0897878657657', 'user', 0, 11, 0, 0, 12, '2026-01-17 15:38:04', 'aktif', 0, '0'),
-(233, '196804141996031002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'SYAFRIZAL, S.H.', 'Ketua', 'HAKIM KARIR DAN AD HOC', 'Pembina Utama Madya (IV/d)', 'Pengadilan Negeri Yogyakarta', '81264701704', 'user', 1, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
+(233, '196804141996031002', '26 Tahun', 'e10adc3949ba59abbe56e057f20f883e', 'SYAFRIZAL, S.H.', 'Ketua', 'HAKIM KARIR DAN AD HOC', 'Pembina Utama Madya (IV/d)', 'Pengadilan Negeri Yogyakarta', '81264701704', 'user', 1, 12, 0, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (234, '197809112001122002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'MELINDA ARITONANG, S.H.', 'Wakil Ketua', 'HAKIM KARIR DAN AD HOC', 'Pembina Tk.I (IV/b)', 'Pengadilan Negeri Yogyakarta', '81397887256', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (235, '196905311996031001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'SUNARYANTO, SH.,MH', 'Hakim Utama Muda', 'HAKIM KARIR DAN AD HOC', 'Pembina Utama Madya (IV/d)', 'Pengadilan Negeri Yogyakarta', '81395831369', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (236, '197501272000032003', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'NI LUH SUKMARINI, SH., MH', 'Hakim Madya Utama', 'HAKIM KARIR DAN AD HOC', 'Pembina Utama Muda (IV/c)', 'Pengadilan Negeri Yogyakarta', '81285095065', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
@@ -303,8 +332,8 @@ INSERT INTO `users` (`id_user`, `nip`, `masa_kerja`, `password`, `nama_lengkap`,
 (295, '198103302006041004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'EVENDI NUGROHO,ST', 'Kepala Sub Bagian Kepegawaian Ortala', 'SEKRETARIS DAN KASUBBAG', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '85711685685', 'admin', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '1'),
 (296, '198607242011011005', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'KUNCORO SETYA R,SE.,MM', 'Analis APBN', 'STAF', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '87878321018', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (297, '199102032019031005', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'NUGRAHA ABDILLAH, S.Kom', 'Pranata Komp.Ahli Pertama', 'STAF', 'Penata Muda (III/a)', 'Pengadilan Negeri Yogyakarta', '87880101733', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
-(298, '199509072020121004', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'MUHAMMAD NUR FIRDAUS S, A.Md', 'Arsiparis Terampil', 'STAF', 'Pengatur Tk.I (II/d)', 'Pengadilan Negeri Yogyakarta', '85875803132', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
-(299, '198208182010121002', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'HARIS HERMAWAN EFFENDI, SS.,MM', 'Penata Layanan Operasional', 'STAF', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '85772126935', 'admin', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
+(298, '199509072020121004', '5 Tahun', 'e10adc3949ba59abbe56e057f20f883e', 'MUHAMMAD NUR FIRDAUS S, A.Md', 'Arsiparis Terampil', 'STAF', 'Pengatur Tk.I (II/d)', 'Pengadilan Negeri Yogyakarta', '85875803132', 'user', 0, 12, 4, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
+(299, '198208182010121002', '17 Tahun 9 Bulan', 'e10adc3949ba59abbe56e057f20f883e', 'HARIS HERMAWAN EFFENDI, SS.,MM', 'Penata Layanan Operasional', 'STAF', 'Penata Tk.I (III/d)', 'Pengadilan Negeri Yogyakarta', '85772126935', 'admin', 0, 12, 2, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (300, '198510182015031001', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'ARDI WICAKSONO, ST', 'Penata Layanan Operasional', 'STAF', 'Penata (III/c)', 'Pengadilan Negeri Yogyakarta', '82141081211', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (301, '199510162020122006', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'OKTA EMILIA LARASATI, SH', 'Analis Perkara Peradilan', 'STAF', 'Penata Muda Tk.I (III/b)', 'Pengadilan Negeri Yogyakarta', '81904224409', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
 (302, '199511142020122005', NULL, 'e10adc3949ba59abbe56e057f20f883e', 'NADYA PRIMAASHA BRAHMANA, SH', 'Analis Perkara Peradilan', 'STAF', 'Penata Muda Tk.I (III/b)', 'Pengadilan Negeri Yogyakarta', '82283958516', 'user', 0, 12, 6, 0, 14, '2026-01-29 02:58:38', 'aktif', NULL, '0'),
@@ -365,6 +394,12 @@ ALTER TABLE `izin_keluar`
   ADD PRIMARY KEY (`id_izin`);
 
 --
+-- Indexes for table `izin_pulang`
+--
+ALTER TABLE `izin_pulang`
+  ADD PRIMARY KEY (`id_izin_pulang`);
+
+--
 -- Indexes for table `jenis_cuti`
 --
 ALTER TABLE `jenis_cuti`
@@ -408,6 +443,12 @@ ALTER TABLE `izin_keluar`
   MODIFY `id_izin` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- AUTO_INCREMENT for table `izin_pulang`
+--
+ALTER TABLE `izin_pulang`
+  MODIFY `id_izin_pulang` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+
+--
 -- AUTO_INCREMENT for table `jenis_cuti`
 --
 ALTER TABLE `jenis_cuti`
@@ -423,7 +464,7 @@ ALTER TABLE `libur_nasional`
 -- AUTO_INCREMENT for table `pengajuan_cuti`
 --
 ALTER TABLE `pengajuan_cuti`
-  MODIFY `id_pengajuan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=108;
+  MODIFY `id_pengajuan` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=112;
 
 --
 -- AUTO_INCREMENT for table `tbl_setting_instansi`
