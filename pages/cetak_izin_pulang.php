@@ -1,302 +1,336 @@
 <?php
-include '../config/database.php'; 
+include '../config/database.php';
 /** @var mysqli $koneksi */
 
-// 1. AMBIL DATA DARI URL
+// 1. AMBIL ID DARI URL
 if (isset($_GET['id'])) {
     $id_izin = mysqli_real_escape_string($koneksi, $_GET['id']);
-
-    // 2. QUERY DATA LENGKAP
-    // Kita join ke tabel users untuk ambil NIP, Jabatan, dan Divisi
+    
+    // REVISI QUERY: Menambahkan pengambilan kolom 'pangkat'
     $query = "SELECT 
                 i.*,
                 u.nama_lengkap AS nama_pemohon,
-                u.nip AS nip_pemohon,           -- Asumsi ada kolom nip
-                u.jabatan AS jabatan_pemohon,   -- Asumsi ada kolom jabatan
-                u.divisi AS divisi_pemohon,     -- Asumsi ada kolom divisi
-                atasan.nama_lengkap AS nama_atasan,
-                atasan.nip AS nip_atasan
+                u.nip AS nip_pemohon,
+                u.jabatan AS jabatan_pemohon,
+                u.pangkat AS pangkat_pemohon,     -- Pastikan kolom ini ada di tabel users
+                
+                a.nama_lengkap AS nama_atasan,
+                a.nip AS nip_atasan,
+                a.jabatan AS jabatan_atasan,
+                a.pangkat AS pangkat_atasan       -- Pastikan kolom ini ada di tabel users
               FROM izin_pulang i
               LEFT JOIN users u ON i.id_user = u.id_user
-              LEFT JOIN users atasan ON i.id_atasan = atasan.id_user
+              LEFT JOIN users a ON i.id_atasan = a.id_user
               WHERE i.id_izin_pulang = '$id_izin'";
 
     $result = mysqli_query($koneksi, $query);
-    $data   = mysqli_fetch_assoc($result);
-
-    if (!$data) {
-        die("Data izin tidak ditemukan.");
+    
+    // Cek error query jika tabel pangkat tidak ada
+    if (!$result) {
+        die("Error Query: " . mysqli_error($koneksi) . "<br>Solusi: Cek apakah kolom 'pangkat' ada di tabel 'users'.");
     }
+
+    $data = mysqli_fetch_assoc($result);
+
+    if (!$data) { die("Data izin tidak ditemukan."); }
 } else {
     die("ID tidak valid.");
 }
 
-// 3. HELPER TANGGAL INDONESIA
+// Helper Tanggal
 function tgl_indo($tanggal){
     $bulan = array (
         1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
         'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
     );
     $pecahkan = explode('-', $tanggal);
-    return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+    if(count($pecahkan) == 3) {
+        return $pecahkan[2] . ' ' . $bulan[ (int)$pecahkan[1] ] . ' ' . $pecahkan[0];
+    }
+    return $tanggal;
 }
 
-// Format Hari
-$hari = date('l', strtotime($data['tgl_izin']));
-$daftar_hari = [
+$hari_inggris = date('l', strtotime($data['tgl_izin']));
+$hari_indo_map = [
     'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
     'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
 ];
-$hari_indo = $daftar_hari[$hari];
+$hari_ini = $hari_indo_map[$hari_inggris];
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Surat Izin Pulang - <?= $data['nama_pemohon']; ?></title>
+    <title>Cetak Izin Pulang - <?= $data['nama_pemohon']; ?></title>
     <style>
-        /* SETTING HALAMAN F4 / LEGAL */
+        /* SETUP KERTAS F4 */
         @page {
-            size: 215mm 330mm; /* Ukuran F4 */
-            margin: 10mm 15mm; /* Margin Kiri-Kanan agak besar, Atas-Bawah kecil */
+            size: F4; 
+            margin: 2cm 2cm;
         }
-
+        
+        /* 1. REVISI FONT JADI ARIAL */
         body {
-            font-family: "Times New Roman", Times, serif;
+            font-family: Arial, Helvetica, sans-serif;
             font-size: 12pt;
+            line-height: 1.5;
             color: #000;
             background: #fff;
-            margin: 0;
-            padding: 0;
         }
 
-        /* CONTAINER UTAMA (Agar muat 2 rangkap) */
-        .sheet {
+        /* TOMBOL PRINT */
+        .no-print { display: none; }
+        .btn-print {
+            position: fixed; top: 10px; right: 10px;
+            background: #004d00; color: white; padding: 10px 15px;
+            border: none; border-radius: 5px; cursor: pointer;
+            font-weight: bold; z-index: 999;
+        }
+
+        /* --- STYLING HALAMAN --- */
+        .page {
             width: 100%;
-            height: 100%;
-        }
-
-        /* BOX UNTUK SETIAP SURAT (ATAS & BAWAH) */
-        .surat-container {
-            height: 46%; /* 46% + 46% + margin = pas 1 halaman */
-            padding: 10px;
-            position: relative;
-            box-sizing: border-box;
-            /* border: 1px solid #000; Debugging border, hapus nanti */ 
-        }
-
-        /* HEADER SURAT */
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 3px double #000;
-            padding-bottom: 10px;
-        }
-        .header h2 {
-            margin: 0;
-            font-size: 16pt;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-        .header p {
-            margin: 2px 0;
-            font-size: 10pt;
-        }
-
-        /* JUDUL SURAT */
-        .judul-surat {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .judul-surat u {
-            font-weight: bold;
-            font-size: 14pt;
-        }
-        .nomor-surat {
             display: block;
-            font-size: 11pt;
+            position: relative;
+            min-height: 25cm; 
+        }
+
+        .page-break {
+            page-break-before: always;
+            display: block;
+            height: 1px;
+        }
+
+        /* TABLE DATA */
+        .table-data { width: 100%; margin-top: 10px; margin-bottom: 10px; }
+        .table-data td { vertical-align: top; padding-bottom: 5px; }
+        .label { width: 180px; }
+        .sep { width: 20px; text-align: center; }
+
+        /* REVISI TANDA TANGAN (CENTER, NOWRAP) */
+        .ttd-wrapper { 
+            margin-top: 40px; 
+            width: 100%; 
+            display: flex; 
+            justify-content: flex-end; /* Posisi di Kanan Halaman */
+        }
+        
+        .ttd-box { 
+            /* Box tanda tangan */
+            text-align: center; /* Teks di dalam box rata tengah */
+            padding-right: 0;
+            min-width: 200px;
+        }
+        
+        .ttd-space { height: 70px; }
+        
+        .nama-terang { 
+            font-weight: bold; 
+            text-decoration: underline; 
+            /* REVISI: Agar nama panjang tetap 1 baris */
+            white-space: nowrap; 
+            display: inline-block;
+        }
+        
+        .nip-text {
+            display: block;
             margin-top: 2px;
         }
 
-        /* ISI SURAT (TABEL) */
-        .tabel-isi {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 15px;
-        }
-        .tabel-isi td {
-            vertical-align: top;
-            padding: 4px 0;
-            font-size: 12pt;
-        }
-        .label { width: 30%; }
-        .titik { width: 3%; text-align: center; }
-        .isi { width: 67%; }
-
-        /* TANDA TANGAN */
-        .ttd-container {
-            width: 100%;
-            margin-top: 30px;
-            display: table;
-        }
-        .ttd-box {
-            display: table-cell;
-            width: 33%;
-            text-align: center;
-            vertical-align: top;
-        }
-        .ttd-box p { margin: 0; }
-        .ttd-space { height: 60px; } /* Ruang tanda tangan */
-        .nama-terang {
-            font-weight: bold;
-            text-decoration: underline;
-        }
-
-        /* GARIS POTONG (CUT LINE) */
-        .cut-line {
-            width: 100%;
-            border-top: 2px dashed #999;
-            margin: 25px 0;
-            position: relative;
-        }
-        .cut-line::after {
-            content: "✂ Potong di sini";
-            position: absolute;
-            left: 50%;
-            top: -12px;
-            transform: translateX(-50%);
-            background: #fff;
-            padding: 0 10px;
-            font-size: 10pt;
-            color: #666;
-            font-style: italic;
-        }
-
-        /* TOMBOL PRINT (Hanya tampil di layar) */
         @media print {
-            .no-print { display: none; }
-        }
-        .no-print {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #004d00;
-            color: #fff;
-            padding: 10px 20px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-family: sans-serif;
-            font-weight: bold;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.3);
-            cursor: pointer;
-            z-index: 9999;
+            .btn-print { display: none; }
+            .page-break { page-break-before: always; }
         }
     </style>
 </head>
 <body onload="window.print()">
 
-    <a href="javascript:window.print()" class="no-print">🖨️ Cetak Surat</a>
+    <button class="btn-print" onclick="window.print()">🖨️ Cetak Dokumen</button>
 
-    <div class="sheet">
-        
-        <?php 
-        // KITA BUAT FUNCTION UNTUK TEMPLATE AGAR TIDAK COPY PASTE KODE HTML 2 KALI
-        function renderSurat($data, $hari_indo, $judul_copy) {
-        ?>
-        
-        <div class="surat-container">
-            <div class="header">
-                <h2>PT. NAMA PERUSAHAAN ANDA</h2>
-                <p>Jalan Alamat Perusahaan No. 123, Kota Anda, Provinsi Anda</p>
-                <p>Telp: (021) 1234567 | Email: info@perusahaan.com</p>
-            </div>
-
-            <div class="judul-surat">
-                <u>SURAT IZIN PULANG AWAL</u><br>
-                <span class="nomor-surat">Nomor: ... / HRD / <?= date('m/Y'); ?></span>
-            </div>
-
-            <p>Yang bertanda tangan di bawah ini menerangkan bahwa:</p>
-
-            <table class="tabel-isi">
-                <tr>
-                    <td class="label">Nama</td>
-                    <td class="titik">:</td>
-                    <td class="isi"><b><?= $data['nama_pemohon']; ?></b></td>
-                </tr>
-                <tr>
-                    <td class="label">NIP / ID</td>
-                    <td class="titik">:</td>
-                    <td class="isi"><?= $data['nip_pemohon'] ?? '-'; ?></td>
-                </tr>
-                <tr>
-                    <td class="label">Jabatan / Divisi</td>
-                    <td class="titik">:</td>
-                    <td class="isi"><?= ($data['jabatan_pemohon'] ?? '-') . ' / ' . ($data['divisi_pemohon'] ?? '-'); ?></td>
-                </tr>
-                <tr>
-                    <td class="label">Hari, Tanggal</td>
-                    <td class="titik">:</td>
-                    <td class="isi"><?= $hari_indo . ', ' . tgl_indo($data['tgl_izin']); ?></td>
-                </tr>
-                <tr>
-                    <td class="label">Jam Pulang</td>
-                    <td class="titik">:</td>
-                    <td class="isi">Pukul <b><?= date('H:i', strtotime($data['jam_pulang'])); ?> WIB</b></td>
-                </tr>
-                <tr>
-                    <td class="label">Keperluan / Alasan</td>
-                    <td class="titik">:</td>
-                    <td class="isi"><?= $data['keperluan']; ?></td>
-                </tr>
-            </table>
-
-            <p>Demikian surat izin ini dibuat untuk dapat dipergunakan sebagaimana mestinya.</p>
-
-            <div class="ttd-container">
-                <div class="ttd-box">
-                    <p>Mengetahui,</p>
-                    <p>Atasan Langsung</p>
-                    <div class="ttd-space">
-                        <?php if($data['status'] == 1): ?>
-                             <br><small style="color:green; border:1px solid green; padding:2px;"><i>Disetujui Digital</i></small>
-                        <?php endif; ?>
-                    </div>
-                    <p class="nama-terang"><?= $data['nama_atasan'] ?? '......................'; ?></p>
-                    <p>NIP. <?= $data['nip_atasan'] ?? '..........'; ?></p>
-                </div>
-
-                <div class="ttd-box">
-                    <p>Mengetahui,</p>
-                    <p>HRD / Security</p>
-                    <div class="ttd-space"></div>
-                    <p class="nama-terang">( ............................. )</p>
-                </div>
-
-                <div class="ttd-box">
-                    <p><?= $data['divisi_pemohon'] ?? 'Kota'; ?>, <?= tgl_indo($data['tgl_izin']); ?></p>
-                    <p>Pemohon</p>
-                    <div class="ttd-space"></div>
-                    <p class="nama-terang"><?= $data['nama_pemohon']; ?></p>
-                    <p>NIP. <?= $data['nip_pemohon'] ?? '..........'; ?></p>
-                </div>
-            </div>
-            
-            <div style="position: absolute; bottom: 5px; right: 10px; font-size: 9pt; color: #888;">
-                <i>*Lembar untuk: <?= $judul_copy; ?> (Dicetak dari Sistem SI-APIC)</i>
-            </div>
+    <div class="page">
+        <div style="text-align: right; margin-bottom: 20px;">
+            Yogyakarta, <?= tgl_indo(date('Y-m-d')); ?>
         </div>
 
-        <?php } // End Function ?>
+        <table style="width: 100%; margin-bottom: 20px;">
+            <tr>
+                <td width="80px">Perihal</td>
+                <td width="20px">:</td>
+                <td>Permohonan Izin Pulang Awal</td>
+            </tr>
+        </table>
 
-        <?= renderSurat($data, $hari_indo, "Arsip / HRD"); ?>
+        <div style="margin-bottom: 30px;">
+            Kepada :<br>
+            Yth. Ketua Pengadilan Negeri Yogyakarta Kelas IA<br>
+            Di -<br>
+            <span style="padding-left: 30px;">Yogyakarta</span>
+        </div>
 
-        <div class="cut-line"></div>
+        <p>Dengan hormat,</p>
+        <p>Yang bertanda tangan dibawah ini saya :</p>
 
-        <?= renderSurat($data, $hari_indo, "Pegawai / Security"); ?>
+        <table class="table-data" style="margin-left: 20px;">
+            <tr>
+                <td class="label">Nama</td>
+                <td class="sep">:</td>
+                <td><?= $data['nama_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">NIP</td>
+                <td class="sep">:</td>
+                <td><?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Pangkat/Gol.Ruang</td>
+                <td class="sep">:</td>
+                <td><?= isset($data['pangkat_pemohon']) ? $data['pangkat_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Jabatan</td>
+                <td class="sep">:</td>
+                <td><?= $data['jabatan_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Unit Kerja</td>
+                <td class="sep">:</td>
+                <td>Pengadilan Negeri Yogyakarta Kelas IA</td>
+            </tr>
+        </table>
 
+        <p>Mengajukan permohonan izin Pulang Awal pada :</p>
+
+        <table class="table-data" style="margin-left: 20px;">
+            <tr>
+                <td class="label">Hari / Tanggal</td>
+                <td class="sep">:</td>
+                <td><?= $hari_ini . ' / ' . tgl_indo($data['tgl_izin']); ?></td>
+            </tr>
+            <tr>
+                <td class="label">Jam</td>
+                <td class="sep">:</td>
+                <td><?= date('H:i', strtotime($data['jam_pulang'])); ?> WIB</td>
+            </tr>
+            <tr>
+                <td class="label">Keperluan</td>
+                <td class="sep">:</td>
+                <td><?= $data['keperluan']; ?></td>
+            </tr>
+        </table>
+
+        <p>Demikian permohonan izin ini disampaikan, atas perkenanannya diucapkan terima kasih.</p>
+
+        <div class="ttd-wrapper">
+            <div class="ttd-box">
+                <p>Hormat saya,</p>
+                <div class="ttd-space"></div>
+                <span class="nama-terang"><?= $data['nama_pemohon']; ?></span>
+                <span class="nip-text">NIP. <?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '.........................'; ?></span>
+            </div>
+        </div>
     </div>
+    
+    <div class="page-break"></div>
 
+    <div class="page">
+        <div style="text-align: center; margin-bottom: 40px; margin-top: 20px;">
+            <span style="font-size: 14pt;">IZIN PULANG AWAL</span>
+        </div>
+
+        <table class="table-data">
+            <tr>
+                <td class="label">Yang bertanda tangan di bawah ini</td>
+                <td class="sep">:</td>
+                <td>
+                    <?= $data['nama_atasan'] ? $data['nama_atasan'] : '.........................................................................'; ?>
+                </td>
+            </tr>
+            <tr>
+                <td class="label">Selaku</td>
+                <td class="sep">:</td>
+                <td>
+                    <?= $data['jabatan_atasan'] ? $data['jabatan_atasan'] : '.........................................................................'; ?>
+                </td>
+            </tr>
+            <tr>
+                <td colspan="3" style="padding-top: 15px; padding-bottom: 15px;">
+                    Dengan ini memberikan izin kepada :
+                </td>
+            </tr>
+            
+            <tr>
+                <td class="label">Nama</td>
+                <td class="sep">:</td>
+                <td><?= $data['nama_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">NIP</td>
+                <td class="sep">:</td>
+                <td><?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Pangkat/Gol.Ruang</td>
+                <td class="sep">:</td>
+                <td><?= isset($data['pangkat_pemohon']) ? $data['pangkat_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Jabatan</td>
+                <td class="sep">:</td>
+                <td><?= $data['jabatan_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Unit Kerja</td>
+                <td class="sep">:</td>
+                <td>Pengadilan Negeri Yogyakarta Kelas IA</td>
+            </tr>
+        </table>
+
+        <div style="margin-top: 10px;">
+            <table class="table-data">
+                <tr>
+                    <td class="label" style="width: 180px;">Untuk pulang kantor lebih awal pada</td>
+                    <td class="sep">:</td>
+                    <td style="width: 50px;">Hari:</td>
+                    <td><?= $hari_ini; ?></td>
+                    <td style="width: 60px;">Tanggal:</td>
+                    <td><?= tgl_indo($data['tgl_izin']); ?></td>
+                </tr>
+                <tr>
+                    <td></td>
+                    <td></td>
+                    <td>Pukul:</td>
+                    <td colspan="3"><?= date('H:i', strtotime($data['jam_pulang'])); ?> WIB</td>
+                </tr>
+            </table>
+        </div>
+
+        <table class="table-data">
+            <tr>
+                <td class="label" style="width: 180px;">Untuk Keperluan</td>
+                <td class="sep">:</td>
+                <td><?= $data['keperluan']; ?></td>
+            </tr>
+        </table>
+
+        <p style="margin-top: 20px;">Demikian izin ini diberikan kepada yang bersangkutan untuk digunakan sebagaimana mestinya.</p>
+
+        <div class="ttd-wrapper" style="margin-top: 50px;">
+            <div class="ttd-box">
+                <p>Yogyakarta, <?= tgl_indo(date('Y-m-d')); ?></p>
+                <p>Atasan Langsung</p>
+                
+                <div class="ttd-space">
+                    </div>
+                
+                <span class="nama-terang">
+                    <?= $data['nama_atasan'] ? $data['nama_atasan'] : '......................................'; ?>
+                </span>
+                <span class="nip-text">
+                    <?= $data['nip_atasan'] ? 'NIP. '.$data['nip_atasan'] : 'NIP. .....................................'; ?>
+                </span>
+            </div>
+        </div>
+    </div>
 </body>
 </html>

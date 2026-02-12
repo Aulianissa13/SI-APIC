@@ -76,7 +76,6 @@
     .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
     textarea.form-control-clean { padding-top: 15px; padding-bottom: 15px; line-height: 1.5; }
 
-    /* --- BUTTONS --- */
     .btn-pn-solid { 
         background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); 
         color: white; border: none; font-weight: 600; padding: 12px 20px; 
@@ -84,7 +83,6 @@
     }
     .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
 
-    /* --- TABLE & GENERAL --- */
     .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
     .section-divider { display: flex; align-items: center; margin: 30px 0 20px 0; }
     .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
