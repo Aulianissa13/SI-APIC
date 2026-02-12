@@ -9,10 +9,60 @@ $bulanIndo = [
     'October' => 'Oktober', 'November' => 'November', 'December' => 'Desember'
 ];
 $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
+
+// ======================================================================
+// RIWAYAT IZIN (ADMIN) - SEARCH + PAGING MODEL VALIDASI CUTI
+// FIX: HEADER KIRI & KANAN SAMA-SAMA DIKECILIN (BIAR MATCH)
+// NOTE route: index.php?page=izin_keluar_admin
+// ======================================================================
+
+$batas   = 9;
+$halaman = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
+$halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
+
+$keyword_izin = "";
+$where_clause_izin = "";
+
+if (isset($_GET['cari_izin'])) {
+    $keyword_izin = mysqli_real_escape_string($koneksi, $_GET['cari_izin']);
+    $where_clause_izin = " AND (
+        u.nama_lengkap LIKE '%$keyword_izin%' OR
+        a.nama_lengkap LIKE '%$keyword_izin%' OR
+        i.tgl_izin LIKE '%$keyword_izin%' OR
+        i.keperluan LIKE '%$keyword_izin%' OR
+        i.jam_keluar LIKE '%$keyword_izin%' OR
+        i.jam_kembali LIKE '%$keyword_izin%'
+    )";
+}
+
+$query_count_str_izin = "
+    SELECT COUNT(i.id_izin) AS jumlah
+    FROM izin_keluar i
+    JOIN users u ON i.id_user = u.id_user
+    LEFT JOIN users a ON i.id_atasan = a.id_user
+    WHERE 1=1 $where_clause_izin
+";
+$query_count_izin = mysqli_query($koneksi, $query_count_str_izin);
+$data_count_izin  = mysqli_fetch_assoc($query_count_izin);
+$jumlah_data_izin = (int)($data_count_izin['jumlah'] ?? 0);
+$total_halaman_izin = ($jumlah_data_izin > 0) ? (int)ceil($jumlah_data_izin / $batas) : 1;
+
+$q_riwayat = mysqli_query($koneksi, "
+    SELECT i.*, u.nama_lengkap AS pemohon, a.nama_lengkap AS atasan
+    FROM izin_keluar i
+    JOIN users u ON i.id_user = u.id_user
+    LEFT JOIN users a ON i.id_atasan = a.id_user
+    WHERE 1=1 $where_clause_izin
+    ORDER BY i.id_izin DESC
+    LIMIT $halaman_awal, $batas
+");
+$no = $halaman_awal + 1;
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
 <style>
     :root { 
@@ -61,6 +111,14 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
         justify-content: space-between;
         align-items: center;
         border-radius: 10px 10px 0 0;
+    }
+
+    /* FIX: KECILIN HEADER KIRI & KANAN (SAMA-SAMA) */
+    .card-header-pn.card-header-mini{
+        padding-top: 10px !important;
+        padding-bottom: 10px !important;
+        min-height: 52px; /* header jadi lebih pendek tapi tetap nyaman */
+        box-sizing: border-box;
     }
 
     .page-header-title { 
@@ -165,9 +223,37 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
         background-color: rgba(0, 77, 0, 0.03) !important;
     }
 
-    /* --- 6. CUSTOM PAGINATION STYLE (MODEL KOTAK) --- */
-    .dataTables_wrapper .dataTables_paginate .pagination { margin-top: 10px; }
-    .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link {
+    /* Action Buttons */
+    .btn-circle-action { 
+        width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; 
+    }
+    .btn-print { background-color: #e3f2fd; color: #0d47a1; }
+    .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
+
+    /* --- SEARCH (MODEL VALIDASI CUTI) --- */
+    .search-wrapper { position: relative; width: 100%; max-width: 300px; }
+    .search-input-inside {
+        width: 100%;
+        height: 30px;
+        padding: 4px 34px 4px 14px !important;
+        border-radius: 20px !important;
+        border: none;
+        background-color: #fff;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        outline: none;
+        box-sizing: border-box;
+    }
+    .search-input-inside:focus {
+        background-color: #fff;
+        box-shadow: 0 0 0 0.2rem rgba(0, 77, 0, 0.18);
+        outline: none;
+    }
+    .search-icon-inside { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
+
+    /* --- PAGINATION --- */
+    .pagination { margin-top: 10px; }
+    .pagination .page-item .page-link {
         padding: .4rem .9rem !important;
         margin-left: 6px !important;
         border-radius: 10px !important;
@@ -178,29 +264,22 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
         font-size: 13px;
         transition: all 0.3s ease;
     }
-    .dataTables_wrapper .dataTables_paginate .pagination .page-item.active .page-link {
+    .pagination .page-item.active .page-link {
         background: var(--pn-green) !important;
         color: #fff !important;
         border: 1px solid var(--pn-green) !important;
     }
-    .dataTables_wrapper .dataTables_paginate .pagination .page-item .page-link:hover {
+    .pagination .page-item .page-link:hover {
         background: #f0fdf4 !important;
         border-color: var(--pn-green) !important;
         transform: translateY(-2px);
     }
-    .dataTables_wrapper .dataTables_paginate .pagination .page-item.disabled .page-link {
+    .pagination .page-item.disabled .page-link {
         color: #9ca3af !important;
         background: #f9fafb !important;
         border-color: #e5e7eb !important;
         transform: none;
     }
-
-    /* Action Buttons */
-    .btn-circle-action { 
-        width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; 
-    }
-    .btn-print { background-color: #e3f2fd; color: #0d47a1; }
-    .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
 </style>
 
 <div class="container-fluid mb-5 mt-4">
@@ -217,9 +296,11 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
     <div class="row">
         <div class="col-lg-5 mb-4">
             <div class="card card-clean shadow-sm h-100">
-                <div class="card-header-pn">
+                <!-- KIRI: DIKECILIN -->
+                <div class="card-header-pn card-header-mini">
                     <div class="font-weight-bold"><i class="fas fa-plus-circle mr-2"></i> Buat Izin Baru</div>
                 </div>
+
                 <div class="card-body p-4">
                     <form action="pages/proses_izin.php" method="POST" autocomplete="off">
                         
@@ -308,59 +389,99 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 
         <div class="col-lg-7">
             <div class="card card-clean shadow-sm mb-4">
-                <div class="card-header-pn">
+                <!-- KANAN: DIKECILIN JUGA -->
+                <div class="card-header-pn card-header-mini">
                     <div class="font-weight-bold"><i class="fas fa-history mr-2"></i>Riwayat Izin (Semua Pegawai)</div>
+
+                    <div class="search-wrapper">
+                        <input type="text" id="keyword_izin" class="search-input-inside"
+                               placeholder="Cari Nama / Tanggal..."
+                               value="<?php echo htmlspecialchars($keyword_izin); ?>"
+                               autocomplete="off">
+                        <i class="fas fa-search search-icon-inside"></i>
+                    </div>
                 </div>
+
                 <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-bordered table-hover" id="dataTableAdmin" width="100%" cellspacing="0">
-                            <thead class="table-pn-head">
-                                <tr class="text-center">
-                                    <th width="5%">No</th>
-                                    <th>Pemohon</th>
-                                    <th>Tanggal & Waktu</th>
-                                    <th>Keperluan</th>
-                                    <th>Atasan</th>
-                                    <th width="12%">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php
-                                $no = 1;
-                                $q_riwayat = mysqli_query($koneksi, "SELECT i.*, u.nama_lengkap as pemohon, a.nama_lengkap as atasan 
-                                                                     FROM izin_keluar i 
-                                                                     JOIN users u ON i.id_user = u.id_user 
-                                                                     LEFT JOIN users a ON i.id_atasan = a.id_user
-                                                                     ORDER BY i.id_izin DESC");
-                                while($row = mysqli_fetch_array($q_riwayat)):
-                                ?>
-                                <tr>
-                                    <td class="text-center font-weight-bold align-middle"><?= $no++; ?></td>
-                                    <td class="align-middle">
-                                        <div class="font-weight-bold text-dark" style="font-size: 15px;"><?= $row['pemohon']; ?></div>
-                                    </td>
-                                    <td class="align-middle" style="font-size: 0.85rem;">
-                                        <div class="font-weight-bold text-primary"><?= date('d/m/Y', strtotime($row['tgl_izin'])); ?></div>
-                                        <small class="text-dark d-block mt-1">
-                                            <i class="far fa-clock mr-1 text-muted"></i>
-                                            <?= date('H:i', strtotime($row['jam_keluar'])); ?> - <?= date('H:i', strtotime($row['jam_kembali'])); ?> WIB
-                                        </small>
-                                    </td>
-                                    <td class="align-middle" style="font-size: 0.85rem;"><?= $row['keperluan']; ?></td>
-                                    <td class="align-middle" style="font-size: 0.85rem;"><?= $row['atasan'] ?? '-'; ?></td>
-                                    <td class="text-center align-middle">
-                                        <a href="pages/cetak_izin_keluar.php?id=<?= $row['id_izin']; ?>" target="_blank" class="btn-circle-action btn-print shadow-sm" title="Cetak Surat">
-                                            <i class="fas fa-print fa-sm"></i>
+                    <div id="area_tabel_izin">
+                        <?php if(mysqli_num_rows($q_riwayat) == 0) { ?>
+                            <div class="alert alert-light text-center border shadow-sm" style="border-radius: 12px;">
+                                <h6 class="text-muted m-3"><i class="fas fa-info-circle mr-2"></i>Data riwayat izin tidak ditemukan.</h6>
+                            </div>
+                        <?php } else { ?>
+
+                        <div class="table-responsive">
+                            <table class="table table-bordered table-hover" width="100%" cellspacing="0">
+                                <thead class="table-pn-head">
+                                    <tr class="text-center">
+                                        <th width="5%">No</th>
+                                        <th>Pemohon</th>
+                                        <th>Tanggal & Waktu</th>
+                                        <th>Keperluan</th>
+                                        <th>Atasan</th>
+                                        <th width="12%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <?php while($row = mysqli_fetch_array($q_riwayat)): ?>
+                                    <tr>
+                                        <td class="text-center font-weight-bold align-middle"><?= $no++; ?></td>
+                                        <td class="align-middle">
+                                            <div class="font-weight-bold text-dark" style="font-size: 15px;"><?= $row['pemohon']; ?></div>
+                                        </td>
+                                        <td class="align-middle" style="font-size: 0.85rem;">
+                                            <div class="font-weight-bold text-primary"><?= date('d/m/Y', strtotime($row['tgl_izin'])); ?></div>
+                                            <small class="text-dark d-block mt-1">
+                                                <i class="far fa-clock mr-1 text-muted"></i>
+                                                <?= date('H:i', strtotime($row['jam_keluar'])); ?> - <?= date('H:i', strtotime($row['jam_kembali'])); ?> WIB
+                                            </small>
+                                        </td>
+                                        <td class="align-middle" style="font-size: 0.85rem;"><?= $row['keperluan']; ?></td>
+                                        <td class="align-middle" style="font-size: 0.85rem;"><?= $row['atasan'] ?? '-'; ?></td>
+                                        <td class="text-center align-middle">
+                                            <a href="pages/cetak_izin_keluar.php?id=<?= $row['id_izin']; ?>" target="_blank" class="btn-circle-action btn-print shadow-sm" title="Cetak Surat">
+                                                <i class="fas fa-print fa-sm"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    <?php endwhile; ?>
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <div class="d-flex flex-column flex-md-row justify-content-between align-items-center mt-3">
+                            <div class="text-muted small mb-2 mb-md-0">
+                                Halaman <?php echo $halaman; ?> dari <?php echo $total_halaman_izin; ?>. total: <?php echo $jumlah_data_izin; ?> izin
+                            </div>
+                            <nav>
+                                <ul class="pagination mb-0">
+                                    <li class="page-item <?php if($halaman <= 1) echo 'disabled'; ?>">
+                                        <a class="page-link" href="<?php if($halaman > 1){ echo "?page=izin_keluar&hal=".($halaman-1)."&cari_izin=".urlencode($keyword_izin); } ?>">
+                                            <i class="fas fa-chevron-left"></i>
                                         </a>
-                                    </td>
-                                </tr>
-                                <?php endwhile; ?>
-                            </tbody>
-                        </table>
+                                    </li>
+
+                                    <?php for($x = 1; $x <= $total_halaman_izin; $x++): ?>
+                                        <li class="page-item <?php if($halaman == $x) echo 'active'; ?>">
+                                            <a class="page-link" href="?page=izin_keluar&hal=<?php echo $x; ?>&cari_izin=<?php echo urlencode($keyword_izin); ?>"><?php echo $x; ?></a>
+                                        </li>
+                                    <?php endfor; ?>
+
+                                    <li class="page-item <?php if($halaman >= $total_halaman_izin) echo 'disabled'; ?>">
+                                        <a class="page-link" href="<?php if($halaman < $total_halaman_izin){ echo "?page=izin_keluar&hal=".($halaman+1)."&cari_izin=".urlencode($keyword_izin); } ?>">
+                                            <i class="fas fa-chevron-right"></i>
+                                        </a>
+                                    </li>
+                                </ul>
+                            </nav>
+                        </div>
+
+                        <?php } ?>
                     </div>
                 </div>
             </div>
         </div>
+
     </div>
 </div>
 
@@ -368,16 +489,15 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
 <script>
-    // 1. Setup Autocomplete Nama/Atasan
     function setupAutocomplete(inputId, listId, hiddenId) {
         const inputEl = document.getElementById(inputId);
         const hiddenEl = document.getElementById(hiddenId);
 
         if(inputEl) {
-            inputEl.addEventListener('input', function(e) {
+            inputEl.addEventListener('input', function() {
                 var inputVal = this.value;
                 var listOptions = document.querySelectorAll('#' + listId + ' option');
-                hiddenEl.value = ""; 
+                hiddenEl.value = "";
                 for (var i = 0; i < listOptions.length; i++) {
                     if (listOptions[i].value === inputVal) {
                         hiddenEl.value = listOptions[i].getAttribute('data-id');
@@ -385,69 +505,50 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
                     }
                 }
             });
-            inputEl.addEventListener('change', function(e) {
-                 if(hiddenEl.value == "") {
-                     var inputVal = this.value;
-                     var listOptions = document.querySelectorAll('#' + listId + ' option');
-                     for (var i = 0; i < listOptions.length; i++) {
+
+            inputEl.addEventListener('change', function() {
+                if(hiddenEl.value == "") {
+                    var inputVal = this.value;
+                    var listOptions = document.querySelectorAll('#' + listId + ' option');
+                    for (var i = 0; i < listOptions.length; i++) {
                         if (listOptions[i].value === inputVal) {
                             hiddenEl.value = listOptions[i].getAttribute('data-id');
                             break;
                         }
                     }
-                 }
+                }
             });
         }
     }
     setupAutocomplete('input_pegawai', 'list_pegawai', 'id_user_hidden');
     setupAutocomplete('input_atasan', 'list_atasan', 'id_atasan_hidden');
 
-    // 2. Setup Flatpickr (Tanggal & Jam)
     document.addEventListener('DOMContentLoaded', function() {
-        
-        // Config Tanggal (Tampil dd/mm/yyyy, Kirim yyyy-mm-dd)
         flatpickr(".flatpickr-date", {
-            dateFormat: "Y-m-d", 
-            altInput: true,      
-            altFormat: "d/m/Y",  
-            locale: "id",        
-            allowInput: true     
+            dateFormat: "Y-m-d",
+            altInput: true,
+            altFormat: "d/m/Y",
+            locale: "id",
+            allowInput: true
         });
 
-        // Config Jam (24 Jam, No AM/PM, Batas 08:00 - 17:00)
         flatpickr(".flatpickr-time", {
             enableTime: true,
-            noCalendar: true,    
-            dateFormat: "H:i",   
-            time_24hr: true,     
-            minTime: "08:00",    
-            maxTime: "17:00",    
-            minuteIncrement: 1   
-        });
-
-        // 3. Setup DataTable Bahasa Indonesia + Styling Pagination
-        $('#dataTableAdmin').DataTable({
-            "pageLength": 7, 
-            "lengthMenu": [[7, 10, 25, 50, -1], [7, 10, 25, 50, "Semua"]],
-            "ordering": false,
-            "language": {
-                "sEmptyTable":   "Tidak ada data riwayat izin",
-                "sProcessing":   "Sedang memproses...",
-                "sLengthMenu":   "Tampilkan _MENU_ entri",
-                "sZeroRecords":  "Tidak ditemukan data yang sesuai",
-                "sInfo":         "Menampilkan _START_ sampai _END_ dari _TOTAL_ entri",
-                "sInfoEmpty":    "Menampilkan 0 sampai 0 dari 0 entri",
-                "sInfoFiltered": "(disaring dari _MAX_ entri keseluruhan)",
-                "sSearch":       "Cari Riwayat:",
-                "oPaginate": {
-                    "sFirst":    "Pertama",
-                    "sPrevious": "<i class='fas fa-chevron-left'></i>",
-                    "sNext":     "<i class='fas fa-chevron-right'></i>",
-                    "sLast":     "Terakhir"
-                }
-            }
+            noCalendar: true,
+            dateFormat: "H:i",
+            time_24hr: true,
+            minTime: "08:00",
+            maxTime: "17:00",
+            minuteIncrement: 1
         });
     });
 
-
+    $(document).ready(function() {
+        $('#keyword_izin').on('keyup', function() {
+            var keyword = $(this).val();
+            $('#area_tabel_izin').load(
+                'index.php?page=izin_keluar&cari_izin=' + encodeURIComponent(keyword) + ' #area_tabel_izin'
+            );
+        });
+    });
 </script>

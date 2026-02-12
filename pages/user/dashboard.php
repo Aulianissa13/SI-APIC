@@ -44,7 +44,7 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 <div class="container-fluid">
     <div class="row">
         <div class="col-xl-8 col-lg-7">
-            <div class="card text-white shadow mb-3" style="background: linear-gradient(90deg, #004d00 0%, #004d00 100%); border-radius: 20px; border:none;">
+<div class="card text-white shadow mb-3 hero-user" style="background: linear-gradient(90deg, #004d00 0%, #004d00 100%); border-radius: 20px; border:none;">
                 <div class="card-body p-4">
                     <div class="row align-items-center">
                         <div class="col-md-8">
@@ -61,7 +61,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
             <div class="row">
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #006837 !important;">
+                    <!-- ✅ tambah outline-brand -->
+                    <div class="card stat-card py-1 border-left-success shadow-sm h-100 outline-brand" style="border-left: 5px solid #006837 !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-success text-uppercase mb-1">Sisa Cuti<br>Tahunan</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $total_tahunan; ?></div>
@@ -74,7 +75,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #36b9cc !important;">
+                    <!-- ✅ tambah outline-info -->
+                    <div class="card stat-card py-1 border-left-success shadow-sm h-100 outline-info" style="border-left: 5px solid #36b9cc !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-info text-uppercase mb-1">Sisa Cuti<br>Sakit</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $sisa_sakit; ?></div>
@@ -85,7 +87,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                     <div class="card stat-card py-1 border-left-success shadow-sm h-100" style="border-left: 5px solid #F9A825 !important;">
+                    <!-- ✅ tambah outline-warning -->
+                     <div class="card stat-card py-1 border-left-success shadow-sm h-100 outline-warning" style="border-left: 5px solid #F9A825 !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Sedang<br>Diproses</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $jml_menunggu; ?></div>
@@ -96,7 +99,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                 </div>
 
                 <div class="col-xl-3 col-md-6 mb-4">
-                    <div class="card stat-card py-1 border-left-primary shadow-sm h-100" style="border-left: 5px solid #4e73df !important;">
+                    <!-- ✅ tambah outline-primary (warna disamain ke biru card ini) -->
+                    <div class="card stat-card py-1 border-left-primary shadow-sm h-100 outline-primary" style="border-left: 5px solid #4e73df !important;">
                         <div class="card-body">
                             <div class="text-xs font-weight-bold text-primary text-uppercase mb-1"> Cuti<br>Disetujui</div>
                             <div class="h2 mb-0 font-weight-bold text-gray-800"><?php echo $jml_setuju; ?></div>
@@ -109,7 +113,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         </div>
 
         <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card card-modern calendar-card-fix shadow-sm">
+            <!-- ✅ tambah outline-pn -->
+            <div class="card card-modern calendar-card-fix shadow-sm outline-pn">
                 <div class="card-body p-3">
                     <div id="calendar"></div>
                     <div id="libur-list-container" class="mt-2" style="max-height: 60px; overflow-y: auto;"></div>
@@ -120,7 +125,8 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
     <div class="row">
         <div class="col-12">
-            <div class="card mb-4 shadow-sm">
+            <!-- ✅ tambah outline-pn -->
+            <div class="card mb-4 shadow-sm outline-pn">
                 <div class="card-header py-3 bg-white d-flex align-items-center">
                     <h6 class="m-0 font-weight-bold text-primary" style="color: #004d00 !important;">
                         <i class="fas fa-info-circle mr-2"></i> Ketentuan
@@ -172,6 +178,22 @@ while($row = mysqli_fetch_assoc($query_libur)) {
     .dot { width: 7px; height: 7px; border-radius: 50%; margin-right: 8px; flex-shrink: 0; }
 
     .calendar-card-fix { height: 360px !important; }
+
+    /* ✅ OUTLINE TIPIS HIJAU (MODEL ADMIN) */
+    .outline-pn{
+        border: 1px solid var(--pn-green) !important;
+    }
+
+    /* ✅ OUTLINE STAT-CARD (MODEL ADMIN) */
+    .outline-info   { box-shadow: 0 0 0 1px #36b9cc, 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-warning{ box-shadow: 0 0 0 1px var(--pn-gold), 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-brand  { box-shadow: 0 0 0 1px var(--pn-green), 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-primary{ box-shadow: 0 0 0 1px #4e73df, 0 4px 12px rgba(0,0,0,.05) !important; }
+
+    .outline-info:hover   { box-shadow: 0 0 0 2px #36b9cc, 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-warning:hover{ box-shadow: 0 0 0 2px var(--pn-gold), 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-brand:hover  { box-shadow: 0 0 0 2px var(--pn-green), 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-primary:hover{ box-shadow: 0 0 0 2px #4e73df, 0 8px 15px rgba(0,0,0,.05) !important; }
 </style>
 
 <style>
@@ -235,8 +257,44 @@ while($row = mysqli_fetch_assoc($query_libur)) {
   @media (max-width: 768px) {
     .stat-card.py-1 { margin-bottom: 10px; }
   }
-</style>
+  /* ✅ Bubble transparan di greeting (hero) */
+.hero-user {
+  position: relative;
+  overflow: hidden;
+}
 
+.hero-user::after{
+  content:'';
+  position:absolute;
+  top:-50px;
+  right:-50px;
+  width:220px;
+  height:220px;
+  background:rgba(255,255,255,.10);
+  border-radius:50%;
+  z-index:0;
+}
+
+.hero-user::before{
+  content:'';
+  position:absolute;
+  bottom:-35px;
+  right:90px;
+  width:120px;
+  height:120px;
+  background:rgba(249,168,37,.22); /* emas transparan */
+  border-radius:50%;
+  z-index:0;
+}
+
+/* Biar konten di atas bubble */
+.hero-user .card-body,
+.hero-user .card-body *{
+  position: relative;
+  z-index: 1;
+}
+
+</style>
 
 <link href='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css' rel='stylesheet' />
 <script src='https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js'></script>
