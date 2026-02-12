@@ -87,7 +87,7 @@ function hari_indo($tanggal){
 
         /* PENGECUALIAN: Isian Data di Halaman 2 TIDAK TEBAL */
         .page-form .data-isian {
-            font-weight: normal;
+            font-weight:bold;
         }
 
         /* Print Settings */
@@ -165,13 +165,13 @@ function hari_indo($tanggal){
         </div>
 
         <div class="mb-medium">
-            Perihal : Permohonan Ijin Keluar Kantor
+            Perihal : Permohonan Izin Keluar Kantor
         </div>
 
         <div class="mb-medium">
-            Kepada : <br>
-            Yth. <?php echo $data['nama_atasan']; ?> <br>
-            Di - <br>
+            <b>Kepada : <br></b>
+            <b>Yth. <?php echo $data['jab_atasan']; ?> <br></b>
+            <b>Di - <br></b>
             &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; <b>Yogyakarta</b>
         </div>
 
@@ -209,7 +209,7 @@ function hari_indo($tanggal){
         </table>
 
         <div style="margin: 20px 0;">
-            Mengajukan permohonan ijin Keluar Kantor pada :
+            Mengajukan permohonan izin Keluar Kantor pada :
         </div>
 
         <table class="table-form" style="margin-left: 30px;">
@@ -237,14 +237,14 @@ function hari_indo($tanggal){
         </table>
 
         <div style="margin-top: 30px;" class="text-justify">
-            Demikian permohonan ijin ini disampaikan, atas perkenanannya diucapkan terima kasih.
+            Demikian permohonan izin ini disampaikan, atas perkenanannya diucapkan terima kasih.
         </div>
 
         <div class="ttd-area">
-            Hormat saya,
+            <b>Hormat saya,</b>
             <div class="ttd-space"></div>
             <span class="bold underline"><?php echo $data['nama_pemohon']; ?></span><br>
-            NIP. <?php echo $data['nip_pemohon']; ?>
+            <b>NIP. <?php echo $data['nip_pemohon']; ?></b>
         </div>
     </div>
 
@@ -262,49 +262,51 @@ function hari_indo($tanggal){
             IZIN KELUAR KANTOR
         </div>
 
-        <table class="table-form">
+        <table class="table-data">
             <tr>
-                <td class="col-label">Yang bertanda tangan di bawah ini</td>
-                <td class="col-separator">:</td>
-                <td><span class="data-isian"><?php echo $data['nama_atasan']; ?></span></td>
-            </tr>
-            <tr>
-                <td class="col-label">Selaku</td>
-                <td class="col-separator">:</td>
-                <td><span class="data-isian"><?php echo $data['jab_atasan'] ? $data['jab_atasan'] : 'Atasan Langsung'; ?></span></td>
-            </tr>
-
-            <tr><td colspan="3" style="padding: 15px 0;">Dengan ini memberikan izin kepada :</td></tr>
-
-            <tr>
-                <td class="col-label">Nama</td>
-                <td class="col-separator">:</td>
-                <td><span class="data-isian"><?php echo $data['nama_pemohon']; ?></span></td>
-            </tr>
-
-            <tr>
-                <td class="col-label">Untuk Keluar Kantor pada</td>
-                <td class="col-separator">:</td>
+                <td class="label">Yang bertanda tangan di bawah ini</td>
+                <td class="sep">:</td>
                 <td>
-                    Hari: <span class="data-isian"><?php echo hari_indo($data['tgl_izin']); ?></span> 
-                    &nbsp;&nbsp;&nbsp;&nbsp;
-                    Tanggal: <span class="data-isian"><?php echo date('d-m-Y', strtotime($data['tgl_izin'])); ?></span>
+                    <?= $data['nama_atasan'] ? $data['nama_atasan'] : '.........................................................................'; ?>
                 </td>
             </tr>
             <tr>
-                <td class="col-label"></td>
-                <td class="col-separator"></td>
+                <td class="label">Selaku</td>
+                <td class="sep">:</td>
                 <td>
-                    Pukul: <span class="data-isian"><?php echo date('H:i', strtotime($data['jam_keluar'])); ?></span>
-                    s/d 
-                    <span class="data-isian"><?php echo date('H:i', strtotime($data['jam_kembali'])); ?></span>
+                    <?= $data['jab_atasan'] ? $data['jab_atasan'] : '.........................................................................'; ?>
                 </td>
             </tr>
-
+            
             <tr>
-                <td class="col-label">Untuk Keperluan</td>
-                <td class="col-separator">:</td>
-                <td><span class="data-isian"><?php echo $data['keperluan']; ?></span></td>
+                <td colspan="3" style="padding-top: 15px; padding-bottom: 2px;">
+                    Dengan ini memberikan izin
+                </td>
+            </tr>
+            <tr>
+                <td class="label">kepada</td>
+                <td class="sep">:</td>
+                <td><?= $data['nama_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">NIP</td>
+                <td class="sep">:</td>
+                <td><?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Pangkat/Gol.Ruang</td>
+                <td class="sep">:</td>
+                <td><?= isset($data['pangkat_pemohon']) ? $data['pangkat_pemohon'] : '-'; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Jabatan</td>
+                <td class="sep">:</td>
+                <td><?= $data['jab_pemohon']; ?></td>
+            </tr>
+            <tr>
+                <td class="label">Unit Kerja</td>
+                <td class="sep">:</td>
+                <td>Pengadilan Negeri Yogyakarta Kelas IA</td>
             </tr>
         </table>
 
