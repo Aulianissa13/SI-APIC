@@ -13,7 +13,10 @@ $d_acc = mysqli_fetch_assoc($get_acc);
 $get_tolak = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM pengajuan_cuti WHERE status='Ditolak'");
 $d_tolak = mysqli_fetch_assoc($get_tolak);
 
-$query_latest = "SELECT c.*, u.nama_lengkap, u.jabatan, c.created_at FROM pengajuan_cuti c JOIN users u ON c.id_user = u.id_user ORDER BY c.created_at DESC LIMIT 5";
+$query_latest = "SELECT c.*, u.nama_lengkap, u.jabatan, c.created_at
+                 FROM pengajuan_cuti c
+                 JOIN users u ON c.id_user = u.id_user
+                 ORDER BY c.created_at DESC LIMIT 5";
 $sql_latest = mysqli_query($koneksi, $query_latest);
 
 $query_libur = mysqli_query($koneksi, "SELECT * FROM libur_nasional");
@@ -29,67 +32,193 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 ?>
 
 <style>
-    :root {
-        --pn-green: #004d00;
-        --pn-gold: #F9A825;
-        --soft-bg: #f8f9fc;
-        --text-dark: #2c3e50;
-    }
-    
-    body { font-family: 'Poppins', sans-serif; background-color: var(--soft-bg); }
-
-    .hero-card {
-        background: linear-gradient(135deg, var(--pn-green) 0%, #004d00 100%);
-        color: white; border-radius: 20px; padding: 1.5rem;
-        position: relative; overflow: hidden; box-shadow: 0 10px 20px rgba(0, 104, 55, 0.2);
-    }
-    .hero-card::after { content: ''; position: absolute; top: -50px; right: -50px; width: 200px; height: 200px; background: rgba(255,255,255,0.1); border-radius: 50%; }
-    .hero-card::before { content: ''; position: absolute; bottom: -30px; right: 80px; width: 100px; height: 100px; background: rgba(249, 168, 37, 0.2); border-radius: 50%; }
-
-    .stat-card { border: none; border-radius: 15px; transition: transform 0.2s, box-shadow 0.2s; background: #fff; height: 100%; overflow: hidden; position: relative; }
-    .stat-card:hover { transform: translateY(-5px); box-shadow: 0 8px 15px rgba(0,0,0,0.05); }
-    .stat-icon-bg { position: absolute; right: -10px; bottom: -10px; font-size: 5rem; opacity: 0.1; transform: rotate(-15deg); }
-    .border-left-brand { border-left: 5px solid var(--pn-green) !important; }
-    .border-left-warning { border-left: 5px solid var(--pn-gold) !important; }
-    .border-left-info { border-left: 5px solid #36b9cc !important; }
-    .border-left-danger { border-left: 5px solid #e74a3b !important; }
-
-    .card-modern { border: none; border-radius: 15px; box-shadow: 0 4px 6px rgba(0,0,0,0.02); height: 20px; display: flex; flex-direction: column; }
-    .card-header-modern { background-color: white; border-bottom: 1px solid #f0f0f0; padding: 0.75rem 1.25rem; border-radius: 15px 15px 0 0; }
-    .card-header-modern h5 { font-size: 0.9rem; margin-bottom: 0; }
-    
-    #calendar { border: none !important; font-size: 0.9rem; max-height: 200px; }
-    .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid { border: none !important; }
-    .fc-daygrid-day-frame { display: flex; align-items: center; justify-content: center; min-height: 20px !important; position: relative; }
-    
-    .fc .fc-daygrid-day-number {
-        width: 30px; height: 30px; display: flex !important; align-items: center; justify-content: center;
-        border-radius: 50%; text-decoration: none !important; color: #333; z-index: 2;
+    :root{
+        --pn-green:#004d00;
+        --pn-gold:#F9A825;
+        --soft-bg:#f8f9fc;
     }
 
-    .fc-day-today { background-color: transparent !important; }
-    .fc-day-today .fc-daygrid-day-number { background-color: var(--pn-green) !important; color: white !important; }
+    body{ font-family:'Poppins',sans-serif; background:var(--soft-bg); }
 
-    .holiday-nasional .fc-daygrid-day-number { background-color: #d9534f !important; color: white !important; }
-    .holiday-cuti-bersama .fc-daygrid-day-number { background-color: var(--pn-gold) !important; color: white !important; }
+    .hero-card{
+        background:linear-gradient(135deg,var(--pn-green) 0%, #004d00 100%);
+        color:#fff; border-radius:20px; padding:1.5rem;
+        position:relative; overflow:hidden;
+        box-shadow:0 10px 20px rgba(0,104,55,.2);
+        min-height:150px;
+    }
+    .hero-card::after{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:rgba(255,255,255,.1);border-radius:50%;}
+    .hero-card::before{content:'';position:absolute;bottom:-30px;right:80px;width:100px;height:100px;background:rgba(249,168,37,.2);border-radius:50%;}
 
-    .fc-event, .fc-daygrid-event { display: none !important; }
+    .section-spacing{ margin-bottom:15px !important; }
 
-    .fc .fc-toolbar-title { font-size: 1rem !important; font-weight: bold; color: var(--pn-green); }
-    .fc .fc-button-primary { background-color: var(--pn-green) !important; border: none !important; padding: 3px 6px !important; }
+    .stat-card{
+        border:none;border-radius:15px;
+        transition:transform .2s, box-shadow .2s;
+        background:#fff;height:140px;overflow:hidden;
+        position:relative;display:flex;align-items:center;
+        box-shadow:0 4px 12px rgba(0,0,0,.05);
+    }
+    .stat-card:hover{ transform:translateY(-5px); box-shadow:0 8px 15px rgba(0,0,0,.05); }
+    .stat-number{ font-size:3.5rem;font-weight:800;line-height:1;margin-top:15px;text-align:center; }
+    .stat-icon-bg{ position:absolute;right:12px;bottom:10px;font-size:2.5rem;opacity:.12;transform:rotate(-15deg); }
 
-    .libur-item { font-size: 0.6rem; padding: 4px 6px; margin-bottom: 3px; border-radius: 6px; display: flex; align-items: center; }
-    .dot { width: 6px; height: 6px; border-radius: 50%; margin-right: 6px; flex-shrink: 0; }
-</style>
+    .border-left-brand{ border-left:5px solid var(--pn-green) !important; }
+    .border-left-warning{ border-left:5px solid var(--pn-gold) !important; }
+    .border-left-info{ border-left:5px solid #36b9cc !important; }
+    .border-left-danger{ border-left:5px solid #e74a3b !important; }
 
-<style>
-    .hero-card { background: linear-gradient(135deg, var(--pn-green) 0%, #004d00 100%); color: white; border-radius: 20px; padding: 1.5rem; position: relative; overflow: hidden; min-height: 150px; }
-    .section-spacing { margin-bottom: 15px !important; }
-    .stat-card { border: none; border-radius: 15px; background: #fff; height: 140px; position: relative; overflow: hidden; display: flex; align-items: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .stat-number { font-size: 3.5rem; font-weight: 800; line-height: 1; margin-top: 15px; text-align: center; }
-    .stat-icon-bg { position: absolute; right: 12px; bottom: 10px; font-size: 2.5rem; opacity: 0.12; }
-    .calendar-card-fix { height: calc(150px + 140px + 20px) !important; }
-    #calendar { font-size: 0.6rem; }
+    .card-modern{
+        border:none;border-radius:0px;
+        box-shadow:0 4px 6px rgba(0,0,0,.02);
+        display:flex;flex-direction:column;
+        overflow:hidden;
+        background:#fff;
+    }
+
+    .card-header-modern{
+        background:var(--pn-green)!important;
+        color:#fff!important;
+        border-bottom:none!important;
+        padding:.75rem 1.25rem;
+    }
+    .card-header-modern h5{
+        font-size:.9rem;margin:0;color:#fff!important;
+    }
+
+    /* ✅ OUTLINE TIPIS HIJAU (Grafik & Permohonan) */
+/* ✅ Outline 2px hijau PN solid */
+.outline-pn{
+  border: 1px solid var(--pn-green) !important;
+}
+
+    /* Kalender (tetap) */
+    .calendar-card-fix{ height:calc(150px + 140px + 20px) !important; }
+    #calendar{ border:none !important; font-size:.6rem; max-height:200px; }
+    .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid{ border:none !important; }
+    .fc-daygrid-day-frame{ display:flex;align-items:center;justify-content:center;min-height:20px!important;position:relative; }
+    .fc .fc-daygrid-day-number{
+        width:30px;height:30px;display:flex!important;align-items:center;justify-content:center;
+        border-radius:50%;text-decoration:none!important;color:#333;z-index:2;
+    }
+    .fc-day-today{ background:transparent!important; }
+    .fc-day-today .fc-daygrid-day-number{ background:var(--pn-green)!important;color:#fff!important; }
+    .holiday-nasional .fc-daygrid-day-number{ background:#d9534f!important;color:#fff!important; }
+    .holiday-cuti-bersama .fc-daygrid-day-number{ background:var(--pn-gold)!important;color:#fff!important; }
+    .fc-event, .fc-daygrid-event{ display:none!important; }
+    .fc .fc-toolbar-title{ font-size:1rem!important;font-weight:bold;color:var(--pn-green); }
+    .fc .fc-button-primary{ background:var(--pn-green)!important;border:none!important;padding:3px 6px!important; }
+
+    .libur-item{ font-size:.6rem;padding:4px 6px;margin-bottom:3px;border-radius:6px;display:flex;align-items:center; }
+    .dot{ width:6px;height:6px;border-radius:50%;margin-right:6px;flex-shrink:0; }
+
+    /* ==============================
+       ✅ PERMOHONAN TERBARU (NO SCROLL, 5 ROW PAS)
+       ============================== */
+    .permohonan-card{ height:320px; }
+
+    .permohonan-card .card-body{
+        padding:10px;
+        flex:1;
+        display:flex;
+        overflow:hidden;
+        background:transparent;
+    }
+
+    .permohonan-table-box{
+        flex:1;
+        display:flex;
+        height:100%;
+        background:#fff;
+        border-radius:0px;
+        border:1px solid #edf0f6;
+        overflow:hidden;
+    }
+
+    .table-permohonan{
+        width:100%;
+        height:100%;
+        margin:0;
+        table-layout:fixed;
+        border-collapse:collapse;
+    }
+
+    .table-permohonan thead tr{ height:42px; }
+    .table-permohonan thead th{
+        background:var(--pn-green);
+        color:#fff;
+        padding:8px 8px !important;
+        font-size:.75rem;
+        border:1px solid rgba(255,255,255,.15) !important;
+        white-space:nowrap;
+        vertical-align:middle;
+    }
+
+    .table-permohonan tbody{ height: calc(100% - 42px); }
+    .table-permohonan tbody tr{ height: calc(100% / 5); }
+    .table-permohonan tbody td{
+        padding:6px 8px !important;
+        line-height:1.1;
+        font-size:.72rem;
+        border:1px solid #e6e6e6 !important;
+        vertical-align:middle !important;
+    }
+
+    .table-permohonan .nama{
+        font-weight:700;
+        font-size:.74rem;
+        margin:0;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+    .table-permohonan .jabatan{
+        font-size:.68rem;
+        color:#8a8f9c;
+        margin:2px 0 0 0;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+    .table-permohonan .waktu{
+        font-size:.70rem;
+        color:#6b7280;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .badge-mini{
+        font-size:.62rem !important;
+        padding:3px 8px !important;
+        border-radius:999px !important;
+        white-space:nowrap;
+        display:inline-block;
+        max-width:100%;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        border:0;
+    }
+    .badge-link{
+        text-decoration:none !important;
+        cursor:pointer;
+        display:inline-block;
+    }
+    .badge-link:hover{
+        filter: brightness(0.95);
+        transform: translateY(-1px);
+    }
+    /* ✅ Outline stat-card sesuai warna border-left */
+.outline-info   { box-shadow: 0 0 0 1px #36b9cc, 0 4px 12px rgba(0,0,0,.05) !important; }
+.outline-warning{ box-shadow: 0 0 0 1px var(--pn-gold), 0 4px 12px rgba(0,0,0,.05) !important; }
+.outline-brand  { box-shadow: 0 0 0 1px var(--pn-green), 0 4px 12px rgba(0,0,0,.05) !important; }
+.outline-danger { box-shadow: 0 0 0 1px #e74a3b, 0 4px 12px rgba(0,0,0,.05) !important; }
+
+.outline-info:hover   { box-shadow: 0 0 0 2px #36b9cc, 0 8px 15px rgba(0,0,0,.05) !important; }
+.outline-warning:hover{ box-shadow: 0 0 0 2px var(--pn-gold), 0 8px 15px rgba(0,0,0,.05) !important; }
+.outline-brand:hover  { box-shadow: 0 0 0 2px var(--pn-green), 0 8px 15px rgba(0,0,0,.05) !important; }
+.outline-danger:hover { box-shadow: 0 0 0 2px #e74a3b, 0 8px 15px rgba(0,0,0,.05) !important; }
+
 </style>
 
 <div class="container-fluid">
@@ -98,45 +227,125 @@ while($row = mysqli_fetch_assoc($query_libur)) {
             <div class="row section-spacing">
                 <div class="col-12">
                     <div class="hero-card d-flex align-items-center justify-content-between shadow">
-                        <div><h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Halo, Administrator!</h1><p class="mb-0 text-white-50 h5">Selamat datang di Panel Kontrol SI-APIC Pengadilan Negeri Yogyakarta.</p></div>
+                        <div>
+                            <h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Halo, Administrator!</h1>
+                            <p class="mb-0 text-white-50 h5">Selamat datang di Panel Kontrol SI-APIC Pengadilan Negeri Yogyakarta.</p>
+                        </div>
                         <div class="d-none d-md-block"><i class="fas fa-chart-line fa-4x text-white-50"></i></div>
                     </div>
                 </div>
             </div>
+
             <div class="row mb-4">
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-info shadow-sm"><div class="card-body"><div class="stat-main-label text-info text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Total<br>Pegawai</div><div class="stat-number text-gray-800"><?php echo $d_pegawai['total']; ?></div><i class="fas fa-users stat-icon-bg text-info"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-warning shadow-sm"><div class="card-body"><div class="stat-main-label text-warning text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Menunggu Persetujuan</div><div class="stat-number text-gray-800"><?php echo $d_pending['total']; ?></div><i class="fas fa-hourglass-half stat-icon-bg text-warning"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-brand shadow-sm"><div class="card-body"><div class="stat-main-label text-success text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Disetujui</div><div class="stat-number text-gray-800"><?php echo $d_acc['total']; ?></div><i class="fas fa-check-circle stat-icon-bg text-success"></i></div></div></div>
-                <div class="col-md-3 col-6 mb-4"><div class="card stat-card border-left-danger shadow-sm"><div class="card-body"><div class="stat-main-label text-danger text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Ditolak</div><div class="stat-number text-gray-800"><?php echo $d_tolak['total']; ?></div><i class="fas fa-times-circle stat-icon-bg text-danger"></i></div></div></div>
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card stat-card border-left-info shadow-sm outline-info">
+                        <div class="card-body">
+                            <div class="stat-main-label text-info text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Total<br>Pegawai</div>
+                            <div class="stat-number text-gray-800"><?php echo $d_pegawai['total']; ?></div>
+                            <i class="fas fa-users stat-icon-bg text-info"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card stat-card border-left-warning shadow-sm outline-warning">
+                        <div class="card-body">
+                            <div class="stat-main-label text-warning text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Menunggu Persetujuan</div>
+                            <div class="stat-number text-gray-800"><?php echo $d_pending['total']; ?></div>
+                            <i class="fas fa-hourglass-half stat-icon-bg text-warning"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card stat-card border-left-brand shadow-sm outline-brand">
+                        <div class="card-body">
+                            <div class="stat-main-label text-success text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Disetujui</div>
+                            <div class="stat-number text-gray-800"><?php echo $d_acc['total']; ?></div>
+                            <i class="fas fa-check-circle stat-icon-bg text-success"></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3 col-6 mb-4">
+                    <div class="card stat-card border-left-danger shadow-sm outline-danger">
+                        <div class="card-body">
+                            <div class="stat-main-label text-danger text-uppercase font-weight-bold" style="font-size: 0.8rem; line-height: 1.2; text-align: center;">Cuti<br>Ditolak</div>
+                            <div class="stat-number text-gray-800"><?php echo $d_tolak['total']; ?></div>
+                            <i class="fas fa-times-circle stat-icon-bg text-danger"></i>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
+
         <div class="col-xl-4 col-lg-5 mb-4">
-            <div class="card card-modern calendar-card-fix shadow-sm"><div class="card-body p-3"><div id="calendar"></div><div id="libur-list-container" class="mt-3" style="max-height: 60px; overflow-y: auto;"></div></div></div>
+<div class="card card-modern calendar-card-fix shadow-sm outline-pn">
+                <div class="card-body p-3">
+                    <div id="calendar"></div>
+                    <div id="libur-list-container" class="mt-3" style="max-height: 60px; overflow-y: auto;"></div>
+                </div>
+            </div>
         </div>
     </div>
+
     <div class="row" style="margin-top: -35px;">
         <div class="col-lg-6 mb-4">
-            <div class="card card-modern shadow-sm" style="height: 320px;">
-                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #004d00; font-size: 0.9rem;">Grafik Status Cuti</h5></div>
-                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 250px;"><canvas id="myAreaChart"></canvas></div>
+            <!-- ✅ Grafik: ditambah outline-pn -->
+            <div class="card card-modern shadow-sm outline-pn" style="height: 320px; border-top: 4px solid var(--pn-green);">
+                <div class="card-header-modern py-2">
+                    <h5 class="m-0 font-weight-bold" style="font-size: 0.9rem;">Grafik Status Cuti</h5>
+                </div>
+                <div class="card-body d-flex align-items-center justify-content-center" style="min-height: 250px;">
+                    <canvas id="myAreaChart"></canvas>
+                </div>
             </div>
         </div>
+
         <div class="col-lg-6 mb-4">
-            <div class="card card-modern shadow-sm" style="height: 320px;">
-                <div class="card-header-modern py-2"><h5 class="m-0 font-weight-bold" style="color: #004d00; font-size: 0.9rem;">Permohonan Terbaru</h5></div>
-                <div class="card-body p-0" style="height: 100%;">
-                    <table class="table table-hover mb-0" style="border-collapse: collapse; height: 100%;">
-                        <thead style="background-color: #004d00; color: white;"><tr><th class="text-center py-1" style="width: 40%; border: 1px solid #ddd; font-size: 0.75rem;">Nama Pegawai</th><th class="text-center py-1" style="width: 35%; border: 1px solid #ddd; font-size: 0.75rem;">Waktu Pengajuan</th><th class="text-center pr-4 py-1" style="width: 25%; border: 1px solid #ddd; font-size: 0.75rem;">Status</th></tr></thead>
-                        <tbody>
-                            <?php while($row = mysqli_fetch_array($sql_latest)) {
-                                $badge = ($row['status'] == 'Diajukan') ? "warning" : (($row['status'] == 'Disetujui') ? "success" : "danger");
-                                $waktu = date('d/m/Y H:i', strtotime($row['created_at']));
-                            ?>
-                            <tr><td class="text-center py-1" style="border: 1px solid #ddd;"><div class="font-weight-bold text-dark" style="font-size: 0.75rem;"><?= $row['nama_lengkap'] ?></div><div class="text-muted small" style="font-size: 0.7rem;"><?= $row['jabatan'] ?></div></td><td class="text-center py-1" style="border: 1px solid #ddd;"><div class="text-muted small" style="font-size: 0.7rem;"><?= $waktu ?></div></td><td class="text-center pr-4 py-1" style="border: 1px solid #ddd;"><span class="badge badge-pill badge-<?= $badge ?> p-1 px-2" style="font-size: 0.65rem;"><?= $row['status'] ?></span></td></tr>
-                            <?php } ?>
-                        </tbody>
-                    </table>
+            <!-- ✅ Permohonan: ditambah outline-pn -->
+            <div class="card card-modern shadow-sm permohonan-card outline-pn">
+                <div class="card-header-modern py-2">
+                    <h5 class="m-0 font-weight-bold" style="font-size: 0.9rem;">Permohonan Terbaru</h5>
                 </div>
+
+                <div class="card-body">
+                    <div class="permohonan-table-box">
+                        <table class="table table-hover table-permohonan">
+                            <thead>
+                                <tr>
+                                    <th class="text-center" style="width: 40%;">Nama Pegawai</th>
+                                    <th class="text-center" style="width: 35%;">Waktu Pengajuan</th>
+                                    <th class="text-center" style="width: 25%;">Status</th>
+                                </tr>
+                            </thead>
+
+                            <tbody>
+                                <?php while($row = mysqli_fetch_array($sql_latest)) {
+                                    $badge = ($row['status'] == 'Diajukan') ? "warning" : (($row['status'] == 'Disetujui') ? "success" : "danger");
+                                    $waktu = date('d/m/Y H:i', strtotime($row['created_at']));
+                                ?>
+                                <tr>
+                                    <td class="text-center">
+                                        <div class="nama"><?= htmlspecialchars($row['nama_lengkap']) ?></div>
+                                        <div class="jabatan"><?= htmlspecialchars($row['jabatan']) ?></div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <div class="waktu"><?= htmlspecialchars($waktu) ?></div>
+                                    </td>
+
+                                    <td class="text-center">
+                                        <a href="index.php?page=validasi_cuti"
+                                           class="badge badge-pill badge-<?= $badge ?> badge-mini badge-link">
+                                            <?= htmlspecialchars($row['status']) ?>
+                                        </a>
+                                    </td>
+                                </tr>
+                                <?php } ?>
+                            </tbody>
+
+                        </table>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
@@ -148,12 +357,21 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
 <script>
 const dataLibur = <?php echo json_encode($libur_data); ?>;
-const currentYear = <?php echo date('Y'); ?>;
 
 new Chart(document.getElementById("myAreaChart"), {
     type: 'doughnut',
-    data: { labels: ["Disetujui", "Menunggu", "Ditolak"], datasets: [{ data: [<?= $d_acc['total'] ?>, <?= $d_pending['total'] ?>, <?= $d_tolak['total'] ?>], backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'], }], },
-    options: { maintainAspectRatio: false, cutoutPercentage: 75, legend: { position: 'bottom', labels: { boxWidth: 12, fontSize: 10 } } }
+    data: {
+        labels: ["Disetujui", "Menunggu", "Ditolak"],
+        datasets: [{
+            data: [<?= (int)$d_acc['total'] ?>, <?= (int)$d_pending['total'] ?>, <?= (int)$d_tolak['total'] ?>],
+            backgroundColor: ['#1cc88a', '#f6c23e', '#e74a3b'],
+        }],
+    },
+    options: {
+        maintainAspectRatio: false,
+        cutoutPercentage: 75,
+        legend: { position: 'bottom', labels: { boxWidth: 12, fontSize: 10 } }
+    }
 });
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -199,11 +417,8 @@ document.addEventListener('DOMContentLoaded', function() {
                         return itemDate.getFullYear() === date.getFullYear() && itemDate.getMonth() === date.getMonth() && itemDate.getDate() === date.getDate();
                     });
                     if (holiday) {
-                        if (holiday.jenis.includes('nasional')) {
-                            dayEl.classList.add('holiday-nasional');
-                        } else {
-                            dayEl.classList.add('holiday-cuti-bersama');
-                        }
+                        if (holiday.jenis.includes('nasional')) dayEl.classList.add('holiday-nasional');
+                        else dayEl.classList.add('holiday-cuti-bersama');
                     }
                 }
             });
