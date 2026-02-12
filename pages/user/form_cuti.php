@@ -1,7 +1,5 @@
 <?php
 /** @var mysqli $koneksi */
-// Pastikan session sudah start di header utama
-// session_start();
 
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");

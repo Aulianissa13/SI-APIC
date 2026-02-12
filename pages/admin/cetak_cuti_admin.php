@@ -27,10 +27,12 @@ if(!$instansi) {
 if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>"); }
 $id_pengajuan = (int)$_GET['id'];
 
+// --- [REVISI] MENAMBAHKAN users.masa_kerja KE DALAM QUERY ---
 $sql = "SELECT 
     pengajuan_cuti.*, 
     jenis_cuti.nama_jenis,
     users.id_user, users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.unit_kerja, users.no_telepon,
+    users.masa_kerja, 
     users.kuota_cuti_sakit,
     users.sisa_cuti_n AS u_sisa_n_realtime,   
     users.sisa_cuti_n1 AS u_sisa_n1_realtime,
@@ -215,24 +217,27 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         .biodata-label { width: 170px; }
         .biodata-sep { width: 15px; text-align: center; }
 
-        /* STYLE TANDA TANGAN KONSISTEN */
+        /* --- PERBAIKAN TANDA TANGAN --- */
         .ttd-wrapper {
             float: right;
-            width: 230px; /* Lebar area tanda tangan */
+            min-width: 230px; 
+            display: table;
             text-align: center;
             margin-top: 40px;
         }
         .ttd-nama {
             margin-top: 70px;
             font-weight: bold;
+            white-space: nowrap; 
         }
         .ttd-garis {
             border-top: 1px solid #000;
-            width: 100%;
+            width: 100%; 
             margin: 2px 0;
+            display: block;
         }
         .ttd-nip {
-            text-align: center; /* NIP Rata Tengah dengan garis */
+            text-align: center;
             font-weight: normal;
         }
 

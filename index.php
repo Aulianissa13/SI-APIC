@@ -88,6 +88,7 @@ include 'layout/sidebar.php';
 include 'layout/topbar.php';
 
 // 4. Load Konten Halaman (Routing)
+
 // --- AREA ADMIN ---
 if($page == "dashboard_admin" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/dashboard.php';
@@ -114,13 +115,24 @@ else if($page == "laporan_cuti" && $_SESSION['role'] == 'admin') {
     include 'pages/admin/laporan_cuti.php';
 }
 
-// --- FITUR BARU: IZIN KELUAR (Admin & User) ---
+// --- FITUR: IZIN KELUAR (Admin & User) ---
 else if($page == "izin_keluar") {
-    // Cek Role untuk menentukan file mana yang diambil
     if($_SESSION['role'] == 'admin'){
         include 'pages/admin/izin_keluar.php';
     } else {
         include 'pages/user/izin_keluar.php';
+    }
+}
+
+// --- FITUR BARU: IZIN PULANG AWAL (Admin & User) ---
+// Bagian ini yang ditambahkan agar link di sidebar berfungsi
+else if($page == "izin_pulang") {
+    if($_SESSION['role'] == 'admin'){
+        // Admin melihat rekap data
+        include 'pages/admin/izin_pulang.php';
+    } else {
+        // User melihat form input
+        include 'pages/user/izin_pulang.php';
     }
 }
 
@@ -161,15 +173,13 @@ include 'layout/footer.php';
         icon: '<?= $_SESSION['swal']['icon'] ?>',
         title: '<?= $_SESSION['swal']['title'] ?>',
         text: '<?= $_SESSION['swal']['text'] ?>',
-        confirmButtonColor: '#1cc88a', // Warna Hijau sesuai tema
+        confirmButtonColor: '#1cc88a',
         confirmButtonText: 'OK'
     }).then((result) => {
-        // Opsional: Jika mau refresh halaman setelah klik OK (supaya form bersih)
-        // window.location.reload(); 
+        // Opsional: window.location.reload(); 
     });
 </script>
 <?php 
-    // 3. Hapus session agar alert tidak muncul terus menerus saat di-refresh
     unset($_SESSION['swal']); 
 ?>
 <?php endif; ?>

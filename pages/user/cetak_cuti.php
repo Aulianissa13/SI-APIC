@@ -27,6 +27,7 @@ $sql = "SELECT
     pengajuan_cuti.*, 
     jenis_cuti.nama_jenis,
     users.id_user, users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.unit_kerja, users.no_telepon,
+    users.masa_kerja,
     users.kuota_cuti_sakit,
     users.sisa_cuti_n AS u_sisa_n_realtime,   
     users.sisa_cuti_n1 AS u_sisa_n1_realtime,
@@ -59,7 +60,9 @@ $sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1_future + $potongan_ini_n1;
 // --- LOGIC TAMPILAN KETERANGAN (FORM PAGE 2) ---
 $id_jenis   = (int)$data['id_jenis']; 
 $lama_ambil = (int)$data['lama_hari'];
-$ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
+
+// [REVISI 1] Menambahkan inisialisasi variable $ket_besar agar tidak error
+$ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
    case 1: // CUTI TAHUNAN
@@ -160,13 +163,11 @@ if ($tipe_ttd == 'wakil') {
     $nama_pejabat = isset($parts[1]) ? $parts[1] : '';
     $nip_pejabat = isset($parts[2]) ? $parts[2] : '';
 } elseif ($tipe_ttd == 'plh') {
-    // Legacy: Empty PLH (jika ada data lama)
     $label_pejabat = ""; $nama_pejabat = ""; $nip_pejabat = "";
 }
 
 // TEXT JENIS CUTI UNTUK HALAMAN 1 & 3
 $nama_jenis_final = $data['nama_jenis']; 
-// Jika di database huruf kecil, ubah jadi Capitalize
 $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
 
 ?>
@@ -192,7 +193,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         }
         .page-container:last-child { page-break-after: auto; }
 
-        /* HEADER LAMPIRAN (Times New Roman, Size 8pt - KECIL) */
+        /* HEADER LAMPIRAN */
         .header-lampiran { 
             font-family: 'Times New Roman', serif; 
             font-size: 5pt; 
@@ -212,16 +213,17 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         .biodata-label { width: 170px; }
         .biodata-sep { width: 15px; text-align: center; }
 
-        /* STYLE TANDA TANGAN KONSISTEN */
+        /* [REVISI 2] STYLE TANDA TANGAN */
         .ttd-wrapper {
             float: right;
-            width: 230px; /* Lebar area tanda tangan */
+            width: 280px; /* Diperlebar agar muat nama panjang */
             text-align: center;
             margin-top: 40px;
         }
         .ttd-nama {
             margin-top: 70px;
             font-weight: bold;
+            white-space: nowrap; /* Memaksa nama tetap 1 baris */
         }
         .ttd-garis {
             border-top: 1px solid #000;
@@ -229,7 +231,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             margin: 2px 0;
         }
         .ttd-nip {
-            text-align: center; /* NIP Rata Tengah dengan garis */
+            text-align: center; 
             font-weight: normal;
         }
 

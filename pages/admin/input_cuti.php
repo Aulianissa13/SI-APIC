@@ -9,10 +9,7 @@ while ($row = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $row['tanggal'
 // --- 2. AMBIL DATA PEGAWAI & ATASAN ---
 $list_pegawai = [];
 $list_atasan  = [];
-
-// SEKARANG AMAN: Kolom masa_kerja sudah ada di database
 $q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan, masa_kerja FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
-
 while ($u = mysqli_fetch_assoc($q_u)) {
     $list_pegawai[] = $u;
     if ($u['is_atasan'] == '1') { $list_atasan[] = $u; }
@@ -22,16 +19,22 @@ while ($u = mysqli_fetch_assoc($q_u)) {
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
 $instansi   = mysqli_fetch_assoc($q_instansi);
 
-// --- 4. GENERATE NOMOR SURAT ---
+// --- 4. GENERATE NOMOR SURAT OTOMATIS (AUTO SUGGEST) ---
 $thn_now = date('Y');
 $bln_now = date('n');
 $romawi  = [1=>"I", 2=>"II", 3=>"III", 4=>"IV", 5=>"V", 6=>"VI", 7=>"VII", 8=>"VIII", 9=>"IX", 10=>"X", 11=>"XI", 12=>"XII"];
+
+// Cari nomor terakhir berdasarkan tahun ini
 $q_last = mysqli_query($koneksi, "SELECT nomor_surat FROM pengajuan_cuti WHERE nomor_surat LIKE '%/$thn_now' ORDER BY id_pengajuan DESC LIMIT 1");
-$no_urut = 1; 
+$no_urut = 1;
+
 if (mysqli_num_rows($q_last) > 0) {
     $d_last = mysqli_fetch_assoc($q_last);
+    // Asumsi format: 001/KPN/...
     $parts  = explode('/', $d_last['nomor_surat']);
-    if (isset($parts[0]) && is_numeric($parts[0])) { $no_urut = intval($parts[0]) + 1; }
+    if (isset($parts[0]) && is_numeric($parts[0])) {
+        $no_urut = intval($parts[0]) + 1;
+    }
 }
 $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bln_now]."/".$thn_now;
 
@@ -39,12 +42,12 @@ $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bl
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
-    $akhir->modify('+1 day'); 
+    $akhir->modify('+1 day');
     $period  = new DatePeriod($iterasi, new DateInterval('P1D'), $akhir);
     $jumlah  = 0;
     foreach ($period as $dt) {
         $curr = $dt->format('Y-m-d');
-        $day  = $dt->format('N'); 
+        $day  = $dt->format('N');
         if ($day < 6 && !in_array($curr, $libur_arr)) { $jumlah++; }
     }
     return $jumlah;
@@ -54,185 +57,122 @@ $swal_script = "";
 
 // --- PROSES SIMPAN DATA ---
 if (isset($_POST['simpan_cuti'])) {
-    $id_user   = $_POST['id_user_hidden']; 
-    $id_atasan = $_POST['id_atasan_hidden']; 
+    $id_user   = $_POST['id_user_hidden'];
+    $id_atasan = $_POST['id_atasan_hidden'];
+    
+    // Ambil nomor surat dari input (bisa hasil auto atau edit manual)
+    $nomor_surat_final = htmlspecialchars($_POST['nomor_surat']);
+
+    // Cek Duplikasi Nomor Surat (Penting karena bisa diedit manual)
+    $cek_no = mysqli_query($koneksi, "SELECT id_pengajuan FROM pengajuan_cuti WHERE nomor_surat = '$nomor_surat_final'");
     
     if (empty($id_user)) {
         $swal_script = "Swal.fire({ title: 'Pegawai Tidak Dikenal!', text: 'Mohon pilih nama pegawai dari saran yang muncul.', icon: 'error' });";
     } elseif (empty($id_atasan)) {
         $swal_script = "Swal.fire({ title: 'Atasan Belum Dipilih!', text: 'Mohon pilih atasan penandatangan.', icon: 'warning' });";
+    } elseif (mysqli_num_rows($cek_no) > 0) {
+        // Jika nomor sudah ada
+        $swal_script = "Swal.fire({ title: 'Nomor Surat Ganda!', text: 'Nomor surat $nomor_surat_final sudah digunakan. Mohon ganti nomor lain.', icon: 'error' });";
     } else {
-        $id_jenis     = $_POST['id_jenis']; 
+        // ... (Logika simpan sama seperti sebelumnya) ...
+        $id_jenis     = $_POST['id_jenis'];
         $tgl_mulai    = $_POST['tgl_mulai'];
         $tgl_selesai  = $_POST['tgl_selesai'];
-        $durasi_input = $_POST['lama_hari']; 
-        $alamat_cuti  = htmlspecialchars($_POST['alamat']); 
+        $durasi_input = $_POST['lama_hari'];
+        $alamat_cuti  = htmlspecialchars($_POST['alamat']);
         $alasan       = htmlspecialchars($_POST['alasan']);
-        $nomor_surat  = htmlspecialchars($_POST['nomor_surat']); 
-        $ttd_pejabat  = $_POST['ttd_pejabat']; 
+        // $nomor_surat sudah diambil di atas sebagai $nomor_surat_final
+        $ttd_pejabat  = $_POST['ttd_pejabat'];
         
-        // Jika PLH dipilih, gunakan input manual, jika tidak gunakan nilai default
+        // Cek PLH
         if ($ttd_pejabat == 'plh') {
             $plh_nama = isset($_POST['plh_nama']) ? htmlspecialchars($_POST['plh_nama']) : '';
             $plh_nip  = isset($_POST['plh_nip']) ? htmlspecialchars($_POST['plh_nip']) : '';
             
             if (empty($plh_nama) || empty($plh_nip)) {
                 $swal_script = "Swal.fire({ title: 'Data PLH Belum Lengkap!', text: 'Mohon isi nama dan NIP PLH.', icon: 'warning' });";
-                $ttd_pejabat = '';
+                $ttd_pejabat = ''; // Gagal
             } else {
-                // Simpan format khusus untuk PLH: "plh|nama|nip"
                 $ttd_pejabat = 'plh|' . $plh_nama . '|' . $plh_nip;
             }
         }
         
+        // Hitung durasi (server side validation)
         $durasi = hitungHariKerja($tgl_mulai, $tgl_selesai, $libur_nasional);
         
         if ($durasi == 0) {
             $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0.', icon: 'warning' });";
-        } else {
-                    $q_cek_jenis = mysqli_query($koneksi, "SELECT nama_jenis FROM jenis_cuti WHERE id_jenis = '$id_jenis'");
-                    $d_jenis = mysqli_fetch_assoc($q_cek_jenis);
-                    $nama_jenis_cuti = $d_jenis['nama_jenis']; 
-                    
-                    $lanjut_simpan = true; $potong_n1 = 0; $potong_n = 0;
-                    $cek_user = mysqli_query($koneksi, "SELECT sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit FROM users WHERE id_user = '$id_user'");
-                    $data_user = mysqli_fetch_assoc($cek_user);
+        } elseif (!empty($ttd_pejabat)) { // Pastikan TTD valid
+            
+            $q_cek_jenis = mysqli_query($koneksi, "SELECT nama_jenis FROM jenis_cuti WHERE id_jenis = '$id_jenis'");
+            $d_jenis = mysqli_fetch_assoc($q_cek_jenis);
+            $nama_jenis_cuti = $d_jenis['nama_jenis'];
+            
+            $lanjut_simpan = true; $potong_n1 = 0; $potong_n = 0;
+            $cek_user = mysqli_query($koneksi, "SELECT sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit FROM users WHERE id_user = '$id_user'");
+            $data_user = mysqli_fetch_assoc($cek_user);
 
-                    if (stripos($nama_jenis_cuti, 'Tahunan') !== false) {
-                        $sisa_n = $data_user['sisa_cuti_n']; $sisa_n1 = $data_user['sisa_cuti_n1'];
-                        if (($sisa_n + $sisa_n1) < $durasi) {
-                            $lanjut_simpan = false;
-                            $swal_script = "Swal.fire({ title: 'Kuota Habis!', text: 'Sisa cuti pegawai tidak mencukupi.', icon: 'error' });";
-                        } else {
-                            if ($durasi <= $sisa_n1) { $potong_n1 = $durasi; } 
-                            else { $potong_n1 = $sisa_n1; $potong_n = $durasi - $sisa_n1; }
-                            mysqli_query($koneksi, "UPDATE users SET sisa_cuti_n=sisa_cuti_n-$potong_n, sisa_cuti_n1=sisa_cuti_n1-$potong_n1 WHERE id_user='$id_user'");
-                        }
-                    } else if (stripos($nama_jenis_cuti, 'Sakit') !== false) {
-                        $sisa_sakit = $data_user['kuota_cuti_sakit'] - $durasi;
-                        if($sisa_sakit < 0) $sisa_sakit = 0;
-                        mysqli_query($koneksi, "UPDATE users SET kuota_cuti_sakit='$sisa_sakit' WHERE id_user='$id_user'");
+            // Logika Potong Cuti
+            if (stripos($nama_jenis_cuti, 'Tahunan') !== false) {
+                $sisa_n = $data_user['sisa_cuti_n']; $sisa_n1 = $data_user['sisa_cuti_n1'];
+                if (($sisa_n + $sisa_n1) < $durasi) {
+                    $lanjut_simpan = false;
+                    $swal_script = "Swal.fire({ title: 'Kuota Habis!', text: 'Sisa cuti pegawai tidak mencukupi.', icon: 'error' });";
+                } else {
+                    if ($durasi <= $sisa_n1) { $potong_n1 = $durasi; }
+                    else { $potong_n1 = $sisa_n1; $potong_n = $durasi - $sisa_n1; }
+                    mysqli_query($koneksi, "UPDATE users SET sisa_cuti_n=sisa_cuti_n-$potong_n, sisa_cuti_n1=sisa_cuti_n1-$potong_n1 WHERE id_user='$id_user'");
+                }
+            } else if (stripos($nama_jenis_cuti, 'Sakit') !== false) {
+                $sisa_sakit = $data_user['kuota_cuti_sakit'] - $durasi;
+                if($sisa_sakit < 0) $sisa_sakit = 0;
+                mysqli_query($koneksi, "UPDATE users SET kuota_cuti_sakit='$sisa_sakit' WHERE id_user='$id_user'");
+            }
+
+            if ($lanjut_simpan) {
+                // INSERT dengan nomor_surat_final
+                $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat_final', '$ttd_pejabat')";
+                
+                if (mysqli_query($koneksi, $query_insert)) {
+                    // Update Masa Kerja (jika ada inputan)
+                    $mk_input = $_POST['masa_kerja'];
+                    if(!empty($mk_input)) {
+                        mysqli_query($koneksi, "UPDATE users SET masa_kerja='$mk_input' WHERE id_user='$id_user'");
                     }
 
-                    if ($lanjut_simpan) {
-                        $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat', '$ttd_pejabat')";
-                        
-                        if (mysqli_query($koneksi, $query_insert)) {
-                            // UPDATE PROFIL USER: Simpan masa kerja ke tabel users agar besok2 auto-fill
-                            if(!empty($masa_kerja)) {
-                                mysqli_query($koneksi, "UPDATE users SET masa_kerja='$masa_kerja' WHERE id_user='$id_user'");
-                            }
-
-                            $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
-                        } else {
-                            $swal_script = "Swal.fire({ title: 'Error!', text: 'Gagal menyimpan ke database.', icon: 'error' });";
-                        }
-                    }
+                    $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
+                } else {
+                    $swal_script = "Swal.fire({ title: 'Error!', text: 'Gagal menyimpan ke database.', icon: 'error' });";
                 }
             }
         }
-    
-
+    }
+}
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
 
 <style>
-    :root { 
-        --pn-green: #004d00; 
-        --pn-dark-green: #003300;
-        --pn-gold: #F9A825; 
-        --pn-gold-dark: #F9A825;
-        --border-color: #d1d3e2;
-    }
-    
+    /* ... (Style CSS sama seperti sebelumnya, tidak berubah) ... */
+    :root { --pn-green: #004d00; --pn-dark-green: #003300; --pn-gold: #F9A825; --pn-gold-dark: #F9A825; --border-color: #d1d3e2; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
-
-    /* Header Styles */
-    .card-header-pn {
-        background-color: var(--pn-green);
-        color: white;
-        border-bottom: 4px solid var(--pn-gold);
-        padding: 15px 20px;
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-    }
-
-    .page-header-title { 
-        border-left: 5px solid var(--pn-gold);
-        padding-left: 15px; 
-        color: var(--pn-green);
-        font-weight: 700; 
-        font-size: 1.6rem; 
-    }
-
-    /* Form Label */
-    .form-label-pn { 
-        font-size: 0.85rem; 
-        font-weight: 600; 
-        color: var(--pn-green); 
-        margin-bottom: 0.5rem;
-        display: block;
-    }
-
-    /* Standard Input Wrapper */
-    .input-group-clean {
-        display: flex;
-        align-items: center;
-        border: 1px solid var(--border-color);
-        border-radius: 8px;
-        background-color: #fff;
-        transition: all 0.3s ease;
-        overflow: hidden;
-        height: 48px; 
-        width: 100%;
-        position: relative;
-    }
-    .input-group-clean:focus-within {
-        border-color: var(--pn-green);
-        box-shadow: 0 0 0 4px rgba(0, 77, 0, 0.1);
-        transform: translateY(-1px);
-    }
-    .input-icon-clean {
-        width: 45px;
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: var(--pn-green);
-        background-color: #f8f9fc;
-        border-right: 1px solid #eaecf4;
-        font-size: 1rem;
-        flex-shrink: 0; 
-    }
-    .form-control-clean {
-        flex: 1;
-        border: none;
-        height: 100%;
-        width: 100%;
-        padding: 0 15px;
-        font-size: 0.95rem;
-        color: #495057;
-        background: transparent;
-        outline: none;
-    }
+    .card-header-pn { background-color: var(--pn-green); color: white; border-bottom: 4px solid var(--pn-gold); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+    .page-header-title { border-left: 5px solid var(--pn-gold); padding-left: 15px; color: var(--pn-green); font-weight: 700; font-size: 1.6rem; }
+    .form-label-pn { font-size: 0.85rem; font-weight: 600; color: var(--pn-green); margin-bottom: 0.5rem; display: block; }
+    .input-group-clean { display: flex; align-items: center; border: 1px solid var(--border-color); border-radius: 8px; background-color: #fff; transition: all 0.3s ease; overflow: hidden; height: 48px; width: 100%; position: relative; }
+    .input-group-clean:focus-within { border-color: var(--pn-green); box-shadow: 0 0 0 4px rgba(0, 77, 0, 0.1); transform: translateY(-1px); }
+    .input-icon-clean { width: 45px; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--pn-green); background-color: #f8f9fc; border-right: 1px solid #eaecf4; font-size: 1rem; flex-shrink: 0; }
+    .form-control-clean { flex: 1; border: none; height: 100%; width: 100%; padding: 0 15px; font-size: 0.95rem; color: #495057; background: transparent; outline: none; }
     .form-control-clean:focus { box-shadow: none; }
-    
-    /* Select & Textarea */
     select.form-control-clean { padding-top: 12px; padding-bottom: 12px; cursor: pointer; }
     .input-group-clean.textarea-group { height: auto !important; align-items: stretch; }
     .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
     textarea.form-control-clean { padding-top: 15px; padding-bottom: 15px; line-height: 1.5; }
-    
-    /* Readonly */
     .input-group-clean.readonly { background-color: #e9ecef; border-color: #dee2e6; }
     .input-group-clean.readonly .input-icon-clean { color: #6c757d; background-color: #e2e6ea; }
-    
     .section-divider { display: flex; align-items: center; margin: 30px 0 20px 0; }
     .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
     .section-divider hr { flex-grow: 1; border-top: 2px solid #e3e6f0; margin-left: 15px; }
-
     .btn-pn-solid { background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); color: white; border: none; font-weight: 600; padding: 12px 20px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.15); transition: 0.3s; }
     .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
     .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
@@ -241,7 +181,7 @@ if (isset($_POST['simpan_cuti'])) {
 <div class="container-fluid mb-5 mt-4">
     
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="page-header-title">Input Cuti (Admin)</h1>
+        <h1 class="page-header-title">Input Cuti</h1>
         <div class="bg-white p-2 rounded shadow-sm" style="border-left: 4px solid var(--pn-gold);">
             <span class="small font-weight-bold" style="color: var(--pn-green);">
                 <i class="far fa-calendar-alt mr-2"></i><?php echo date('d F Y'); ?>
@@ -266,14 +206,17 @@ if (isset($_POST['simpan_cuti'])) {
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label-pn">Nomor Surat</label>
-                            <div class="input-group-clean readonly">
+                            <label class="form-label-pn">Nomor Surat <span class="text-danger">*</span></label>
+                            <div class="input-group-clean">
                                 <div class="input-icon-clean"><i class="fas fa-hashtag"></i></div>
-                                <input type="text" name="nomor_surat" class="form-control-clean" 
-                                    value="<?= $nomor_surat_auto ?>" 
-                                    style="font-family: monospace; letter-spacing: 1px; font-weight: 700; color: #5a5c69;" 
-                                    readonly>
+                                <input type="text" name="nomor_surat" class="form-control-clean"
+                                    value="<?= $nomor_surat_auto ?>"
+                                    style="font-family: monospace; letter-spacing: 1px; font-weight: 700; color: #2c3e50;"
+                                    required>
                             </div>
+                            <small class="text-muted font-italic ml-1">
+                                *Nomor otomatis dari sistem. Silakan ubah manual jika dibutuhkan.
+                            </small>
                         </div>
 
                         <div class="mb-3">
@@ -284,10 +227,9 @@ if (isset($_POST['simpan_cuti'])) {
                             </div>
                             
                             <datalist id="list_pegawai">
-                                <?php foreach($list_pegawai as $u) { 
-                                    // Handle jika masa_kerja null
+                                <?php foreach($list_pegawai as $u) {
                                     $mk = isset($u['masa_kerja']) ? $u['masa_kerja'] : '';
-                                    echo "<option data-id='$u[id_user]' data-masa='$mk' value='$u[nama_lengkap] (NIP: $u[nip]) | Sisa N: $u[sisa_cuti_n]'>"; 
+                                    echo "<option data-id='$u[id_user]' data-masa='$mk' value='$u[nama_lengkap] (NIP: $u[nip]) | Sisa N: $u[sisa_cuti_n]'>";
                                 } ?>
                             </datalist>
                             <input type="hidden" name="id_user_hidden" id="id_user_hidden">
@@ -324,8 +266,8 @@ if (isset($_POST['simpan_cuti'])) {
                                 <label class="form-label-pn">Tanggal Mulai <span class="text-danger">*</span></label>
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="far fa-calendar-alt"></i></div>
-                                    <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control-clean" required 
-                                            onclick="this.showPicker()" onfocus="this.showPicker()">
+                                    <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control-clean" required
+                                           onclick="this.showPicker()" onfocus="this.showPicker()">
                                 </div>
                             </div>
 
@@ -333,8 +275,8 @@ if (isset($_POST['simpan_cuti'])) {
                                 <label class="form-label-pn">Tanggal Selesai <span class="text-danger">*</span></label>
                                 <div class="input-group-clean">
                                     <div class="input-icon-clean"><i class="far fa-calendar-check"></i></div>
-                                    <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control-clean" required 
-                                            onclick="this.showPicker()" onfocus="this.showPicker()">
+                                    <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control-clean" required
+                                           onclick="this.showPicker()" onfocus="this.showPicker()">
                                 </div>
                             </div>
                             
@@ -378,8 +320,8 @@ if (isset($_POST['simpan_cuti'])) {
                                     <div class="input-icon-clean"><i class="fas fa-user-tie"></i></div>
                                     <select name="id_atasan_hidden" class="form-control-clean" required>
                                         <option value="">-- Pilih Atasan --</option>
-                                        <?php foreach($list_atasan as $u) { 
-                                            echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip])</option>"; 
+                                        <?php foreach($list_atasan as $u) {
+                                            echo "<option value='$u[id_user]'>$u[nama_lengkap] (NIP: $u[nip])</option>";
                                         } ?>
                                     </select>
                                 </div>
@@ -398,7 +340,6 @@ if (isset($_POST['simpan_cuti'])) {
                                 </div>
                             </div>
 
-                            <!-- Input Manual PLH -->
                             <div id="plh_input_container" style="display: none;" class="col-md-6 mb-3">
                                 <label class="form-label-pn">Nama PLH <span class="text-danger">*</span></label>
                                 <div class="input-group-clean">
@@ -436,9 +377,8 @@ if (isset($_POST['simpan_cuti'])) {
 
         <div class="col-lg-4">
             <div class="card card-clean mb-4 shadow-sm" style="border-left: 5px solid var(--pn-gold);">
-                
-                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center" 
-                     data-toggle="collapse" href="#collapseKetentuan" role="button" aria-expanded="false" 
+                <div class="card-header bg-white border-0 py-3 d-flex justify-content-between align-items-center"
+                     data-toggle="collapse" href="#collapseKetentuan" role="button" aria-expanded="false"
                      style="cursor: pointer;">
                     <h6 class="font-weight-bold text-dark m-0">
                         <i class="fas fa-info-circle text-warning mr-2"></i> Ketentuan Admin
@@ -446,24 +386,27 @@ if (isset($_POST['simpan_cuti'])) {
                     <i class="fas fa-chevron-down text-muted small"></i>
                 </div>
 
-                <div class="collapse" id="collapseKetentuan">
+                <div class="collapse show" id="collapseKetentuan">
                     <div class="card-body pt-0 pb-3">
                         <ul class="list-unstyled small text-muted mb-0" style="line-height: 1.6;">
-                            <li class="mb-2 d-flex">
-                                <i class="fas fa-wallet text-primary mt-1 mr-2" style="width:15px;"></i>
-                                <span><b>Cek Saldo:</b> Pastikan kuota cuti (N/N-1) mencukupi.</span>
+                            <li class="mb-3">
+                                <strong class="text-dark d-block mb-1"><i class="fas fa-calculator text-primary mr-1"></i> Prioritas Kuota (N-1 > N)</strong>
+                                Sistem memprioritaskan pemotongan <b>Sisa Cuti Tahun Lalu (N-1)</b>. Jika habis, baru memotong <b>Cuti Tahun Ini (N)</b>.
                             </li>
-                            <li class="mb-2 d-flex">
-                                <i class="fas fa-calendar-times text-danger mt-1 mr-2" style="width:15px;"></i>
-                                <span><b>Hari Kerja:</b> Sabtu, Minggu, & Libur Nasional otomatis dilewati.</span>
+                            <li class="mb-3">
+                                <strong class="text-dark d-block mb-1"><i class="fas fa-check-double text-success mr-1"></i> Auto-Approve</strong>
+                                Data yang diinput Admin <b>langsung disetujui</b>, kuota cuti langsung terpotong.
                             </li>
-                            <li class="mb-2 d-flex">
-                                <i class="fas fa-stamp text-success mt-1 mr-2" style="width:15px;"></i>
-                                <span><b>Status:</b> Input via admin otomatis <b>DISETUJUI</b>.</span>
+                            <li class="mb-3">
+                                <strong class="text-dark d-block mb-1"><i class="fas fa-calendar-day text-warning mr-1"></i> Perhitungan Hari</strong>
+                                Durasi dihitung otomatis. <b>Sabtu, Minggu, & Libur Nasional</b> tidak mengurangi kuota cuti.
                             </li>
-                            <li class="d-flex">
-                                <i class="fas fa-trash-alt text-secondary mt-1 mr-2" style="width:15px;"></i>
-                                <span><b>Edit:</b> Jika salah, hapus data via menu Laporan Cuti.</span>
+                            <li class="mb-3">
+                                <strong class="text-dark d-block mb-1"><i class="fas fa-exclamation-triangle text-danger mr-1"></i> Kesalahan Input</strong>
+                                Data tidak dapat diedit sebagian. Jika ada kesalahan (misal salah tanggal), data harus <b>diinput ulang.</b>
+                            <li>
+                                <strong class="text-dark d-block mb-1"><i class="fas fa-file-signature text-info mr-1"></i> Penandatangan (PLH)</strong>
+                                Jika pejabat berwenang berhalangan, pilih opsi <b>PLH/Manual</b> dan isi Nama & NIP pejabat pengganti.
                             </li>
                         </ul>
                     </div>
@@ -475,26 +418,22 @@ if (isset($_POST['simpan_cuti'])) {
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-    // 1. Script Autocomplete Nama Pegawai & Auto-fill Masa Kerja
+    // 1. Script Autocomplete
     function setupAutocomplete(inputId, listId, hiddenId) {
         const inputEl = document.getElementById(inputId);
         const hiddenEl = document.getElementById(hiddenId);
-        const masaKerjaEl = document.getElementById('input_masa_kerja'); // Target input masa kerja
+        const masaKerjaEl = document.getElementById('input_masa_kerja');
 
         inputEl.addEventListener('input', function(e) {
             var inputVal = this.value;
             var listOptions = document.querySelectorAll('#' + listId + ' option');
-            hiddenEl.value = ""; 
-            if(masaKerjaEl) masaKerjaEl.value = ""; // Reset jika nama dihapus
+            hiddenEl.value = "";
+            if(masaKerjaEl) masaKerjaEl.value = "";
 
             for (var i = 0; i < listOptions.length; i++) {
                 if (listOptions[i].value === inputVal) {
                     hiddenEl.value = listOptions[i].getAttribute('data-id');
-                    
-                    // Ambil masa kerja dari data-masa dan isi ke input visible
-                    if(masaKerjaEl) {
-                        masaKerjaEl.value = listOptions[i].getAttribute('data-masa');
-                    }
+                    if(masaKerjaEl) masaKerjaEl.value = listOptions[i].getAttribute('data-masa');
                     break;
                 }
             }
@@ -506,7 +445,7 @@ if (isset($_POST['simpan_cuti'])) {
     const holidays = <?php echo json_encode($libur_nasional); ?>;
     const tglMulai = document.getElementById('tgl_mulai');
     const tglSelesai = document.getElementById('tgl_selesai');
-    const durasiInput = document.getElementById('lama_hari'); // Input Text
+    const durasiInput = document.getElementById('lama_hari');
     const infoLibur = document.getElementById('info_libur');
 
     function hitung() {
@@ -516,16 +455,16 @@ if (isset($_POST['simpan_cuti'])) {
             let count = 0;
             let loop = new Date(start);
 
-            if (end < start) { 
+            if (end < start) {
                 Swal.fire('Tanggal Invalid', 'Tanggal selesai tidak boleh mundur.', 'error');
                 tglSelesai.value = "";
                 durasiInput.value = 0;
-                return; 
+                return;
             }
 
             while (loop <= end) {
-                let d = loop.getDay(); 
-                let dateStr = loop.toISOString().split('T')[0]; 
+                let d = loop.getDay();
+                let dateStr = loop.toISOString().split('T')[0];
                 if (d !== 0 && d !== 6 && !holidays.includes(dateStr)) { count++; }
                 loop.setDate(loop.getDate() + 1);
             }
@@ -537,7 +476,7 @@ if (isset($_POST['simpan_cuti'])) {
     tglMulai.addEventListener('change', hitung);
     tglSelesai.addEventListener('change', hitung);
 
-    // 3. Script Toggle PLH Input Fields
+    // 3. Script Toggle PLH
     const ttdPejabatSelect = document.getElementById('ttd_pejabat_select');
     const plhInputContainer = document.getElementById('plh_input_container');
     const plhNipContainer = document.getElementById('plh_nip_container');
@@ -559,10 +498,7 @@ if (isset($_POST['simpan_cuti'])) {
             plhNipInput.value = '';
         }
     }
-
     ttdPejabatSelect.addEventListener('change', togglePlhInputs);
-    
-    // Initialize on page load jika PLH sudah dipilih
     togglePlhInputs();
 </script>
 
