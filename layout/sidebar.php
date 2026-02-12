@@ -184,7 +184,7 @@
     <div class="sidebar-heading">Izin Insidentil</div>
     <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_keluar') ? 'active' : ''; ?>">
         <a class="nav-link" href="index.php?page=izin_keluar">
-            <i class="fas fa-fw fa-print" style="color: #F9A825;"></i>
+            <i class="fas fa-fw fa-door-open" style="color: #F9A825;"></i>
             <span>Cetak Izin Keluar</span>
         </a>
     </li>

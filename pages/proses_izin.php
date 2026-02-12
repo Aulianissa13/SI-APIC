@@ -1,6 +1,7 @@
 <?php
 session_start();
 include '../config/database.php';
+/** @var mysqli $koneksi */
 
 if(isset($_POST['simpan_izin'])) {
     
@@ -38,7 +39,6 @@ if(isset($_POST['simpan_izin'])) {
         ];
     }
 
-    // 4. KEMBALIKAN KE HALAMAN ASAL
     header("Location: ../index.php?page=izin_keluar");
     exit();
 }
