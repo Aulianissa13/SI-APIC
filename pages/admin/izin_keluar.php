@@ -1,7 +1,6 @@
 <?php
 /** @var mysqli $koneksi */
 
-// --- Helper Tanggal Indonesia ---
 $bulanIndo = [
     'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
     'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
@@ -10,11 +9,6 @@ $bulanIndo = [
 ];
 $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 
-// ======================================================================
-// RIWAYAT IZIN (ADMIN) - SEARCH + PAGING MODEL VALIDASI CUTI
-// FIX: HEADER KIRI & KANAN SAMA-SAMA DIKECILIN (BIAR MATCH)
-// NOTE route: index.php?page=izin_keluar_admin
-// ======================================================================
 
 $batas   = 7;
 $halaman = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
@@ -75,7 +69,6 @@ $no = $halaman_awal + 1;
     
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
 
-    /* --- 1. CUSTOM FLATPICKR (KALENDER HIJAU) --- */
     .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, 
     .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, 
     .flatpickr-day.endRange.inRange, .flatpickr-day.selected:focus, 
@@ -101,7 +94,6 @@ $no = $halaman_awal + 1;
         color: #fff !important;
     }
 
-    /* --- 2. CARD & HEADER STYLES --- */
     .card-header-pn {
         background-color: var(--pn-green);
         color: white;
@@ -113,11 +105,10 @@ $no = $halaman_awal + 1;
         border-radius: 10px 10px 0 0;
     }
 
-    /* FIX: KECILIN HEADER KIRI & KANAN (SAMA-SAMA) */
     .card-header-pn.card-header-mini{
         padding-top: 10px !important;
         padding-bottom: 10px !important;
-        min-height: 52px; /* header jadi lebih pendek tapi tetap nyaman */
+        min-height: 52px; 
         box-sizing: border-box;
     }
 
@@ -129,7 +120,6 @@ $no = $halaman_awal + 1;
         font-size: 1.6rem; 
     }
 
-    /* --- 3. FORM INPUT STYLES --- */
     .form-label-pn { 
         font-size: 0.85rem; 
         font-weight: 600; 
@@ -186,7 +176,6 @@ $no = $halaman_awal + 1;
     .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
     textarea.form-control-clean { padding-top: 15px; padding-bottom: 15px; line-height: 1.5; }
 
-    /* --- 4. BUTTON STYLES --- */
     .btn-pn-solid { 
         background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); 
         color: white; border: none; font-weight: 600; padding: 12px 20px; 
@@ -201,7 +190,6 @@ $no = $halaman_awal + 1;
     .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
     .section-divider hr { flex-grow: 1; border-top: 2px solid #e3e6f0; margin-left: 15px; }
 
-    /* --- 5. TABLE STYLES --- */
     .table-pn-head {
         background-color: var(--pn-green);
         color: #fff;
@@ -223,14 +211,12 @@ $no = $halaman_awal + 1;
         background-color: rgba(0, 77, 0, 0.03) !important;
     }
 
-    /* Action Buttons */
     .btn-circle-action { 
         width: 35px; height: 35px; border-radius: 50%; display: inline-flex; align-items: center; justify-content: center; border: none; transition: 0.2s; cursor: pointer; 
     }
     .btn-print { background-color: #e3f2fd; color: #0d47a1; }
     .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
 
-    /* --- SEARCH (MODEL VALIDASI CUTI) --- */
     .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
         width: 100%;
@@ -251,7 +237,6 @@ $no = $halaman_awal + 1;
     }
     .search-icon-inside { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
 
-    /* --- PAGINATION --- */
     .pagination { margin-top: 10px; }
     .pagination .page-item .page-link {
         padding: .4rem .9rem !important;
@@ -296,7 +281,6 @@ $no = $halaman_awal + 1;
     <div class="row">
         <div class="col-lg-5 mb-4">
             <div class="card card-clean shadow-sm h-100">
-                <!-- KIRI: DIKECILIN -->
                 <div class="card-header-pn card-header-mini">
                     <div class="font-weight-bold"><i class="fas fa-plus-circle mr-2"></i> Buat Izin Baru</div>
                 </div>
@@ -389,7 +373,6 @@ $no = $halaman_awal + 1;
 
         <div class="col-lg-7">
             <div class="card card-clean shadow-sm mb-4">
-                <!-- KANAN: DIKECILIN JUGA -->
                 <div class="card-header-pn card-header-mini">
                     <div class="font-weight-bold"><i class="fas fa-history mr-2"></i>Riwayat Izin (Semua Pegawai)</div>
 

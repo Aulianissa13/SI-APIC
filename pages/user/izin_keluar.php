@@ -1,7 +1,5 @@
 <?php
 /** @var mysqli $koneksi */
-// Pastikan session sudah start di file induk, jika belum, uncomment baris bawah:
-// session_start();
 
 $bulanIndo = [
     'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
@@ -11,9 +9,6 @@ $bulanIndo = [
 ];
 $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 
-// =====================================================
-// RIWAYAT IZIN USER - PAGINATION + SEARCH MODEL ADMIN
-// =====================================================
 $id_saya = $_SESSION['id_user'];
 
 $batas   = 7;
@@ -34,7 +29,6 @@ if (isset($_GET['cari'])) {
     )";
 }
 
-// Count total data
 $query_count_str = "
     SELECT COUNT(i.id_izin) AS jumlah
     FROM izin_keluar i
@@ -46,7 +40,6 @@ $data_count  = mysqli_fetch_assoc($query_count);
 $jumlah_data = (int)($data_count['jumlah'] ?? 0);
 $total_halaman = ($jumlah_data > 0) ? (int)ceil($jumlah_data / $batas) : 1;
 
-// Data utama
 $query_utama = "
     SELECT i.*, a.nama_lengkap AS atasan
     FROM izin_keluar i
@@ -75,7 +68,6 @@ $no = $halaman_awal + 1;
     
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
 
-    /* --- CUSTOM FLATPICKR (TEMA HIJAU) --- */
     .flatpickr-calendar { border: none !important; box-shadow: 0 10px 25px rgba(0,0,0,0.15) !important; }
     .flatpickr-day.selected, .flatpickr-day.startRange, .flatpickr-day.endRange, 
     .flatpickr-day.selected.inRange, .flatpickr-day.startRange.inRange, 
@@ -90,7 +82,6 @@ $no = $halaman_awal + 1;
     .flatpickr-current-month .flatpickr-monthDropdown-months .flatpickr-monthDropdown-month { background-color: var(--pn-green) !important; }
     span.flatpickr-weekday { background: var(--pn-green) !important; color: #fff !important; }
 
-    /* --- HEADER & CARD --- */
     .card-header-pn {
         background-color: var(--pn-green);
         color: white;
@@ -110,7 +101,6 @@ $no = $halaman_awal + 1;
         font-size: 1.6rem; 
     }
 
-    /* --- FORM STYLES --- */
     .form-label-pn { font-size: 0.85rem; font-weight: 600; color: var(--pn-green); margin-bottom: 0.5rem; display: block; }
     .input-group-clean {
         display: flex; align-items: center;
@@ -151,7 +141,6 @@ $no = $halaman_awal + 1;
     .input-group-clean.textarea-group .input-icon-clean { height: auto; min-height: 80px; padding-top: 0; }
     textarea.form-control-clean { padding-top: 15px; padding-bottom: 15px; line-height: 1.5; }
 
-    /* --- BUTTONS --- */
     .btn-pn-solid { 
         background: linear-gradient(45deg, var(--pn-green), var(--pn-dark-green)); 
         color: white; border: none; font-weight: 600; padding: 12px 20px; 
@@ -159,7 +148,6 @@ $no = $halaman_awal + 1;
     }
     .btn-pn-solid:hover { transform: translateY(-2px); box-shadow: 0 6px 12px rgba(0,0,0,0.2); color: var(--pn-gold); }
 
-    /* --- CARD/TABLE --- */
     .card-clean { border: none; border-radius: 10px; box-shadow: 0 0.15rem 1.75rem 0 rgba(58, 59, 69, 0.15); overflow: hidden; }
     .section-divider { display: flex; align-items: center; margin: 30px 0 20px 0; }
     .section-divider span { background-color: var(--pn-green); color: white; padding: 6px 15px; border-radius: 4px; font-size: 0.75rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; border-bottom: 2px solid var(--pn-gold-dark); }
@@ -172,7 +160,7 @@ $no = $halaman_awal + 1;
         text-transform: uppercase; 
         font-size: 0.85rem; 
         letter-spacing: 0.5px; 
-        text-align: center; /* center judul kolom */
+        text-align: center; 
     }
     .table tbody td { font-size: 0.85rem !important; vertical-align: middle; }
     .table-hover tbody tr:hover { background-color: rgba(0, 77, 0, 0.03) !important; }
@@ -181,7 +169,6 @@ $no = $halaman_awal + 1;
     .btn-print { background-color: #e3f2fd; color: #0d47a1; }
     .btn-print:hover { background-color: #bbdefb; transform: scale(1.1); }
 
-    /* --- SEARCH HEADER (MODEL ADMIN) --- */
     .search-wrapper { position: relative; width: 100%; max-width: 300px; }
     .search-input-inside {
         width: 100%;
@@ -198,7 +185,6 @@ $no = $halaman_awal + 1;
     .search-input-inside:focus { box-shadow: 0 0 0 0.2rem rgba(0, 77, 0, 0.18); }
     .search-icon-inside { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); color: #999; pointer-events: none; }
 
-    /* --- PAGINATION (MODEL ADMIN) --- */
     .pagination { margin-top: 10px; }
     .pagination .page-item .page-link {
         padding: .4rem .9rem !important;
@@ -241,7 +227,6 @@ $no = $halaman_awal + 1;
     </div>
 
     <div class="row">
-        <!-- LEFT: FORM (tetap seperti user) -->
         <div class="col-lg-5 mb-4">
             <div class="card card-clean shadow-sm h-100">
                 <div class="card-header-pn">
@@ -320,7 +305,6 @@ $no = $halaman_awal + 1;
             </div>
         </div>
 
-        <!-- RIGHT: RIWAYAT (MODEL ADMIN) -->
         <div class="col-lg-7">
             <div class="card card-clean shadow-sm mb-4">
                 <div class="card-header-pn">
@@ -423,7 +407,7 @@ $no = $halaman_awal + 1;
                         </div>
 
                         <?php } ?>
-                    </div><!-- /#area_tabel_user -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -434,7 +418,6 @@ $no = $halaman_awal + 1;
 <script src="https://npmcdn.com/flatpickr/dist/l10n/id.js"></script>
 
 <script>
-    // Autocomplete Atasan
     function setupAutocomplete(inputId, listId, hiddenId) {
         const inputEl = document.getElementById(inputId);
         const hiddenEl = document.getElementById(hiddenId);
@@ -468,7 +451,6 @@ $no = $halaman_awal + 1;
     }
     setupAutocomplete('input_atasan', 'list_atasan', 'id_atasan_hidden');
 
-    // Flatpickr
     document.addEventListener('DOMContentLoaded', function() {
         flatpickr(".flatpickr-date", {
             dateFormat: "Y-m-d",
@@ -490,7 +472,6 @@ $no = $halaman_awal + 1;
         });
     });
 
-    // Live search (model admin)
     $(document).ready(function() {
         $('#keyword').on('keyup', function() {
             var keyword = $(this).val();

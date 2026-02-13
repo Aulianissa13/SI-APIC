@@ -1,87 +1,105 @@
+<?php
+$pageAktif = $_GET['page'] ?? null;
+
+if (!$pageAktif) {
+    $pageAktif = ($_SESSION['role'] == 'admin') ? 'dashboard_admin' : 'dashboard_user';
+}
+?>
+
 <ul class="navbar-nav sidebar sidebar-dark accordion" id="accordionSidebar"
     style="background: linear-gradient(180deg, #004d00 10%, #004d00 100%); position: sticky; top: 0; height: 100vh; overflow-y: hidden; overflow-x: hidden; z-index: 1050;">
 
     <style>
-        /* --- STANDAR SIDEBAR BESAR (TIDAK BERUBAH) --- */
         .sidebar .nav-item .nav-link span { font-size: 0.8rem; }
         .sidebar-brand-text { font-size: 0.85rem; }
 
-        /* Menghilangkan scrollbar secara paksa agar fit di layar */
-        #accordionSidebar {
-            scrollbar-width: none;
-            -ms-overflow-style: none;
+        #accordionSidebar { scrollbar-width: none; -ms-overflow-style: none; }
+        #accordionSidebar::-webkit-scrollbar { display: none; }
+
+        .sidebar .nav-item .nav-link i{
+            color: rgba(255, 255, 255, 0.35) !important;
+            transition: all .2s ease;
         }
-        #accordionSidebar::-webkit-scrollbar {
-            display: none;
+        .sidebar .nav-item .nav-link:hover i{
+            color: rgba(255, 255, 255, 0.6) !important;
+        }
+        .sidebar .nav-item.active .nav-link i,
+        .sidebar .nav-item .nav-link.active i{
+            color: #F9A825 !important;
         }
 
-        /* --- PERBAIKAN KHUSUS SIDEBAR KECIL (TOGGLED) --- */
-        
-        /* Lebar sidebar kecil */
-        .sidebar.toggled {
-            width: 6.5rem !important;
+        .sidebar:not(.toggled) .nav-item{
+            margin: 0 0 .18rem 0 !important;
+        }
+        .sidebar:not(.toggled) .nav-item .nav-link{
+            padding: .58rem .9rem !important;
+            line-height: 1.18 !important;
+        }
+        .sidebar:not(.toggled) .nav-item .nav-link i{
+            font-size: 1rem !important;
+            margin-right: .55rem !important;
+        }
+        .sidebar:not(.toggled) .sidebar-heading{
+            padding: .62rem 1rem .24rem !important;
+            margin: 0 !important;
+            font-size: .62rem !important;
+            opacity: .85;
+        }
+        .sidebar:not(.toggled) .sidebar-divider{
+            margin: .36rem 0 !important;
+        }
+        .sidebar:not(.toggled) .sidebar-brand{
+            padding: 1.2rem 1rem !important;
         }
 
-        /* Brand: Logo & Teks SI-APIC Vertikal */
-        .sidebar.toggled .sidebar-brand {
+        .sidebar.toggled { width: 6.5rem !important; }
+
+        .sidebar.toggled .sidebar-brand{
             flex-direction: column !important;
             height: auto !important;
-            padding: 1rem 0.25rem !important;
+            padding: .75rem .25rem !important;
         }
-
-        /* HANYA HAPUS PNYK SAAT KECIL */
-        .sidebar.toggled .sidebar-brand-text sup {
-            display: none !important;
-        }
-
-        .sidebar.toggled .sidebar-brand-text {
+        .sidebar.toggled .sidebar-brand-text sup { display: none !important; }
+        .sidebar.toggled .sidebar-brand-text{
             display: block !important;
             font-size: 0.75rem !important;
             margin: 5px 0 0 0 !important;
             text-align: center;
         }
-
-        /* Judul Kategori: Dibikin agak kebawah dan tidak mepet divider */
-        .sidebar.toggled .sidebar-heading {
+        .sidebar.toggled .sidebar-heading{
             display: block !important;
             text-align: center !important;
-            font-size: 0.55rem !important;
-            padding: 0.8rem 0.25rem 0.2rem !important; /* Padding atas ditambah agar tidak mepet */
-            opacity: 0.8;
+            font-size: .55rem !important;
+            padding: .45rem .25rem .15rem !important;
+            opacity: .8;
             white-space: normal;
+            line-height: 1.05 !important;
         }
-
-        /* Menu Link: Ikon di atas, Teks di bawah */
-        .sidebar.toggled .nav-item .nav-link {
+        .sidebar.toggled .nav-item .nav-link{
             text-align: center !important;
-            padding: 0.4rem 0.25rem !important; /* Padding dikurangi agar tidak scroll */
+            padding: .25rem .15rem !important;
             width: 100% !important;
-            height: 4rem !important; /* Tinggi sama untuk semua menu */
+            height: 3.25rem !important;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
+            line-height: 1.1 !important;
         }
-
-        .sidebar.toggled .nav-item .nav-link i {
+        .sidebar.toggled .nav-item .nav-link i{
             margin-right: 0 !important;
-            margin-bottom: 3px;
-            font-size: 1rem !important;
+            margin-bottom: 2px !important;
+            font-size: .95rem !important;
         }
-
-        .sidebar.toggled .nav-item .nav-link span {
+        .sidebar.toggled .nav-item .nav-link span{
             display: block !important;
-            font-size: 0.6rem !important;
-            line-height: 1.1;
+            font-size: .58rem !important;
+            line-height: 1.0 !important;
         }
-
-        /* Perkecil divider agar hemat ruang */
-        .sidebar.toggled .sidebar-divider {
-            margin: 0.25rem 0 !important;
-        }
+        .sidebar.toggled .sidebar-divider{ margin: .2rem 0 !important; }
     </style>
 
-    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.php" style="padding: 1.5rem 1rem;">
+    <a class="sidebar-brand d-flex align-items-center justify-content-center" href="index.php">
         <div class="sidebar-brand-icon">
             <?php if(file_exists("assets/img/logo.png")): ?>
                 <img src="assets/img/logo.png" style="width: 40px; filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));">
@@ -98,119 +116,119 @@
 
     <?php if($_SESSION['role'] == 'admin'): ?>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'dashboard_admin') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=dashboard_admin">
-            <i class="fas fa-fw fa-tachometer-alt"></i>
-            <span>Dashboard Admin</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'dashboard_admin') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=dashboard_admin">
+                <i class="fas fa-fw fa-tachometer-alt"></i>
+                <span>Dashboard Admin</span>
+            </a>
+        </li>
 
-    <div class="sidebar-heading">Administrasi</div>
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'data_pegawai') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=data_pegawai">
-            <i class="fas fa-fw fa-users"></i>
-            <span>Data Pegawai</span>
-        </a>
-    </li>
+        <div class="sidebar-heading">Administrasi</div>
+        <li class="nav-item <?php echo ($pageAktif == 'data_pegawai') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=data_pegawai">
+                <i class="fas fa-fw fa-users"></i>
+                <span>Data Pegawai</span>
+            </a>
+        </li>
 
-    <hr class="sidebar-divider">
+        <hr class="sidebar-divider">
 
-    <div class="sidebar-heading">Laporan & Cuti</div>
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'laporan_cuti') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=laporan_cuti">
-            <i class="fas fa-fw fa-print"></i>
-            <span>Laporan Cuti</span>
-        </a>
-    </li>
+        <div class="sidebar-heading">Laporan & Cuti</div>
+        <li class="nav-item <?php echo ($pageAktif == 'laporan_cuti') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=laporan_cuti">
+                <i class="fas fa-fw fa-print"></i>
+                <span>Laporan Cuti</span>
+            </a>
+        </li>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'input_cuti') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=input_cuti">
-            <i class="fas fa-fw fa-calendar-plus" style="<?php echo (isset($_GET['page']) && $_GET['page'] == 'input_cuti') ? '' : 'color: #F9A825;'; ?>"></i>
-            <span>Input Cuti Pegawai</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'input_cuti') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=input_cuti">
+                <i class="fas fa-fw fa-calendar-plus"></i>
+                <span>Input Cuti Pegawai</span>
+            </a>
+        </li>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'validasi_cuti') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=validasi_cuti">
-            <i class="fas fa-fw fa-check-double"></i>
-            <span>Persetujuan Cuti</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'validasi_cuti') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=validasi_cuti">
+                <i class="fas fa-fw fa-check-double"></i>
+                <span>Persetujuan Cuti</span>
+            </a>
+        </li>
 
-    <hr class="sidebar-divider">
-    <div class="sidebar-heading">Izin Insidentil</div>
-    
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_keluar') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=izin_keluar">
-            <i class="fas fa-fw fa-door-open" style="color: #F9A825;"></i>
-            <span>Izin Keluar Kantor</span>
-        </a>
-    </li>
+        <hr class="sidebar-divider">
+        <div class="sidebar-heading">Izin Insidentil</div>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_pulang') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=izin_pulang">
-            <i class="fas fa-fw fa-walking" style="color: #F9A825;"></i>
-            <span>Izin Pulang Awal</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'izin_keluar') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=izin_keluar">
+                <i class="fas fa-fw fa-door-open"></i>
+                <span>Izin Keluar Kantor</span>
+            </a>
+        </li>
 
-    <hr class="sidebar-divider">
+        <li class="nav-item <?php echo ($pageAktif == 'izin_pulang') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=izin_pulang">
+                <i class="fas fa-fw fa-walking"></i>
+                <span>Izin Pulang Awal</span>
+            </a>
+        </li>
 
-    <div class="sidebar-heading">Hari Libur</div>
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'manage_libur') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=manage_libur">
-            <i class="fas fa-fw fa-calendar-alt"></i>
-            <span>Atur Libur Nasional</span>
-        </a>
-    </li>
+        <hr class="sidebar-divider">
+
+        <div class="sidebar-heading">Hari Libur</div>
+        <li class="nav-item <?php echo ($pageAktif == 'manage_libur') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=manage_libur">
+                <i class="fas fa-fw fa-calendar-alt"></i>
+                <span>Atur Libur Nasional</span>
+            </a>
+        </li>
 
     <?php else: ?>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'dashboard_user') || !isset($_GET['page']) ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=dashboard_user">
-            <i class="fas fa-fw fa-home"></i>
-            <span>Beranda</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'dashboard_user') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=dashboard_user">
+                <i class="fas fa-fw fa-home"></i>
+                <span>Beranda</span>
+            </a>
+        </li>
 
-    <div class="sidebar-heading">Menu Utama</div>
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'form_cuti') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=form_cuti">
-            <i class="fas fa-fw fa-calendar-plus" style="<?php echo (isset($_GET['page']) && $_GET['page'] == 'form_cuti') ? '' : 'color: #F9A825;'; ?>"></i>
-            <span>Ajukan Cuti</span>
-        </a>
-    </li>
+        <div class="sidebar-heading">Menu Utama</div>
+        <li class="nav-item <?php echo ($pageAktif == 'form_cuti') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=form_cuti">
+                <i class="fas fa-fw fa-calendar-plus"></i>
+                <span>Ajukan Cuti</span>
+            </a>
+        </li>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'riwayat_cuti') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=riwayat_cuti">
-            <i class="fas fa-fw fa-history"></i>
-            <span>Riwayat</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'riwayat_cuti') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=riwayat_cuti">
+                <i class="fas fa-fw fa-history"></i>
+                <span>Riwayat</span>
+            </a>
+        </li>
 
-    <hr class="sidebar-divider">
-    <div class="sidebar-heading">Izin Insidentil</div>
-    
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_keluar') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=izin_keluar">
-            <i class="fas fa-fw fa-door-open" style="color: #F9A825;"></i>
-            <span>Cetak Izin Keluar</span>
-        </a>
-    </li>
+        <hr class="sidebar-divider">
+        <div class="sidebar-heading">Izin Insidentil</div>
 
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'izin_pulang') ? 'active' : ''; ?>">
-        <a class="nav-link" href="index.php?page=izin_pulang">
-            <i class="fas fa-fw fa-walking" style="color: #F9A825;"></i>
-            <span>Izin Pulang Awal</span>
-        </a>
-    </li>
+        <li class="nav-item <?php echo ($pageAktif == 'izin_keluar') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=izin_keluar">
+                <i class="fas fa-fw fa-door-open"></i>
+                <span>Cetak Izin Keluar</span>
+            </a>
+        </li>
+
+        <li class="nav-item <?php echo ($pageAktif == 'izin_pulang') ? 'active' : ''; ?>">
+            <a class="nav-link" href="index.php?page=izin_pulang">
+                <i class="fas fa-fw fa-walking"></i>
+                <span>Izin Pulang Awal</span>
+            </a>
+        </li>
 
     <?php endif; ?>
 
     <hr class="sidebar-divider">
 
     <div class="sidebar-heading">Akun</div>
-    <li class="nav-item <?php echo (isset($_GET['page']) && $_GET['page'] == 'ganti_password') ? 'active' : ''; ?>">
+    <li class="nav-item <?php echo ($pageAktif == 'ganti_password') ? 'active' : ''; ?>">
         <a class="nav-link" href="index.php?page=ganti_password">
             <i class="fas fa-fw fa-key"></i>
             <span>Ganti Password</span>
@@ -234,7 +252,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
-// Script logout tetap sama
 document.addEventListener('DOMContentLoaded', function() {
     const logoutBtn = document.getElementById('tombol-logout-sidebar');
     if (logoutBtn) {

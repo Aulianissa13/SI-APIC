@@ -86,13 +86,10 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         font-size:.9rem;margin:0;color:#fff!important;
     }
 
-    /* ✅ OUTLINE TIPIS HIJAU (Grafik & Permohonan) */
-/* ✅ Outline 2px hijau PN solid */
 .outline-pn{
   border: 1px solid var(--pn-green) !important;
 }
 
-    /* Kalender (tetap) */
     .calendar-card-fix{ height:calc(150px + 140px + 20px) !important; }
     #calendar{ border:none !important; font-size:.6rem; max-height:200px; }
     .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid{ border:none !important; }
@@ -112,9 +109,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
     .libur-item{ font-size:.6rem;padding:4px 6px;margin-bottom:3px;border-radius:6px;display:flex;align-items:center; }
     .dot{ width:6px;height:6px;border-radius:50%;margin-right:6px;flex-shrink:0; }
 
-    /* ==============================
-       ✅ PERMOHONAN TERBARU (NO SCROLL, 5 ROW PAS)
-       ============================== */
     .permohonan-card{ height:320px; }
 
     .permohonan-card .card-body{
@@ -208,7 +202,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         filter: brightness(0.95);
         transform: translateY(-1px);
     }
-    /* ✅ Outline stat-card sesuai warna border-left */
 .outline-info   { box-shadow: 0 0 0 1px #36b9cc, 0 4px 12px rgba(0,0,0,.05) !important; }
 .outline-warning{ box-shadow: 0 0 0 1px var(--pn-gold), 0 4px 12px rgba(0,0,0,.05) !important; }
 .outline-brand  { box-shadow: 0 0 0 1px var(--pn-green), 0 4px 12px rgba(0,0,0,.05) !important; }
@@ -288,7 +281,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
     <div class="row" style="margin-top: -35px;">
         <div class="col-lg-6 mb-4">
-            <!-- ✅ Grafik: ditambah outline-pn -->
             <div class="card card-modern shadow-sm outline-pn" style="height: 320px; border-top: 4px solid var(--pn-green);">
                 <div class="card-header-modern py-2">
                     <h5 class="m-0 font-weight-bold" style="font-size: 0.9rem;">Grafik Status Cuti</h5>
@@ -300,7 +292,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         </div>
 
         <div class="col-lg-6 mb-4">
-            <!-- ✅ Permohonan: ditambah outline-pn -->
             <div class="card card-modern shadow-sm permohonan-card outline-pn">
                 <div class="card-header-modern py-2">
                     <h5 class="m-0 font-weight-bold" style="font-size: 0.9rem;">Permohonan Terbaru</h5>
