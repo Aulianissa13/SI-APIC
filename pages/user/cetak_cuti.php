@@ -23,26 +23,52 @@ if(!$instansi) {
 if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>"); }
 $id_pengajuan = (int)$_GET['id'];
 
-// Query SELECT * memastikan kolom plh_nama dan plh_nip ikut terpanggil
-$sql = "SELECT 
-    pengajuan_cuti.*, 
+/**
+ * FIX: panggil kolom penting secara eksplisit biar ga “ilang”
+ * - nomor_surat -> AS nomor_surat
+ * - plh_nama, plh_nip ikut dipastikan kebaca
+ */
+$sql = "
+SELECT 
+    pengajuan_cuti.*,
+    pengajuan_cuti.nomor_surat AS nomor_surat,
+    pengajuan_cuti.plh_nama AS plh_nama,
+    pengajuan_cuti.plh_nip AS plh_nip,
+
     jenis_cuti.nama_jenis,
-    users.id_user, users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.unit_kerja, users.no_telepon,
+
+    users.id_user,
+    users.nama_lengkap,
+    users.nip,
+    users.jabatan,
+    users.pangkat,
+    users.unit_kerja,
+    users.no_telepon,
     users.masa_kerja,
     users.kuota_cuti_sakit,
-    users.sisa_cuti_n AS u_sisa_n_realtime,   
+
+    users.sisa_cuti_n  AS u_sisa_n_realtime,
     users.sisa_cuti_n1 AS u_sisa_n1_realtime,
     users.sisa_cuti_n2 AS u_sisa_n2_realtime,
-    pengajuan_cuti.id_atasan AS id_atasan_fix 
-    FROM pengajuan_cuti 
-    JOIN users ON pengajuan_cuti.id_user = users.id_user 
-    JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
-    WHERE id_pengajuan='$id_pengajuan'";
+
+    pengajuan_cuti.id_atasan AS id_atasan_fix
+
+FROM pengajuan_cuti
+JOIN users ON pengajuan_cuti.id_user = users.id_user
+JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis
+WHERE pengajuan_cuti.id_pengajuan = '$id_pengajuan'
+";
 
 $query = mysqli_query($koneksi, $sql);
-$data = mysqli_fetch_array($query);
+$data  = mysqli_fetch_array($query);
 
 if (!$data) { die("<h3>DATA TIDAK DITEMUKAN:</h3> <p>ID Pengajuan: $id_pengajuan tidak valid.</p>"); }
+
+/**
+ * Kalau ini kosong, berarti sumbernya dari proses insert (proses_cuti.php)
+ */
+$nomor_surat_safe = !empty($data['nomor_surat']) ? $data['nomor_surat'] : '..................';
+
 
 //LOGIC HITUNG HISTORY SALDO
 $saldo_n_realtime  = (int)$data['u_sisa_n_realtime'];
@@ -50,7 +76,12 @@ $saldo_n1_realtime = (int)$data['u_sisa_n1_realtime'];
 $potongan_ini_n    = (int)$data['dipotong_n'];
 $potongan_ini_n1   = (int)$data['dipotong_n1'];
 
-$q_future = mysqli_query($koneksi, "SELECT SUM(dipotong_n) as masa_depan_n, SUM(dipotong_n1) as masa_depan_n1 FROM pengajuan_cuti WHERE id_user = '".$data['id_user']."' AND id_pengajuan > '$id_pengajuan' AND status = 'Disetujui'");
+$q_future = mysqli_query($koneksi, "SELECT SUM(dipotong_n) as masa_depan_n, SUM(dipotong_n1) as masa_depan_n1 
+FROM pengajuan_cuti 
+WHERE id_user = '".$data['id_user']."' 
+AND id_pengajuan > '$id_pengajuan' 
+AND status = 'Disetujui'");
+
 $future = mysqli_fetch_array($q_future);
 $kembalikan_n_future  = (int)$future['masa_depan_n'];
 $kembalikan_n1_future = (int)$future['masa_depan_n1'];
@@ -122,19 +153,17 @@ if (!function_exists('angka_terbilang')) {
             30 => 'tiga puluh', 40 => 'empat puluh', 50 => 'lima puluh', 60 => 'enam puluh',
             70 => 'tujuh puluh', 80 => 'delapan puluh', 90 => 'sembilan puluh', 100 => 'seratus'
         );
-        
         if ($angka < 1 || $angka > 99) return $angka;
         if (isset($terbilang[$angka])) return $terbilang[$angka];
-        
         $puluhan = (int)($angka / 10) * 10;
         $satuan = $angka % 10;
         return $terbilang[$puluhan] . ' ' . $terbilang[$satuan];
     }
 }
 
-$hari_mulai     = hari_indo($data['tgl_mulai']);
-$tgl_mulai_indo = tgl_indo($data['tgl_mulai']);
-$hari_selesai   = hari_indo($data['tgl_selesai']);
+$hari_mulai       = hari_indo($data['tgl_mulai']);
+$tgl_mulai_indo   = tgl_indo($data['tgl_mulai']);
+$hari_selesai     = hari_indo($data['tgl_selesai']);
 $tgl_selesai_indo = tgl_indo($data['tgl_selesai']);
 
 // Data Atasan
@@ -144,47 +173,41 @@ $id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0
 
 if ($id_atasan_terpilih > 0) {
     $cari_bos = mysqli_query($koneksi, "SELECT nama_lengkap, nip FROM users WHERE id_user = '$id_atasan_terpilih'");
-    if ($bos = mysqli_fetch_array($cari_bos)) { $nama_atasan = $bos['nama_lengkap']; $nip_atasan = $bos['nip']; }
+    if ($bos = mysqli_fetch_array($cari_bos)) { 
+        $nama_atasan = $bos['nama_lengkap']; 
+        $nip_atasan  = $bos['nip']; 
+    }
 }
 
-// ---------------- REVISI LOGIC PEJABAT ----------------
+// ---------------- LOGIC PEJABAT ----------------
 $tipe_ttd = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : 'ketua'; 
 
-// Default: KETUA
-$label_pejabat = "Ketua,";
+$label_pejabat = "";
 $nama_pejabat  = isset($instansi['ketua_nama']) ? $instansi['ketua_nama'] : '..................';
 $nip_pejabat   = isset($instansi['ketua_nip']) ? $instansi['ketua_nip'] : '..................';
 
 if ($tipe_ttd == 'wakil') {
-    // Jika WAKIL KETUA
-    $label_pejabat = "Wakil Ketua,";
+    $label_pejabat = "";
     $nama_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
     $nip_pejabat   = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
-
 } elseif ($tipe_ttd == 'plh') {
-    // Jika PLH (Ambil dari kolom plh_nama & plh_nip di tabel pengajuan_cuti)
-    $label_pejabat = "Plh. Ketua,";
     $nama_pejabat  = !empty($data['plh_nama']) ? $data['plh_nama'] : '..................';
     $nip_pejabat   = !empty($data['plh_nip']) ? $data['plh_nip'] : '..................';
 }
-// ---------------- END REVISI ----------------
 
 // TEXT JENIS CUTI UNTUK HALAMAN 1 & 3
-$nama_jenis_final = $data['nama_jenis']; 
-$nama_jenis_final = ucwords(strtolower($nama_jenis_final));
-
+$nama_jenis_final = ucwords(strtolower($data['nama_jenis']));
 ?>
 
 <!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>Cetak Cuti - <?php echo $data['nomor_surat']; ?></title>
+    <title>Cetak Cuti - <?php echo $nomor_surat_safe; ?></title>
     <style>
-        @page { size: 215mm 330mm; margin: 0; } /* Ukuran F4 */
+        @page { size: 215mm 330mm; margin: 0; }
         body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; line-height: 1.3; }
-        
-        /* Container Per Halaman */
+
         .page-container {
             width: 215mm;
             min-height: 320mm;
@@ -196,7 +219,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         }
         .page-container:last-child { page-break-after: auto; }
 
-        /* HEADER LAMPIRAN */
         .header-lampiran { 
             font-family: 'Times New Roman', serif; 
             font-size: 5pt; 
@@ -205,49 +227,41 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             margin-bottom: 5px; 
         }
 
-        /* STYLE UMUM */
         .judul-utama { text-align: center; font-weight: bold; font-size: 11pt; margin: 5px 0 2px 0; font-family: Arial, sans-serif; }
         .nomor-surat { text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 5px; font-family: Arial, sans-serif;}
-        
-        /* STYLE HALAMAN 1 (ARIAL 12) */
+
         .page-1-content { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
         .biodata-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
         .biodata-table td { padding: 4px 0; vertical-align: top; }
         .biodata-label { width: 170px; }
         .biodata-sep { width: 15px; text-align: center; }
 
-        /* [REVISI 2] STYLE TANDA TANGAN */
         .ttd-wrapper {
             float: right;
-            width: 280px; /* Diperlebar agar muat nama panjang */
+            width: 280px;
             text-align: center;
             margin-top: 40px;
         }
         .ttd-nama {
             margin-top: 70px;
             font-weight: bold;
-            white-space: nowrap; /* Memaksa nama tetap 1 baris */
+            white-space: nowrap;
         }
         .ttd-garis {
             border-top: 1px solid #000;
             width: 100%;
             margin: 2px 0;
         }
-        .ttd-nip {
-            text-align: center; 
-            font-weight: normal;
-        }
+        .ttd-nip { text-align: center; font-weight: normal; }
 
-        /* STYLE HALAMAN 2 (TABEL) */
         table.tbl-form { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-family: Arial, sans-serif; }
         table.tbl-form th, table.tbl-form td { border: 1px solid #000; padding: 0 4px; vertical-align: middle; height: 0.5cm; font-size: 8pt; }
-        
+
         .font-bold { font-weight: bold; }
         .text-center { text-align: center; }
         .valign-top { vertical-align: top; }
         .no-border { border: none !important; }
-        
-        /* TTD KOTAK DI TABEL (FIXED SIZE) */
+
         .box-ttd-fixed { 
             height: 3cm; 
             width: 100%; 
@@ -268,95 +282,72 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             body { background: none; }
             .page-container { margin: 0; border: none; width: 100%; height: auto; page-break-after: always; }
         }
-
-        .no-break {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            -webkit-column-break-inside: avoid;
-            -webkit-page-break-inside: avoid;
-        }
     </style>
 </head>
 <body>
 
-    <div class="no-print" style="position:fixed; top:10px; right:10px; z-index:9999;">
-        <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#004d00; color:white; border:none; border-radius:4px;">CETAK</button>
-        <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#dc3545; color:white; border:none; border-radius:4px;">TUTUP</button>
+<div class="no-print" style="position:fixed; top:10px; right:10px; z-index:9999;">
+    <button onclick="window.print()" style="padding:8px 20px; font-weight:bold; cursor:pointer; background:#004d00; color:white; border:none; border-radius:4px;">CETAK</button>
+    <button onclick="window.close()" style="padding:8px 20px; cursor:pointer; background:#dc3545; color:white; border:none; border-radius:4px;">TUTUP</button>
+</div>
+
+<div class="page-container page-1-content">
+    <br><br>
+    <div style="margin-bottom: 30px;">
+        Kepada Yth.<br>
+        Ketua Pengadilan Negeri Yogyakarta<br>
+        di-<br>
+        <span style="margin-left: 30px;">Yogyakarta</span>
     </div>
 
-    <div class="page-container page-1-content">
-        <br><br>
-        <div style="margin-bottom: 30px;">
-            Kepada Yth.<br>
-            Ketua Pengadilan Negeri Yogyakarta<br>
-            di-<br>
-            <span style="margin-left: 30px;">Yogyakarta</span>
-        </div>
+    <br>
+    <p>Saya yang bertanda tangan di bawah ini :</p>
 
-        <br>
-        <p>Saya yang bertanda tangan di bawah ini :</p>
+    <table class="biodata-table" style="margin-left: 30px;">
+        <tr><td class="biodata-label">Nama</td><td class="biodata-sep">:</td><td><?php echo $data['nama_lengkap']; ?></td></tr>
+        <tr><td>NIP</td><td>:</td><td><?php echo $data['nip']; ?></td></tr>
+        <tr><td>Pangkat/Gol.Ruang</td><td>:</td><td><?php echo $data['pangkat']; ?></td></tr>
+        <tr><td>Jabatan</td><td>:</td><td><?php echo $data['jabatan']; ?></td></tr>
+        <tr><td>No. Handphone</td><td>:</td><td><?php echo $data['no_telepon']; ?></td></tr>
+    </table>
 
-        <table class="biodata-table" style="margin-left: 30px;">
-            <tr>
-                <td class="biodata-label">Nama</td><td class="biodata-sep">:</td>
-                <td><?php echo $data['nama_lengkap']; ?></td>
-            </tr>
-            <tr>
-                <td>NIP</td><td>:</td>
-                <td><?php echo $data['nip']; ?></td>
-            </tr>
-            <tr>
-                <td>Pangkat/Gol.Ruang</td><td>:</td>
-                <td><?php echo $data['pangkat']; ?></td>
-            </tr>
-            <tr>
-                <td>Jabatan</td><td>:</td>
-                <td><?php echo $data['jabatan']; ?></td>
-            </tr>
-            <tr>
-                <td>No. Handphone</td><td>:</td>
-                <td><?php echo $data['no_telepon']; ?></td>
-            </tr>
-        </table>
-
-        <div style="text-align: justify;">
-            dengan ini mengajukan <b><?php echo $nama_jenis_final; ?></b> selama <?php echo $data['lama_hari']; ?> hari, pada hari
-            <?php echo $hari_mulai; ?> s.d <?php echo $hari_selesai; ?>, tanggal <?php echo $tgl_mulai_indo; ?> s.d <?php echo $tgl_selesai_indo; ?> untuk keperluan
-            <?php echo $data['alasan']; ?>.
-        </div>
-
-        <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenannya dihaturkan terima kasih.</p>
-
-        <div class="ttd-wrapper">
-            Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?><br>
-            Hormat saya,
-            <div class="ttd-nama"><?php echo $data['nama_lengkap']; ?></div>
-            <div class="ttd-garis"></div>
-            <div class="ttd-nip">NIP. <?php echo $data['nip']; ?></div>
-        </div>
+    <div style="text-align: justify;">
+        dengan ini mengajukan <b><?php echo $nama_jenis_final; ?></b> selama <?php echo $data['lama_hari']; ?> hari, pada hari
+        <?php echo $hari_mulai; ?> s.d <?php echo $hari_selesai; ?>, tanggal <?php echo $tgl_mulai_indo; ?> s.d <?php echo $tgl_selesai_indo; ?> untuk keperluan
+        <?php echo $data['alasan']; ?>.
     </div>
 
+    <p>Demikian permohonan <b><?php echo $nama_jenis_final; ?></b> ini, atas perkenannya dihaturkan terima kasih.</p>
 
-    <div class="page-container">
-        <div class="header-lampiran">
-            LAMPIRAN II : SURAT EDARAN SEKRETARIS MAHKAMAH AGUNG <br>
-            REPUBLIK INDONESIA <br>
-            NOMOR 13 TAHUN 2019
-        </div>
+    <div class="ttd-wrapper">
+        Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?><br>
+        Hormat saya,
+        <div class="ttd-nama"><?php echo $data['nama_lengkap']; ?></div>
+        <div class="ttd-garis"></div>
+        <div class="ttd-nip">NIP. <?php echo $data['nip']; ?></div>
+    </div>
+</div>
 
-        <div style="text-align: right; font-size: 10pt; margin-bottom: 5px; font-family: Arial;">
-            Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?>
-        </div>
+<div class="page-container">
+    <div class="header-lampiran">
+        LAMPIRAN II : SURAT EDARAN SEKRETARIS MAHKAMAH AGUNG <br>
+        REPUBLIK INDONESIA <br>
+        NOMOR 13 TAHUN 2019
+    </div>
 
-        <div style="margin-bottom: 5px; font-size: 10pt; font-family: Arial;">
-            Kepada :<br>
-            Yth. Ketua Pengadilan Negeri Yogyakarta  <br>
-            di - <br>
-            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;YOGYAKARTA.
-        </div>
+    <div style="text-align: right; font-size: 10pt; margin-bottom: 5px; font-family: Arial;">
+        Yogyakarta, <?php echo tgl_indo($data['tgl_pengajuan']); ?>
+    </div>
 
-        <div class="judul-utama">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
-        <div class="nomor-surat">Nomor : <?php echo $data['nomor_surat']; ?></div>
+    <div style="margin-bottom: 5px; font-size: 10pt; font-family: Arial;">
+        Kepada :<br>
+        Yth. Ketua Pengadilan Negeri Yogyakarta  <br>
+        di - <br>
+        &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;YOGYAKARTA.
+    </div>
+
+    <div class="judul-utama">FORMULIR PERMINTAAN DAN PEMBERIAN CUTI</div>
+    <div class="nomor-surat">Nomor : <?php echo $nomor_surat_safe; ?></div>
 
         <table class="tbl-form">
             <tr><td colspan="4" class="font-bold">I. DATA PEGAWAI</td></tr>
@@ -536,7 +527,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             selama <?php echo $data['lama_hari']; ?> (<?php echo angka_terbilang($data['lama_hari']); ?>) hari terhitung sejak tanggal <?php echo $tgl_mulai_indo; ?> s.d <?php echo $tgl_selesai_indo; ?>
             perkara yang harus saya sidangkan pada tanggal tersebut yaitu berkas perkara nomor :
         </div>
-   
+
         <div style="margin-left: 50px; margin-top: 15px;">
             1. <br><br>
             2. <br><br>

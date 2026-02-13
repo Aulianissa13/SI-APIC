@@ -196,9 +196,7 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
 
     /* PLH Input Containers */
     #plh_input_container,
-    #plh_nip_container {
-        margin-bottom: 1.5rem;
-    }
+    #plh_nip_container { margin-bottom: 1.5rem; }
     #plh_input_container.hidden,
     #plh_nip_container.hidden {
         display: none !important;
@@ -314,7 +312,10 @@ $no_surat_auto  = "$no_urut_format/KPN/W13.U1/KP.05.3/$bulan_romawi/$tahun_ini";
                             <div class="col-sm-9">
                                 <div class="input-group-clean readonly">
                                     <div class="input-icon-clean"><i class="fas fa-hashtag"></i></div>
-                                    <input type="text" name="no_surat" class="form-control-clean" value="<?php echo $no_surat_auto; ?>" readonly>
+
+                                    <!-- FIX MINIMAL: cuma ganti name -->
+                                    <input type="text" name="nomor_surat" class="form-control-clean" value="<?php echo $no_surat_auto; ?>" readonly>
+
                                 </div>
                             </div>
                         </div>
