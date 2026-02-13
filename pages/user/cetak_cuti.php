@@ -23,6 +23,7 @@ if(!$instansi) {
 if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>"); }
 $id_pengajuan = (int)$_GET['id'];
 
+// Query SELECT * memastikan kolom plh_nama dan plh_nip ikut terpanggil
 $sql = "SELECT 
     pengajuan_cuti.*, 
     jenis_cuti.nama_jenis,
@@ -61,7 +62,7 @@ $sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1_future + $potongan_ini_n1;
 $id_jenis   = (int)$data['id_jenis']; 
 $lama_ambil = (int)$data['lama_hari'];
 
-// [REVISI 1] Menambahkan inisialisasi variable $ket_besar agar tidak error
+// Inisialisasi variable
 $ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_besar = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = "";
 
 switch ($id_jenis) {
@@ -146,25 +147,27 @@ if ($id_atasan_terpilih > 0) {
     if ($bos = mysqli_fetch_array($cari_bos)) { $nama_atasan = $bos['nama_lengkap']; $nip_atasan = $bos['nip']; }
 }
 
-// Logic Pejabat
+// ---------------- REVISI LOGIC PEJABAT ----------------
 $tipe_ttd = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : 'ketua'; 
+
+// Default: KETUA
 $label_pejabat = "Ketua,";
 $nama_pejabat  = isset($instansi['ketua_nama']) ? $instansi['ketua_nama'] : '..................';
 $nip_pejabat   = isset($instansi['ketua_nip']) ? $instansi['ketua_nip'] : '..................';
 
 if ($tipe_ttd == 'wakil') {
+    // Jika WAKIL KETUA
     $label_pejabat = "Wakil Ketua,";
     $nama_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
     $nip_pejabat   = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
-} elseif (strpos($tipe_ttd, 'plh|') === 0) {
-    // Format: "plh|nama|nip"
-    $parts = explode('|', $tipe_ttd);
-    $label_pejabat = "";
-    $nama_pejabat = isset($parts[1]) ? $parts[1] : '';
-    $nip_pejabat = isset($parts[2]) ? $parts[2] : '';
+
 } elseif ($tipe_ttd == 'plh') {
-    $label_pejabat = ""; $nama_pejabat = ""; $nip_pejabat = "";
+    // Jika PLH (Ambil dari kolom plh_nama & plh_nip di tabel pengajuan_cuti)
+    $label_pejabat = "Plh. Ketua,";
+    $nama_pejabat  = !empty($data['plh_nama']) ? $data['plh_nama'] : '..................';
+    $nip_pejabat   = !empty($data['plh_nip']) ? $data['plh_nip'] : '..................';
 }
+// ---------------- END REVISI ----------------
 
 // TEXT JENIS CUTI UNTUK HALAMAN 1 & 3
 $nama_jenis_final = $data['nama_jenis']; 

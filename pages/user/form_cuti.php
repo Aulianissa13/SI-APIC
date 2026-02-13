@@ -6,21 +6,21 @@ $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_use
 $user = mysqli_fetch_array($query_user);
 $total_kuota_tahunan = $user['sisa_cuti_n'] + $user['sisa_cuti_n1'];
 
-// --- Query Instansi & Pejabat ---
+
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
 $instansi   = mysqli_fetch_array($q_instansi);
 
 $query_jenis = mysqli_query($koneksi, "SELECT * FROM jenis_cuti ORDER BY id_jenis ASC");
 $query_atasan = mysqli_query($koneksi, "SELECT * FROM users WHERE is_atasan = '1' AND id_user != '$id_user' ORDER BY nama_lengkap ASC");
 
-// --- Array Libur Nasional (Untuk JS) ---
+
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 while ($row = mysqli_fetch_assoc($q_libur)) {
     $libur_nasional[] = $row['tanggal'];
 }
 
-// --- Penomoran Surat Otomatis ---
+
 $tahun_ini = date('Y');
 $bulan_ini = date('n');
 $romawi    = [ 1 => "I", 2 => "II", 3 => "III", 4 => "IV", 5 => "V", 6 => "VI", 7 => "VII", 8 => "VIII", 9 => "IX", 10 => "X", 11 => "XI", 12 => "XII" ];

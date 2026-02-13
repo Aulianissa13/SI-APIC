@@ -1,12 +1,9 @@
 <?php
 /** @var mysqli $koneksi */
 
-// --- 1. AMBIL DATA HARI LIBUR ---
 $libur_nasional = [];
 $q_libur = mysqli_query($koneksi, "SELECT tanggal FROM libur_nasional");
 while ($row = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $row['tanggal']; }
-
-// --- 2. AMBIL DATA PEGAWAI & ATASAN ---
 $list_pegawai = [];
 $list_atasan  = [];
 $q_u = mysqli_query($koneksi, "SELECT id_user, nama_lengkap, nip, sisa_cuti_n, sisa_cuti_n1, is_atasan, masa_kerja FROM users WHERE status_akun='aktif' ORDER BY nama_lengkap ASC");
@@ -15,22 +12,20 @@ while ($u = mysqli_fetch_assoc($q_u)) {
     if ($u['is_atasan'] == '1') { $list_atasan[] = $u; }
 }
 
-// --- 3. AMBIL DATA INSTANSI ---
+
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi LIMIT 1");
 $instansi   = mysqli_fetch_assoc($q_instansi);
 
-// --- 4. GENERATE NOMOR SURAT OTOMATIS (AUTO SUGGEST) ---
+
 $thn_now = date('Y');
 $bln_now = date('n');
 $romawi  = [1=>"I", 2=>"II", 3=>"III", 4=>"IV", 5=>"V", 6=>"VI", 7=>"VII", 8=>"VIII", 9=>"IX", 10=>"X", 11=>"XI", 12=>"XII"];
 
-// Cari nomor terakhir berdasarkan tahun ini
 $q_last = mysqli_query($koneksi, "SELECT nomor_surat FROM pengajuan_cuti WHERE nomor_surat LIKE '%/$thn_now' ORDER BY id_pengajuan DESC LIMIT 1");
 $no_urut = 1;
 
 if (mysqli_num_rows($q_last) > 0) {
     $d_last = mysqli_fetch_assoc($q_last);
-    // Asumsi format: 001/KPN/...
     $parts  = explode('/', $d_last['nomor_surat']);
     if (isset($parts[0]) && is_numeric($parts[0])) {
         $no_urut = intval($parts[0]) + 1;
@@ -38,7 +33,6 @@ if (mysqli_num_rows($q_last) > 0) {
 }
 $nomor_surat_auto = sprintf("%03d", $no_urut)."/KPN/W13.U1/KP.05.3/".$romawi[$bln_now]."/".$thn_now;
 
-// --- FUNGSI PHP HITUNG HARI KERJA ---
 function hitungHariKerja($start, $end, $libur_arr) {
     $iterasi = new DateTime($start);
     $akhir   = new DateTime($end);
@@ -55,15 +49,11 @@ function hitungHariKerja($start, $end, $libur_arr) {
 
 $swal_script = "";
 
-// --- PROSES SIMPAN DATA ---
 if (isset($_POST['simpan_cuti'])) {
     $id_user   = $_POST['id_user_hidden'];
     $id_atasan = $_POST['id_atasan_hidden'];
-    
-    // Ambil nomor surat dari input (bisa hasil auto atau edit manual)
     $nomor_surat_final = htmlspecialchars($_POST['nomor_surat']);
 
-    // Cek Duplikasi Nomor Surat (Penting karena bisa diedit manual)
     $cek_no = mysqli_query($koneksi, "SELECT id_pengajuan FROM pengajuan_cuti WHERE nomor_surat = '$nomor_surat_final'");
     
     if (empty($id_user)) {
@@ -71,38 +61,37 @@ if (isset($_POST['simpan_cuti'])) {
     } elseif (empty($id_atasan)) {
         $swal_script = "Swal.fire({ title: 'Atasan Belum Dipilih!', text: 'Mohon pilih atasan penandatangan.', icon: 'warning' });";
     } elseif (mysqli_num_rows($cek_no) > 0) {
-        // Jika nomor sudah ada
         $swal_script = "Swal.fire({ title: 'Nomor Surat Ganda!', text: 'Nomor surat $nomor_surat_final sudah digunakan. Mohon ganti nomor lain.', icon: 'error' });";
     } else {
-        // ... (Logika simpan sama seperti sebelumnya) ...
         $id_jenis     = $_POST['id_jenis'];
         $tgl_mulai    = $_POST['tgl_mulai'];
         $tgl_selesai  = $_POST['tgl_selesai'];
         $durasi_input = $_POST['lama_hari'];
         $alamat_cuti  = htmlspecialchars($_POST['alamat']);
         $alasan       = htmlspecialchars($_POST['alasan']);
-        // $nomor_surat sudah diambil di atas sebagai $nomor_surat_final
         $ttd_pejabat  = $_POST['ttd_pejabat'];
         
-        // Cek PLH
+        $plh_nama_db = NULL; 
+        $plh_nip_db  = NULL; 
+
         if ($ttd_pejabat == 'plh') {
-            $plh_nama = isset($_POST['plh_nama']) ? htmlspecialchars($_POST['plh_nama']) : '';
-            $plh_nip  = isset($_POST['plh_nip']) ? htmlspecialchars($_POST['plh_nip']) : '';
+            $raw_plh_nama = isset($_POST['plh_nama']) ? trim($_POST['plh_nama']) : '';
+            $raw_plh_nip  = isset($_POST['plh_nip']) ? trim($_POST['plh_nip']) : '';
             
-            if (empty($plh_nama) || empty($plh_nip)) {
-                $swal_script = "Swal.fire({ title: 'Data PLH Belum Lengkap!', text: 'Mohon isi nama dan NIP PLH.', icon: 'warning' });";
-                $ttd_pejabat = ''; // Gagal
+            if (empty($raw_plh_nama) || empty($raw_plh_nip)) {
+                $swal_script = "Swal.fire({ title: 'Data PLH Kurang!', text: 'Nama dan NIP PLH wajib diisi.', icon: 'warning' });";
+                $ttd_pejabat = ''; 
             } else {
-                $ttd_pejabat = 'plh|' . $plh_nama . '|' . $plh_nip;
+                $plh_nama_db = htmlspecialchars($raw_plh_nama);
+                $plh_nip_db  = htmlspecialchars($raw_plh_nip);
             }
         }
-        
-        // Hitung durasi (server side validation)
+
         $durasi = hitungHariKerja($tgl_mulai, $tgl_selesai, $libur_nasional);
         
         if ($durasi == 0) {
-            $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0.', icon: 'warning' });";
-        } elseif (!empty($ttd_pejabat)) { // Pastikan TTD valid
+            $swal_script = "Swal.fire({ title: 'Durasi Nol!', text: 'Hari kerja 0 (mungkin tanggal merah semua).', icon: 'warning' });";
+        } elseif (!empty($ttd_pejabat)) { 
             
             $q_cek_jenis = mysqli_query($koneksi, "SELECT nama_jenis FROM jenis_cuti WHERE id_jenis = '$id_jenis'");
             $d_jenis = mysqli_fetch_assoc($q_cek_jenis);
@@ -112,7 +101,6 @@ if (isset($_POST['simpan_cuti'])) {
             $cek_user = mysqli_query($koneksi, "SELECT sisa_cuti_n, sisa_cuti_n1, kuota_cuti_sakit FROM users WHERE id_user = '$id_user'");
             $data_user = mysqli_fetch_assoc($cek_user);
 
-            // Logika Potong Cuti
             if (stripos($nama_jenis_cuti, 'Tahunan') !== false) {
                 $sisa_n = $data_user['sisa_cuti_n']; $sisa_n1 = $data_user['sisa_cuti_n1'];
                 if (($sisa_n + $sisa_n1) < $durasi) {
@@ -130,11 +118,13 @@ if (isset($_POST['simpan_cuti'])) {
             }
 
             if ($lanjut_simpan) {
-                // INSERT dengan nomor_surat_final
-                $query_insert = "INSERT INTO pengajuan_cuti (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat) VALUES ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat_final', '$ttd_pejabat')";
+               
+                $query_insert = "INSERT INTO pengajuan_cuti 
+                    (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat, plh_nama, plh_nip) 
+                    VALUES 
+                    ('$id_user', '$id_atasan', '$id_jenis', '$tgl_mulai', '$tgl_selesai', '$durasi', '$potong_n', '$potong_n1', '$alasan', '$alamat_cuti', 'disetujui', '".date('Y-m-d')."', '$nomor_surat_final', '$ttd_pejabat', '$plh_nama_db', '$plh_nip_db')";
                 
                 if (mysqli_query($koneksi, $query_insert)) {
-                    // Update Masa Kerja (jika ada inputan)
                     $mk_input = $_POST['masa_kerja'];
                     if(!empty($mk_input)) {
                         mysqli_query($koneksi, "UPDATE users SET masa_kerja='$mk_input' WHERE id_user='$id_user'");
@@ -142,7 +132,7 @@ if (isset($_POST['simpan_cuti'])) {
 
                     $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data cuti berhasil disimpan & disetujui.', icon: 'success' }).then(() => { window.location='index.php?page=validasi_cuti'; });";
                 } else {
-                    $swal_script = "Swal.fire({ title: 'Error!', text: 'Gagal menyimpan ke database.', icon: 'error' });";
+                    $swal_script = "Swal.fire({ title: 'Error DB!', text: '".mysqli_error($koneksi)."', icon: 'error' });";
                 }
             }
         }
@@ -151,9 +141,7 @@ if (isset($_POST['simpan_cuti'])) {
 ?>
 
 <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-
 <style>
-    /* ... (Style CSS sama seperti sebelumnya, tidak berubah) ... */
     :root { --pn-green: #004d00; --pn-dark-green: #003300; --pn-gold: #F9A825; --pn-gold-dark: #F9A825; --border-color: #d1d3e2; }
     body { font-family: 'Poppins', sans-serif !important; background-color: #f4f6f9; }
     .card-header-pn { background-color: var(--pn-green); color: white; border-bottom: 4px solid var(--pn-gold); padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
@@ -476,7 +464,7 @@ if (isset($_POST['simpan_cuti'])) {
     tglMulai.addEventListener('change', hitung);
     tglSelesai.addEventListener('change', hitung);
 
-    // 3. Script Toggle PLH
+    // 3. Script Toggle PLH (SUDAH BENAR)
     const ttdPejabatSelect = document.getElementById('ttd_pejabat_select');
     const plhInputContainer = document.getElementById('plh_input_container');
     const plhNipContainer = document.getElementById('plh_nip_container');

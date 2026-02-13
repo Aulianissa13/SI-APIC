@@ -3,7 +3,6 @@
 
 session_start();
 
-// KONFIGURASI KONEKSI
 require_once '../../config/database.php';
 
 if (empty($koneksi)) { 
@@ -13,7 +12,6 @@ if (!isset($_SESSION['id_user']) && !isset($_SESSION['id_admin'])) {
     die("<h3>AKSES DITOLAK:</h3> <p>Harap login terlebih dahulu.</p>"); 
 }
 
-//AMBIL DATA SETTING INSTANSI
 $q_instansi = mysqli_query($koneksi, "SELECT * FROM tbl_setting_instansi WHERE id_setting='1'");
 $instansi = ($q_instansi) ? mysqli_fetch_array($q_instansi) : null;
 if(!$instansi) {
@@ -23,15 +21,19 @@ if(!$instansi) {
     ];
 }
 
-// --- AMBIL DATA PENGAJUAN ---
 if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p>"); }
 $id_pengajuan = (int)$_GET['id'];
 
-// --- [REVISI] MENAMBAHKAN users.masa_kerja KE DALAM QUERY ---
 $sql = "SELECT 
     pengajuan_cuti.*, 
     jenis_cuti.nama_jenis,
-    users.id_user, users.nama_lengkap, users.nip, users.jabatan, users.pangkat, users.unit_kerja, users.no_telepon,
+    users.id_user, 
+    users.nama_lengkap, 
+    users.nip, 
+    users.jabatan, 
+    users.pangkat,         
+    users.unit_kerja, 
+    users.no_telepon,      
     users.masa_kerja, 
     users.kuota_cuti_sakit,
     users.sisa_cuti_n AS u_sisa_n_realtime,   
@@ -48,7 +50,12 @@ $data = mysqli_fetch_array($query);
 
 if (!$data) { die("<h3>DATA TIDAK DITEMUKAN:</h3> <p>ID Pengajuan: $id_pengajuan tidak valid.</p>"); }
 
-// --- LOGIC HITUNG HISTORY SALDO ---
+
+$pangkat_user = !empty($data['pangkat']) ? $data['pangkat'] : '-';
+$telp_user    = !empty($data['no_telepon']) ? $data['no_telepon'] : '-';
+$masa_kerja   = !empty($data['masa_kerja']) ? $data['masa_kerja'] : '-';
+
+
 $saldo_n_realtime  = (int)$data['u_sisa_n_realtime'];
 $saldo_n1_realtime = (int)$data['u_sisa_n1_realtime'];
 $potongan_ini_n    = (int)$data['dipotong_n'];
@@ -62,13 +69,13 @@ $kembalikan_n1_future = (int)$future['masa_depan_n1'];
 $sisa_n_tampil  = $saldo_n_realtime + $kembalikan_n_future + $potongan_ini_n;
 $sisa_n1_tampil = $saldo_n1_realtime + $kembalikan_n1_future + $potongan_ini_n1;
 
-// --- LOGIC TAMPILAN KETERANGAN (FORM PAGE 2) ---
+
 $id_jenis   = (int)$data['id_jenis']; 
 $lama_ambil = (int)$data['lama_hari'];
 $ket_tahunan_n = ""; $ket_tahunan_n1 = ""; $ket_sakit = ""; $ket_lahir = ""; $ket_penting = ""; $ket_luar = ""; $ket_besar = "";
 
 switch ($id_jenis) {
-   case 1: // CUTI TAHUNAN
+   case 1: 
         $ambil_n  = $potongan_ini_n;
         $ambil_n1 = $potongan_ini_n1;
         if (($ambil_n + $ambil_n1) == 0 && $lama_ambil > 0) {
@@ -78,7 +85,7 @@ switch ($id_jenis) {
         if ($ambil_n1 > 0) { $ket_tahunan_n1 = "Diambil " . $ambil_n1 . " hari, Sisa " . ($sisa_n1_tampil - $ambil_n1) . " hari"; } 
         if ($ambil_n > 0) { $ket_tahunan_n = "Diambil " . $ambil_n . " hari, Sisa " . ($sisa_n_tampil - $ambil_n) . " hari"; } 
         break;
-    case 2: // SAKIT
+    case 2: 
         $sisa_sakit = isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0;
         $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari";
         break;
@@ -88,17 +95,15 @@ switch ($id_jenis) {
     case 6: $ket_luar    = "Diambil " . $lama_ambil . " hari"; break;
 }
 
-// Simbol Centang
 $c1 = ($id_jenis == 1) ? '&#10003;' : ''; $c2 = ($id_jenis == 3) ? '&#10003;' : '';
 $c3 = ($id_jenis == 2) ? '&#10003;' : ''; $c4 = ($id_jenis == 4) ? '&#10003;' : '';
 $c5 = ($id_jenis == 5) ? '&#10003;' : ''; $c6 = ($id_jenis == 6) ? '&#10003;' : '';
 
-// Tahun & Tanggal
+
 $tahun_n  = date('Y', strtotime($data['tgl_pengajuan'])); 
 $tahun_n1 = $tahun_n - 1; 
 $tahun_n2 = $tahun_n - 2;
 
-// FUNGSI TANGGAL & HARI INDO
 if (!function_exists('tgl_indo')) {
     function tgl_indo($tanggal){
         $bulan = array (1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember');
@@ -139,7 +144,7 @@ $tgl_mulai_indo = tgl_indo($data['tgl_mulai']);
 $hari_selesai   = hari_indo($data['tgl_selesai']);
 $tgl_selesai_indo = tgl_indo($data['tgl_selesai']);
 
-// Data Atasan
+
 $nama_atasan = "............................................."; 
 $nip_atasan  = ".......................";
 $id_atasan_terpilih = isset($data['id_atasan_fix']) ? $data['id_atasan_fix'] : 0; 
@@ -149,30 +154,39 @@ if ($id_atasan_terpilih > 0) {
     if ($bos = mysqli_fetch_array($cari_bos)) { $nama_atasan = $bos['nama_lengkap']; $nip_atasan = $bos['nip']; }
 }
 
-// Logic Pejabat
-$tipe_ttd = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : 'ketua'; 
-$label_pejabat = "Ketua,";
-$nama_pejabat  = isset($instansi['ketua_nama']) ? $instansi['ketua_nama'] : '..................';
-$nip_pejabat   = isset($instansi['ketua_nip']) ? $instansi['ketua_nip'] : '..................';
+$tipe_ttd = isset($data['ttd_pejabat']) ? $data['ttd_pejabat'] : '';
+
+
+$ketua_nama = isset($instansi['ketua_nama']) ? $instansi['ketua_nama'] : '..................';
+$ketua_nip  = isset($instansi['ketua_nip']) ? $instansi['ketua_nip'] : '..................';
+
+$wakil_nama = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
+$wakil_nip  = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
 
 if ($tipe_ttd == 'wakil') {
-    $label_pejabat = "Wakil Ketua,";
-    $nama_pejabat  = isset($instansi['wakil_nama']) ? $instansi['wakil_nama'] : '..................';
-    $nip_pejabat   = isset($instansi['wakil_nip']) ? $instansi['wakil_nip'] : '..................';
-} elseif (strpos($tipe_ttd, 'plh|') === 0) {
-    // Format: "plh|nama|nip"
-    $parts = explode('|', $tipe_ttd);
-    $label_pejabat = "Plh,";
-    $nama_pejabat = isset($parts[1]) ? $parts[1] : '';
-    $nip_pejabat = isset($parts[2]) ? $parts[2] : '';
+    $label_pejabat = "";
+    $nama_pejabat  = $wakil_nama;
+    $nip_pejabat   = $wakil_nip;
+
 } elseif ($tipe_ttd == 'plh') {
-    // Legacy: Empty PLH (jika ada data lama)
-    $label_pejabat = ""; $nama_pejabat = ""; $nip_pejabat = "";
+    $label_pejabat = "";
+    
+    if (!empty($data['plh_nama'])) {
+        $nama_pejabat = $data['plh_nama'];
+        $nip_pejabat  = $data['plh_nip'];
+    } else {
+        $nama_pejabat = "...........................";
+        $nip_pejabat  = "...........................";
+    }
+
+} else {
+
+    $label_pejabat = "Ketua,";
+    $nama_pejabat  = $ketua_nama;
+    $nip_pejabat   = $ketua_nip;
 }
 
-// TEXT JENIS CUTI UNTUK HALAMAN 1 & 3
 $nama_jenis_final = $data['nama_jenis']; 
-// Jika di database huruf kecil, ubah jadi Capitalize
 $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
 ?>
 
@@ -182,10 +196,9 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
     <meta charset="UTF-8">
     <title>Cetak Cuti - <?php echo $data['nomor_surat']; ?></title>
     <style>
-        @page { size: 215mm 330mm; margin: 0; } /* Ukuran F4 */
+        @page { size: 215mm 330mm; margin: 0; } 
         body { font-family: Arial, sans-serif; color: #000; margin: 0; padding: 0; line-height: 1.3; }
-        
-        /* Container Per Halaman */
+
         .page-container {
             width: 215mm;
             min-height: 320mm;
@@ -197,7 +210,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         }
         .page-container:last-child { page-break-after: auto; }
 
-        /* HEADER LAMPIRAN (Times New Roman, Size 8pt - KECIL) */
+
         .header-lampiran { 
             font-family: 'Times New Roman', serif; 
             font-size: 5pt; 
@@ -206,18 +219,15 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             margin-bottom: 5px; 
         }
 
-        /* STYLE UMUM */
         .judul-utama { text-align: center; font-weight: bold; font-size: 11pt; margin: 5px 0 2px 0; font-family: Arial, sans-serif; }
         .nomor-surat { text-align: center; font-size: 11pt; font-weight: bold; margin-bottom: 5px; font-family: Arial, sans-serif;}
         
-        /* STYLE HALAMAN 1 (ARIAL 12) */
         .page-1-content { font-family: Arial, sans-serif; font-size: 12pt; line-height: 1.5; }
         .biodata-table { width: 100%; margin-bottom: 15px; border-collapse: collapse; }
         .biodata-table td { padding: 4px 0; vertical-align: top; }
         .biodata-label { width: 170px; }
         .biodata-sep { width: 15px; text-align: center; }
 
-        /* --- PERBAIKAN TANDA TANGAN --- */
         .ttd-wrapper {
             float: right;
             min-width: 230px; 
@@ -241,7 +251,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             font-weight: normal;
         }
 
-        /* STYLE HALAMAN 2 (TABEL) */
         table.tbl-form { width: 100%; border-collapse: collapse; margin-bottom: 3px; font-family: Arial, sans-serif; }
         table.tbl-form th, table.tbl-form td { border: 1px solid #000; padding: 0 4px; vertical-align: middle; height: 0.5cm; font-size: 8pt; }
         
@@ -250,7 +259,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         .valign-top { vertical-align: top; }
         .no-border { border: none !important; }
         
-        /* TTD KOTAK DI TABEL (FIXED SIZE) */
         .box-ttd-fixed { 
             height: 3cm; 
             width: 100%; 
@@ -270,14 +278,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             .no-print { display: none !important; }
             body { background: none; }
             .page-container { margin: 0; border: none; width: 100%; height: auto; page-break-after: always; }
-        }
-
-        /* Prevent breaking small blocks (like notes) across printed pages */
-        .no-break {
-            page-break-inside: avoid;
-            break-inside: avoid;
-            -webkit-column-break-inside: avoid;
-            -webkit-page-break-inside: avoid;
         }
     </style>
 </head>
@@ -311,7 +311,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             </tr>
             <tr>
                 <td>Pangkat/Gol.Ruang</td><td>:</td>
-                <td><?php echo $data['pangkat']; ?></td>
+                <td><?php echo $pangkat_user; ?></td>
             </tr>
             <tr>
                 <td>Jabatan</td><td>:</td>
@@ -319,7 +319,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             </tr>
             <tr>
                 <td>No. Handphone</td><td>:</td>
-                <td><?php echo $data['no_telepon']; ?></td>
+                <td><?php echo $telp_user; ?></td>
             </tr>
         </table>
 
@@ -339,7 +339,6 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <div class="ttd-nip">NIP. <?php echo $data['nip']; ?></div>
         </div>
     </div>
-
 
     <div class="page-container">
         <div class="header-lampiran">
@@ -370,11 +369,11 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             </tr>
             <tr>
                 <td>Jabatan</td><td><?php echo $data['jabatan']; ?></td>
-                <td>Gol.Ruang</td><td><?php echo $data['pangkat']; ?></td>
+                <td>Gol.Ruang</td><td><?php echo $pangkat_user; ?></td>
             </tr>
             <tr>
                 <td>Unit Kerja</td><td>Pengadilan Negeri Yogyakarta</td>
-                <td>Masa Kerja</td><td><?php echo isset($data['masa_kerja']) ? $data['masa_kerja'] : '-'; ?></td>
+                <td>Masa Kerja</td><td><?php echo $masa_kerja; ?></td>
             </tr>
         </table>
 
@@ -441,7 +440,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             <tr><td colspan="3" class="font-bold">VI. ALAMAT SELAMA MENJALANKAN CUTI</td></tr>
             <tr>
                 <td rowspan="2" class="valign-top" style="padding: 5px;"><?php echo $data['alamat_cuti']; ?></td>
-                <td class="bt-0 bb-0" style="width: 2cm;">Telp</td><td class="bt-0 bb-0" style="width: 4cm;"><?php echo $data['no_telepon']; ?></td>
+                <td class="bt-0 bb-0" style="width: 2cm;">Telp</td><td class="bt-0 bb-0" style="width: 4cm;"><?php echo $telp_user; ?></td>
             </tr>
             <tr>
                 <td colspan="2" style="width: 6cm; padding: 0;">
@@ -528,7 +527,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             </tr>
             <tr>
                 <td>Pangkat/Gol.Ruang</td><td>:</td>
-                <td><?php echo $data['pangkat']; ?></td>
+                <td><?php echo $pangkat_user; ?></td>
             </tr>
             <tr>
                 <td>Jabatan</td><td>:</td>
@@ -551,7 +550,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
         <br>
         <p>Adapun tugas saya sebagai Panitera Pengganti / Hakim * digantikan oleh :</p>
         <div style="margin-top:5px; margin-bottom: 20px;">
-             .......................................................................................................................................................
+              .......................................................................................................................................................
         </div>
 
         <p>Demikian surat pernyataan ini saya buat dengan sesungguhnya untuk dipergunakan sebagaimana mestinya.</p>
