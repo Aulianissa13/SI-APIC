@@ -2,22 +2,20 @@
 include '../config/database.php';
 /** @var mysqli $koneksi */
 
-// 1. AMBIL ID DARI URL
 if (isset($_GET['id'])) {
     $id_izin = mysqli_real_escape_string($koneksi, $_GET['id']);
     
-    // REVISI QUERY: Menambahkan pengambilan kolom 'pangkat'
     $query = "SELECT 
                 i.*,
                 u.nama_lengkap AS nama_pemohon,
                 u.nip AS nip_pemohon,
                 u.jabatan AS jabatan_pemohon,
-                u.pangkat AS pangkat_pemohon,     -- Pastikan kolom ini ada di tabel users
+                u.pangkat AS pangkat_pemohon,    
                 
                 a.nama_lengkap AS nama_atasan,
                 a.nip AS nip_atasan,
                 a.jabatan AS jabatan_atasan,
-                a.pangkat AS pangkat_atasan       -- Pastikan kolom ini ada di tabel users
+                a.pangkat AS pangkat_atasan       
               FROM izin_pulang i
               LEFT JOIN users u ON i.id_user = u.id_user
               LEFT JOIN users a ON i.id_atasan = a.id_user
@@ -25,7 +23,7 @@ if (isset($_GET['id'])) {
 
     $result = mysqli_query($koneksi, $query);
     
-    // Cek error query jika tabel pangkat tidak ada
+
     if (!$result) {
         die("Error Query: " . mysqli_error($koneksi) . "<br>Solusi: Cek apakah kolom 'pangkat' ada di tabel 'users'.");
     }
@@ -37,7 +35,6 @@ if (isset($_GET['id'])) {
     die("ID tidak valid.");
 }
 
-// Helper Tanggal
 function tgl_indo($tanggal){
     $bulan = array (
         1 => 'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
@@ -64,13 +61,11 @@ $hari_ini = $hari_indo_map[$hari_inggris];
     <meta charset="UTF-8">
     <title>Cetak Izin Pulang - <?= $data['nama_pemohon']; ?></title>
     <style>
-        /* SETUP KERTAS F4 */
         @page {
-            size: F4; 
+            size: legal; /* Diubah menjadi Legal (Standard US Legal) */
             margin: 2cm 2cm;
         }
         
-        /* 1. REVISI FONT JADI ARIAL */
         body {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 12pt;
@@ -79,7 +74,6 @@ $hari_ini = $hari_indo_map[$hari_inggris];
             background: #fff;
         }
 
-        /* TOMBOL PRINT */
         .no-print { display: none; }
         .btn-print {
             position: fixed; top: 10px; right: 10px;
@@ -88,7 +82,6 @@ $hari_ini = $hari_indo_map[$hari_inggris];
             font-weight: bold; z-index: 999;
         }
 
-        /* --- STYLING HALAMAN --- */
         .page {
             width: 100%;
             display: block;
@@ -102,23 +95,20 @@ $hari_ini = $hari_indo_map[$hari_inggris];
             height: 1px;
         }
 
-        /* TABLE DATA */
         .table-data { width: 100%; margin-top: 10px; margin-bottom: 10px; }
         .table-data td { vertical-align: top; padding-bottom: 5px; }
         .label { width: 180px; }
         .sep { width: 20px; text-align: center; }
 
-        /* REVISI TANDA TANGAN (CENTER, NOWRAP) */
         .ttd-wrapper { 
             margin-top: 40px; 
             width: 100%; 
             display: flex; 
-            justify-content: flex-end; /* Posisi di Kanan Halaman */
+            justify-content: flex-end; 
         }
         
         .ttd-box { 
-            /* Box tanda tangan */
-            text-align: center; /* Teks di dalam box rata tengah */
+            text-align: center; 
             padding-right: 0;
             min-width: 200px;
         }
@@ -127,8 +117,6 @@ $hari_ini = $hari_indo_map[$hari_inggris];
         
         .nama-terang { 
             font-weight: bold; 
-            text-decoration: underline; 
-            /* REVISI: Agar nama panjang tetap 1 baris */
             white-space: nowrap; 
             display: inline-block;
         }
@@ -154,19 +142,25 @@ $hari_ini = $hari_indo_map[$hari_inggris];
         </div>
 
         <table style="width: 100%; margin-bottom: 20px;">
-            <tr>
-                <td width="80px">Perihal</td>
-                <td width="20px">:</td>
-                <td>Permohonan Izin Pulang Awal</td>
-            </tr>
-        </table>
+    <tr>
+        <td style="width: 1px; white-space: nowrap;">Perihal</td>
+        <td style="width: 1px; padding: 0 5px;">:</td>
+        <td>Permohonan Izin Pulang Awal</td>
+    </tr>
+    
+    <tr>
+        <td style="width: 1px; white-space: nowrap;">Kepada</td>
+        <td style="width: 1px; padding: 0 5px;">:</td>
+        <td></td> </tr>
 
-        <div style="margin-bottom: 30px;">
-            Kepada :<br>
-            Yth. Ketua Pengadilan Negeri Yogyakarta Kelas IA<br>
+    <tr>
+        <td colspan="3" style="padding-top: 5px;">
+            Yth. <?php echo $data['jabatan_atasan']; ?> <br>
             Di -<br>
             <span style="padding-left: 30px;">Yogyakarta</span>
-        </div>
+        </td>
+    </tr>
+</table>
 
         <p>Dengan hormat,</p>
         <p>Yang bertanda tangan dibawah ini saya :</p>
@@ -225,7 +219,7 @@ $hari_ini = $hari_indo_map[$hari_inggris];
             <div class="ttd-box">
                 <p>Hormat saya,</p>
                 <div class="ttd-space"></div>
-                <span class="nama-terang"><?= $data['nama_pemohon']; ?></span>
+                <span class="nama-terang"><u><?php echo $data['nama_pemohon']; ?></u></span><br>
                 <span class="nip-text">NIP. <?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '.........................'; ?></span>
             </div>
         </div>
@@ -254,35 +248,9 @@ $hari_ini = $hari_indo_map[$hari_inggris];
                 </td>
             </tr>
             <tr>
-                <td colspan="3" style="padding-top: 15px; padding-bottom: 15px;">
-                    Dengan ini memberikan izin kepada :
-                </td>
-            </tr>
-            
-            <tr>
-                <td class="label">Nama</td>
-                <td class="sep">:</td>
-                <td><?= $data['nama_pemohon']; ?></td>
-            </tr>
-            <tr>
-                <td class="label">NIP</td>
-                <td class="sep">:</td>
-                <td><?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '-'; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Pangkat/Gol.Ruang</td>
-                <td class="sep">:</td>
-                <td><?= isset($data['pangkat_pemohon']) ? $data['pangkat_pemohon'] : '-'; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Jabatan</td>
-                <td class="sep">:</td>
-                <td><?= $data['jabatan_pemohon']; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Unit Kerja</td>
-                <td class="sep">:</td>
-                <td>Pengadilan Negeri Yogyakarta Kelas IA</td>
+                <td class="label" style="padding-top: 15px;">Dengan ini memberikan izin kepada</td>
+                <td class="sep" style="padding-top: 15px;">:</td>
+                <td style="padding-top: 15px;"><?= $data['nama_pemohon']; ?></td>
             </tr>
         </table>
 
@@ -323,12 +291,9 @@ $hari_ini = $hari_indo_map[$hari_inggris];
                 <div class="ttd-space">
                     </div>
                 
-                <span class="nama-terang">
+                (<span class="nama-terang">
                     <?= $data['nama_atasan'] ? $data['nama_atasan'] : '......................................'; ?>
-                </span>
-                <span class="nip-text">
-                    <?= $data['nip_atasan'] ? 'NIP. '.$data['nip_atasan'] : 'NIP. .....................................'; ?>
-                </span>
+                </span>)
             </div>
         </div>
     </div>

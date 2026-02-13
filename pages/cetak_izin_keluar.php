@@ -38,6 +38,8 @@ function hari_indo($tanggal){
     );
     return $hari[date('l', strtotime($tanggal))];
 }
+
+$hari_ini = hari_indo($data['tgl_izin']);
 ?>
 
 <!DOCTYPE html>
@@ -57,11 +59,9 @@ function hari_indo($tanggal){
             background-color: #ccc; 
         }
         
-        /* Container Halaman Umum */
         .page {
             width: 215mm;
             height: 330mm;
-            /* Margin Kertas: Tetap kecil sesuai request sebelumnya */
             padding: 15mm 20mm; 
             margin: 10mm auto;
             background: white;
@@ -73,22 +73,24 @@ function hari_indo($tanggal){
         .page-surat {
             font-family: "Times New Roman", Times, serif;
             font-size: 12pt;
-            line-height: 1.6; /* Line height sedikit diperlega */
+            line-height: 1.6;
             font-weight: normal; 
         }
+        /* Tabel Halaman 1 */
+        .page-surat .col-label { width: 170px; } 
 
         /* ================= KHUSUS HALAMAN 2 (FORM/LAMPIRAN) ================= */
         .page-form {
             font-family: Arial, Helvetica, sans-serif;
             font-size: 11pt;
             line-height: 1.6;
-            font-weight: bold; 
+            font-weight: bold; /* SESUAI REQUEST: SEMUA BOLD */
         }
 
-        /* PENGECUALIAN: Isian Data di Halaman 2 TIDAK TEBAL */
-        .page-form .data-isian {
-            font-weight:bold;
-        }
+        /* Helper Tabel Halaman 2 */
+        .page-form .label { width: 230px; vertical-align: top; }
+        .page-form .sep { width: 20px; vertical-align: top; text-align: center; }
+        .page-form td { padding-bottom: 10px; } 
 
         /* Print Settings */
         @media print {
@@ -111,29 +113,24 @@ function hari_indo($tanggal){
         .bold { font-weight: bold; }
         .underline { text-decoration: underline; }
         
-        /* ================= POSISI LAMPIRAN (POJOK KANAN ATAS) ================= */
+        /* Header Lampiran Pojok Kanan Atas */
         .header-lampiran {
             position: absolute;
-            top: 15mm;         /* Sesuai padding atas */
-            right: 20mm;       /* Sesuai padding kanan */
+            top: 15mm;
+            right: 20mm;
             width: auto;
             text-align: left;
             font-size: 10pt;
             z-index: 10;
             line-height: 1.4;
+            font-weight: bold;
         }
         
-        /* Tabel Form - SPACING DIPERLEBAR DISINI */
+        /* Tabel Umum */
         .table-form { width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 10px; }
-        .table-form td { 
-            vertical-align: top; 
-            padding: 6px 0; /* Padding diperbesar agar baris lebih renggang */
-        }
-        
-        /* Lebar Kolom Label */
-        .page-surat .col-label { width: 170px; } 
-        .page-form .col-label { width: 230px; } 
+        .table-form td { vertical-align: top; padding: 6px 0; }
 
+        .table-data { width: 100%; border-collapse: collapse; margin-top: 20px; }
         .col-separator { width: 20px; text-align: center; }
         
         /* Area Tanda Tangan */
@@ -141,14 +138,13 @@ function hari_indo($tanggal){
             float: right;
             width: 250px;
             text-align: center;
-            margin-top: 50px; /* Jarak TTD diperjauh */
+            margin-top: 50px; 
         }
-        .ttd-space { height: 75px; } /* Ruang tanda tangan diperlega */
+        .ttd-space { height: 75px; } 
         
-        /* Utilitas Jarak Antar Elemen (Diperlebar) */
         .mb-small { margin-bottom: 20px; }
         .mb-medium { margin-bottom: 35px; }
-        .mt-big { margin-top: 140px; } /* Untuk judul halaman 2 */
+        .mt-big { margin-top: 120px; } 
     </style>
 </head>
 <body onload="window.print()">
@@ -258,64 +254,71 @@ function hari_indo($tanggal){
             Peradilan yang berada dibawahnya.
         </div>
 
-        <div class="text-center mt-big mb-medium" style="font-size: 13pt;">
+        <div class="text-center mt-big mb-medium" style="font-size: 13pt; text-decoration: none;">
             IZIN KELUAR KANTOR
         </div>
 
         <table class="table-data">
             <tr>
-                <td class="label">Yang bertanda tangan di bawah ini</td>
-                <td class="sep">:</td>
-                <td>
-                    <?= $data['nama_atasan'] ? $data['nama_atasan'] : '.........................................................................'; ?>
+                <td class="label" style="vertical-align: bottom;">
+                    Yang bertanda tangan di<br>
+                    bawah ini
+                </td>
+                <td class="sep" style="vertical-align: bottom;">:</td>
+                <td style="vertical-align: bottom;">
+                    <?= $data['nama_atasan'] ? $data['nama_atasan'] : '.........................................................'; ?>
                 </td>
             </tr>
             <tr>
                 <td class="label">Selaku</td>
                 <td class="sep">:</td>
                 <td>
-                    <?= $data['jab_atasan'] ? $data['jab_atasan'] : '.........................................................................'; ?>
+                    <?= $data['jab_atasan'] ? $data['jab_atasan'] : '.........................................................'; ?>
                 </td>
             </tr>
             
             <tr>
-                <td colspan="3" style="padding-top: 15px; padding-bottom: 2px;">
-                    Dengan ini memberikan izin
+                <td class="label" style="vertical-align: bottom;">
+                    Dengan ini memberikan izin<br>
+                    kepada
+                </td>
+                <td class="sep" style="vertical-align: bottom;">:</td>
+                <td style="vertical-align: bottom;">
+                    <?= $data['nama_pemohon']; ?>
                 </td>
             </tr>
+
             <tr>
-                <td class="label">kepada</td>
+                <td class="label">Untuk Keluar Kantor pada</td>
                 <td class="sep">:</td>
-                <td><?= $data['nama_pemohon']; ?></td>
+                <td>
+                    <span style="display:inline-block; width: 50px;">Hari :</span> 
+                    <span style="display:inline-block; width: 100px;"><?= $hari_ini; ?></span>
+                    
+                    <span style="display:inline-block; width: 70px;">Tanggal :</span> 
+                    <?= tgl_indo($data['tgl_izin']); ?>
+                    
+                    <br>
+                    <div style="margin-top: 5px;">
+                        <span style="display:inline-block; width: 50px;">Pukul :</span> 
+                        <?= date('H:i', strtotime($data['jam_keluar'])); ?> s/d <?= date('H:i', strtotime($data['jam_kembali'])); ?> WIB
+                    </div>
+                </td>
             </tr>
+
             <tr>
-                <td class="label">NIP</td>
+                <td class="label">Untuk Keperluan</td>
                 <td class="sep">:</td>
-                <td><?= $data['nip_pemohon'] ? $data['nip_pemohon'] : '-'; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Pangkat/Gol.Ruang</td>
-                <td class="sep">:</td>
-                <td><?= isset($data['pangkat_pemohon']) ? $data['pangkat_pemohon'] : '-'; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Jabatan</td>
-                <td class="sep">:</td>
-                <td><?= $data['jab_pemohon']; ?></td>
-            </tr>
-            <tr>
-                <td class="label">Unit Kerja</td>
-                <td class="sep">:</td>
-                <td>Pengadilan Negeri Yogyakarta Kelas IA</td>
+                <td><?= $data['keperluan']; ?></td>
             </tr>
         </table>
 
-        <div style="margin-top: 25px;" class="text-justify">
+        <div style="margin-top: 30px;" class="text-justify">
             Demikian izin ini diberikan kepada yang bersangkutan untuk digunakan sebagaimana mestinya.
         </div>
 
         <div class="ttd-area">
-            Yogyakarta, <span class="data-isian"><?php echo tgl_indo($data['tgl_izin']); ?></span><br>
+            Yogyakarta, <?php echo tgl_indo($data['tgl_izin']); ?><br>
             Atasan Langsung,
             <div class="ttd-space"></div>
             ( <span><?php echo $data['nama_atasan']; ?></span> )<br>
