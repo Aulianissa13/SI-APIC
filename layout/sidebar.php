@@ -212,7 +212,7 @@ if (!$pageAktif) {
         <li class="nav-item <?php echo ($pageAktif == 'izin_keluar') ? 'active' : ''; ?>">
             <a class="nav-link" href="index.php?page=izin_keluar">
                 <i class="fas fa-fw fa-door-open"></i>
-                <span>Cetak Izin Keluar</span>
+                <span>Izin Keluar Kantor</span>
             </a>
         </li>
 

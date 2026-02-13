@@ -536,7 +536,7 @@ $nama_jenis_final = ucwords(strtolower($nama_jenis_final));
             selama <?php echo $data['lama_hari']; ?> (<?php echo angka_terbilang($data['lama_hari']); ?>) hari terhitung sejak tanggal <?php echo $tgl_mulai_indo; ?> s.d <?php echo $tgl_selesai_indo; ?>
             perkara yang harus saya sidangkan pada tanggal tersebut yaitu berkas perkara nomor :
         </div>
-
+   
         <div style="margin-left: 50px; margin-top: 15px;">
             1. <br><br>
             2. <br><br>
