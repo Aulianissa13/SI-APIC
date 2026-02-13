@@ -16,7 +16,7 @@ $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 // NOTE route: index.php?page=izin_keluar_admin
 // ======================================================================
 
-$batas   = 9;
+$batas   = 7;
 $halaman = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
 
