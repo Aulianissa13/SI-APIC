@@ -1,7 +1,6 @@
 <?php
 /** @var mysqli $koneksi */
 
-
 $bulanIndo = [
     'January' => 'Januari', 'February' => 'Februari', 'March' => 'Maret',
     'April' => 'April', 'May' => 'Mei', 'June' => 'Juni',
@@ -10,7 +9,7 @@ $bulanIndo = [
 ];
 $hariIni = date('d') . ' ' . $bulanIndo[date('F')] . ' ' . date('Y');
 
-$batas   = 10;
+$batas   = 6;
 $halaman = isset($_GET['hal']) ? (int)$_GET['hal'] : 1;
 $halaman = ($halaman < 1) ? 1 : $halaman;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
@@ -97,7 +96,7 @@ $no = $halaman_awal + 1;
     }
 
     .card-header-pn.card-header-compact{
-        padding: 10px 16px; 
+        padding: 10px 16px;
     }
 
     .page-header-title {
@@ -133,6 +132,8 @@ $no = $halaman_awal + 1;
         font-size: 1rem;
         flex-shrink: 0;
     }
+
+    /* === FIX: INPUT JANGAN CENTER, RATA KIRI === */
     .form-control-clean{
         flex: 1; border: none; height: 100%; width: 100%;
         padding: 0 15px;
@@ -140,8 +141,17 @@ $no = $halaman_awal + 1;
         color: #495057;
         background-color: #fff !important;
         outline: none;
+        text-align: left !important; /* <--- ini */
+    }
+    .form-control-clean::placeholder{
+        text-align: left !important; /* <--- placeholder rata kiri */
     }
     .form-control-clean:focus{ box-shadow: none; }
+
+    /* pastiin khusus jam juga rata kiri (flatpickr kadang inject style) */
+    input.flatpickr-time.form-control-clean{
+        text-align: left !important;
+    }
     input.flatpickr-date, input.flatpickr-time { cursor: pointer; background-color: #fff !important; }
 
     .input-group-clean.textarea-group { height: auto !important; align-items: stretch; }
@@ -229,7 +239,6 @@ $no = $halaman_awal + 1;
         border-color: #e5e7eb !important;
         transform: none;
     }
-
 </style>
 
 <div class="container-fluid mb-5 mt-4">
@@ -369,16 +378,24 @@ $no = $halaman_awal + 1;
 
                                         <td class="align-middle">
                                             <div class="font-weight-bold text-dark"><?= $row['pemohon']; ?></div>
-                                            <small class="text-muted"><i class="fas fa-user-tie mr-1"></i>Atasan: <?= $row['atasan'] ? $row['atasan'] : '-'; ?></small>
+                                            <!-- HAPUS atasan di bawah nama pemohon (sesuai request) -->
                                         </td>
 
-                                        <td class="align-middle">
-                                            <div class="font-weight-bold text-primary" style="font-size: 0.88rem;">
-                                                <?= date('d/m/Y', strtotime($row['tgl_izin'])); ?>
-                                                <span class="text-dark ml-1">(<?= date('H:i', strtotime($row['jam_pulang'])); ?> WIB)</span>
-                                            </div>
-                                            <div class="text-muted font-italic small mt-1" style="line-height: 1.2;">"<?= $row['keperluan']; ?>"</div>
-                                        </td>
+<td class="align-middle text-center">
+
+    <div class="font-weight-bold text-primary" style="font-size: 0.9rem;">
+        <?= date('d/m/Y', strtotime($row['tgl_izin'])); ?>
+    </div>
+
+    <div class="font-weight-bold text-dark" style="font-size: 0.86rem; margin-top: 2px;">
+        <?= date('H:i', strtotime($row['jam_pulang'])); ?> WIB
+    </div>
+
+    <div class="text-muted font-italic small mt-1" style="line-height: 1.25;">
+        "<?= $row['keperluan']; ?>"
+    </div>
+
+</td>
 
                                         <td class="align-middle">
                                             <?= $row['atasan'] ? $row['atasan'] : '<span class="text-muted">-</span>'; ?>

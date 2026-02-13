@@ -412,13 +412,16 @@ $no = $halaman_awal + 1;
                                         <td class="align-middle">
                                             <div class="font-weight-bold text-dark" style="font-size: 15px;"><?= $row['pemohon']; ?></div>
                                         </td>
-                                        <td class="align-middle" style="font-size: 0.85rem;">
-                                            <div class="font-weight-bold text-primary"><?= date('d/m/Y', strtotime($row['tgl_izin'])); ?></div>
-                                            <small class="text-dark d-block mt-1">
-                                                <i class="far fa-clock mr-1 text-muted"></i>
-                                                <?= date('H:i', strtotime($row['jam_keluar'])); ?> - <?= date('H:i', strtotime($row['jam_kembali'])); ?> WIB
-                                            </small>
-                                        </td>
+<td class="align-middle text-center" style="font-size: 0.85rem;">
+    <div class="font-weight-bold text-primary" style="font-size: 0.9rem;">
+        <?= date('d/m/Y', strtotime($row['tgl_izin'])); ?>
+    </div>
+
+    <div class="font-weight-bold text-dark mt-1"
+         style="font-size: 0.65rem; white-space: nowrap;">
+        <?= date('H:i', strtotime($row['jam_keluar'])); ?> - <?= date('H:i', strtotime($row['jam_kembali'])); ?> WIB
+    </div>
+</td>
                                         <td class="align-middle" style="font-size: 0.85rem;"><?= $row['keperluan']; ?></td>
                                         <td class="align-middle" style="font-size: 0.85rem;"><?= $row['atasan'] ?? '-'; ?></td>
                                         <td class="text-center align-middle">
