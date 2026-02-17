@@ -270,7 +270,7 @@ $no = $halaman_awal + 1;
 <div class="container-fluid mb-5 mt-4">
     
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="page-header-title">Izin Keluar (Admin)</h1>
+        <h1 class="page-header-title">Izin Keluar Kantor</h1>
         <div class="bg-white p-2 rounded shadow-sm" style="border-left: 4px solid var(--pn-gold);">
             <span class="small font-weight-bold" style="color: var(--pn-green);">
                 <i class="far fa-calendar-alt mr-2"></i><?php echo $hariIni; ?>
@@ -374,7 +374,7 @@ $no = $halaman_awal + 1;
         <div class="col-lg-7">
             <div class="card card-clean shadow-sm mb-4">
                 <div class="card-header-pn card-header-mini">
-                    <div class="font-weight-bold"><i class="fas fa-history mr-2"></i>Riwayat Izin (Semua Pegawai)</div>
+                    <div class="font-weight-bold"><i class="fas fa-history mr-2"></i>Riwayat Izin Keluar Kantor</div>
 
                     <div class="search-wrapper">
                         <input type="text" id="keyword_izin" class="search-input-inside"

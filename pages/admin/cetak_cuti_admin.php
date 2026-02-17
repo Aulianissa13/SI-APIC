@@ -87,7 +87,7 @@ switch ($id_jenis) {
         break;
     case 2: 
         $sisa_sakit = isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0;
-        $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari";
+        $ket_sakit =  " Sisa " . $sisa_sakit . " hari";
         break;
     case 3: $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
     case 4: $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;

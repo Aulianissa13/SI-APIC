@@ -350,7 +350,7 @@ $cek_data = mysqli_num_rows($cek_data_query);
             <div class="alert alert-warning shadow-sm border-0" style="border-left:4px solid #f6c23e!important; border-radius:12px;">
                 <div class="d-flex align-items-center">
                     <i class="fas fa-info-circle mr-3 fa-lg"></i>
-                    <small><b>Informasi:</b> Tanggal yang didaftarkan di sini secara otomatis akan mematikan fungsi pengajuan cuti bagi pegawai.</small>
+                    <small><b>Informasi:</b> Tanggal yang didaftarkan di sini secara otomatis tidak memotong kuota cuti.</small>
                 </div>
             </div>
         </div>

@@ -1,4 +1,6 @@
 <?php
+/** @var mysqli $koneksi */
+
 $id_user = $_SESSION['id_user'];
 $query_user = mysqli_query($koneksi, "SELECT * FROM users WHERE id_user='$id_user'");
 
@@ -44,21 +46,69 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 <div class="container-fluid">
     <div class="row">
         <div class="col-xl-8 col-lg-7">
-<div class="card text-white shadow mb-3 hero-user" style="background: linear-gradient(90deg, #004d00 0%, #004d00 100%); border-radius: 20px; border:none;">
-                <div class="card-body p-4">
-                    <div class="row align-items-center">
-                        <div class="col-md-8">
-                            <h2 class="font-weight-bold mb-2" style="font-size: 1.5rem;">Hai, <?php echo $nama_lengkap; ?>! 👋</h2>
-                            <p class="mb-3" style="opacity: 0.9;">Selamat datang di Dashboard Pegawai. Jaga kesehatan agar tetap produktif melayani masyarakat.</p>
-                            <a href="index.php?page=form_cuti" class="btn btn-light font-weight-bold shadow-sm" style="border-radius: 30px; color: #006837 !important; font-size: 0.8rem;"><i class="fas fa-plus mr-1"></i> Ajukan Cuti Baru</a>
+            
+            <div id="heroCarousel" class="carousel slide shadow mb-3" data-ride="carousel" style="border-radius: 20px; overflow: hidden;">
+                <ol class="carousel-indicators">
+                    <li data-target="#heroCarousel" data-slide-to="0" class="active"></li>
+                    <li data-target="#heroCarousel" data-slide-to="1"></li>
+                    <li data-target="#heroCarousel" data-slide-to="2"></li>
+                </ol>
+
+                <div class="carousel-inner">
+                    <div class="carousel-item active hero-user" style="background: linear-gradient(90deg, #004d00 0%, #006837 100%);">
+                        <div class="card-body p-4" style="min-height: 220px; display: flex; align-items: center;">
+                            <div class="row w-100 align-items-center m-0 text-white">
+                                <div class="col-md-8">
+                                    <h2 class="font-weight-bold mb-2" style="font-size: 1.5rem;">Hai, <?php echo $nama_lengkap; ?>! 👋</h2>
+                                    <p class="mb-3" style="opacity: 0.9;">Selamat datang di SI-APIC. Jaga kesehatan agar tetap produktif melayani masyarakat.</p>
+                                    <a href="index.php?page=form_cuti" class="btn btn-light font-weight-bold shadow-sm" style="border-radius: 30px; color: #006837 !important; font-size: 0.8rem;"><i class="fas fa-plus mr-1"></i> Ajukan Cuti Baru</a>
+                                </div>
+                                <div class="col-md-4 d-none d-md-block text-right">
+                                    <i class="fas fa-calendar-alt" style="font-size: 6rem; opacity: 0.2;"></i>
+                                </div>
+                            </div>
                         </div>
-                        <div class="col-md-4 d-none d-md-block text-right">
-                            <i class="fas fa-calendar-alt" style="font-size: 6rem; opacity: 0.2;"></i>
+                    </div>
+
+                    <div class="carousel-item hero-user" style="background: linear-gradient(90deg, #1b5e20 0%, #2e7d32 100%);">
+                        <div class="card-body p-4" style="min-height: 220px; display: flex; align-items: center;">
+                            <div class="row w-100 align-items-center m-0 text-white">
+                                <div class="col-md-8">
+                                    <h2 class="font-weight-bold mb-2" style="font-size: 1.5rem;">Cek Kuota Cuti</h2>
+                                    <p class="mb-3" style="opacity: 0.9;">Sisa Cuti Tahunan Anda: <strong><?php echo $total_tahunan; ?> Hari</strong>. Pastikan memeriksa riwayat pengajuan Anda secara berkala.</p>
+                                    <a href="index.php?page=riwayat_cuti" class="btn btn-outline-light font-weight-bold shadow-sm" style="border-radius: 30px; font-size: 0.8rem;"><i class="fas fa-history mr-1"></i> Riwayat Cuti</a>
+                                </div>
+                                <div class="col-md-4 d-none d-md-block text-right">
+                                    <i class="fas fa-chart-pie" style="font-size: 6rem; opacity: 0.2;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="carousel-item hero-user" style="background: linear-gradient(90deg, #00695c 0%, #00897b 100%);">
+                        <div class="card-body p-4" style="min-height: 220px; display: flex; align-items: center;">
+                            <div class="row w-100 align-items-center m-0 text-white">
+                                <div class="col-md-8">
+                                    <h2 class="font-weight-bold mb-2" style="font-size: 1.5rem;">Stay Healthy!</h2>
+                                    <p class="mb-3" style="opacity: 0.9;">"Kesehatan adalah investasi terbaik untuk masa depan." Jangan lupa istirahat yang cukup.</p>
+                                </div>
+                                <div class="col-md-4 d-none d-md-block text-right">
+                                    <i class="fas fa-heartbeat" style="font-size: 6rem; opacity: 0.2;"></i>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <a class="carousel-control-prev" href="#heroCarousel" role="button" data-slide="prev">
+                    <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Previous</span>
+                </a>
+                <a class="carousel-control-next" href="#heroCarousel" role="button" data-slide="next">
+                    <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                    <span class="sr-only">Next</span>
+                </a>
+            </div>
             <div class="row">
                 <div class="col-xl-3 col-md-6 mb-4">
                     <div class="card stat-card py-1 border-left-success shadow-sm h-100 outline-brand" style="border-left: 5px solid #006837 !important;">
@@ -249,9 +299,12 @@ while($row = mysqli_fetch_assoc($query_libur)) {
   @media (max-width: 768px) {
     .stat-card.py-1 { margin-bottom: 10px; }
   }
+/* Modifikasi CSS Hero agar support Carousel Item */
 .hero-user {
   position: relative;
   overflow: hidden;
+  /* border-radius dihapus disini karena sudah dihandle di container carousel */
+  border: none;
 }
 
 .hero-user::after{

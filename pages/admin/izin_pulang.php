@@ -244,7 +244,7 @@ $no = $halaman_awal + 1;
 <div class="container-fluid mb-5 mt-4">
 
     <div class="d-sm-flex align-items-center justify-content-between mb-4">
-        <h1 class="page-header-title mb-2 mb-sm-0">Validasi Pulang Awal</h1>
+        <h1 class="page-header-title mb-2 mb-sm-0">Izin Pulang Awal</h1>
         <div class="bg-white py-2 px-3 rounded shadow-sm" style="border-left: 4px solid var(--pn-gold);">
             <span class="small font-weight-bold" style="color: var(--pn-green);">
                 <i class="far fa-calendar-alt mr-2"></i><?php echo $hariIni; ?>
@@ -256,7 +256,7 @@ $no = $halaman_awal + 1;
         <div class="col-lg-5 mb-4">
             <div class="card card-clean shadow-sm h-100">
                 <div class="card-header-pn">
-                    <div class="font-weight-bold"><i class="fas fa-plus-circle mr-2"></i> Input Manual (Admin)</div>
+                    <div class="font-weight-bold"><i class="fas fa-plus-circle mr-2"></i> Buat Izin Baru</div>
                 </div>
                 <div class="card-body p-4">
                     <form action="pages/proses_izin_pulang.php" method="POST" autocomplete="off">
@@ -339,7 +339,7 @@ $no = $halaman_awal + 1;
             <div class="card card-clean shadow-sm mb-4">
                 <div class="card-header-pn card-header-compact">
                     <div class="font-weight-bold">
-                        <i class="fas fa-history mr-2"></i>Riwayat Pulang Awal
+                        <i class="fas fa-history mr-2"></i>Riwayat Izin Pulang Awal
                     </div>
 
                     <div class="search-wrapper">

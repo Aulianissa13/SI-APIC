@@ -1,6 +1,8 @@
 <?php
 /** @var mysqli $koneksi */
 
+// Pastikan koneksi database sudah ada sebelumnya
+
 $get_pegawai = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users WHERE role='user'");
 $d_pegawai = mysqli_fetch_assoc($get_pegawai);
 
@@ -40,16 +42,41 @@ while($row = mysqli_fetch_assoc($query_libur)) {
 
     body{ font-family:'Poppins',sans-serif; background:var(--soft-bg); }
 
+    /* --- HERO CARD MENJADI CAROUSEL --- */
     .hero-card{
         background:linear-gradient(135deg,var(--pn-green) 0%, #004d00 100%);
-        color:#fff; border-radius:20px; padding:1.5rem;
+        color:#fff; border-radius:20px; 
+        padding: 0; 
         position:relative; overflow:hidden;
         box-shadow:0 10px 20px rgba(0,104,55,.2);
         min-height:150px;
     }
-    .hero-card::after{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:rgba(255,255,255,.1);border-radius:50%;}
-    .hero-card::before{content:'';position:absolute;bottom:-30px;right:80px;width:100px;height:100px;background:rgba(249,168,37,.2);border-radius:50%;}
+    .hero-card::after{content:'';position:absolute;top:-50px;right:-50px;width:200px;height:200px;background:rgba(255,255,255,.1);border-radius:50%; z-index: 1;}
+    .hero-card::before{content:'';position:absolute;bottom:-30px;right:80px;width:100px;height:100px;background:rgba(249,168,37,.2);border-radius:50%; z-index: 1;}
 
+    /* Konten di dalam slide */
+    .hero-content {
+        padding: 1.5rem 3.5rem; /* Padding kiri-kanan lebih besar agar tidak kena panah */
+        position: relative;
+        z-index: 2;
+        height: 150px; /* Menjaga tinggi konsisten */
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+    }
+
+    /* Kustomisasi Panah Carousel */
+    .hero-card .carousel-control-prev,
+    .hero-card .carousel-control-next {
+        width: 5%;
+        z-index: 10;
+        opacity: 0.5;
+    }
+    .hero-card .carousel-control-prev:hover,
+    .hero-card .carousel-control-next:hover {
+        opacity: 1;
+    }
+    
     .section-spacing{ margin-bottom:15px !important; }
 
     .stat-card{
@@ -86,12 +113,12 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         font-size:.9rem;margin:0;color:#fff!important;
     }
 
-.outline-pn{
-  border: 1px solid var(--pn-green) !important;
-}
+    .outline-pn{ border: 1px solid var(--pn-green) !important; }
 
+    /* --- UKURAN KALENDER --- */
     .calendar-card-fix{ height:calc(150px + 140px + 20px) !important; }
     #calendar{ border:none !important; font-size:.6rem; max-height:200px; }
+
     .fc-theme-standard td, .fc-theme-standard th, .fc-scrollgrid{ border:none !important; }
     .fc-daygrid-day-frame{ display:flex;align-items:center;justify-content:center;min-height:20px!important;position:relative; }
     .fc .fc-daygrid-day-number{
@@ -158,60 +185,23 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         vertical-align:middle !important;
     }
 
-    .table-permohonan .nama{
-        font-weight:700;
-        font-size:.74rem;
-        margin:0;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-    }
-    .table-permohonan .jabatan{
-        font-size:.68rem;
-        color:#8a8f9c;
-        margin:2px 0 0 0;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-    }
-    .table-permohonan .waktu{
-        font-size:.70rem;
-        color:#6b7280;
-        white-space:nowrap;
-        overflow:hidden;
-        text-overflow:ellipsis;
-    }
+    .table-permohonan .nama{ font-weight:700; font-size:.74rem; margin:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .table-permohonan .jabatan{ font-size:.68rem; color:#8a8f9c; margin:2px 0 0 0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .table-permohonan .waktu{ font-size:.70rem; color:#6b7280; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
-    .badge-mini{
-        font-size:.62rem !important;
-        padding:3px 8px !important;
-        border-radius:999px !important;
-        white-space:nowrap;
-        display:inline-block;
-        max-width:100%;
-        overflow:hidden;
-        text-overflow:ellipsis;
-        border:0;
-    }
-    .badge-link{
-        text-decoration:none !important;
-        cursor:pointer;
-        display:inline-block;
-    }
-    .badge-link:hover{
-        filter: brightness(0.95);
-        transform: translateY(-1px);
-    }
-.outline-info   { box-shadow: 0 0 0 1px #36b9cc, 0 4px 12px rgba(0,0,0,.05) !important; }
-.outline-warning{ box-shadow: 0 0 0 1px var(--pn-gold), 0 4px 12px rgba(0,0,0,.05) !important; }
-.outline-brand  { box-shadow: 0 0 0 1px var(--pn-green), 0 4px 12px rgba(0,0,0,.05) !important; }
-.outline-danger { box-shadow: 0 0 0 1px #e74a3b, 0 4px 12px rgba(0,0,0,.05) !important; }
-
-.outline-info:hover   { box-shadow: 0 0 0 2px #36b9cc, 0 8px 15px rgba(0,0,0,.05) !important; }
-.outline-warning:hover{ box-shadow: 0 0 0 2px var(--pn-gold), 0 8px 15px rgba(0,0,0,.05) !important; }
-.outline-brand:hover  { box-shadow: 0 0 0 2px var(--pn-green), 0 8px 15px rgba(0,0,0,.05) !important; }
-.outline-danger:hover { box-shadow: 0 0 0 2px #e74a3b, 0 8px 15px rgba(0,0,0,.05) !important; }
-
+    .badge-mini{ font-size:.62rem !important; padding:3px 8px !important; border-radius:999px !important; white-space:nowrap; display:inline-block; max-width:100%; overflow:hidden; text-overflow:ellipsis; border:0; }
+    .badge-link{ text-decoration:none !important; cursor:pointer; display:inline-block; }
+    .badge-link:hover{ filter: brightness(0.95); transform: translateY(-1px); }
+    
+    .outline-info   { box-shadow: 0 0 0 1px #36b9cc, 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-warning{ box-shadow: 0 0 0 1px var(--pn-gold), 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-brand  { box-shadow: 0 0 0 1px var(--pn-green), 0 4px 12px rgba(0,0,0,.05) !important; }
+    .outline-danger { box-shadow: 0 0 0 1px #e74a3b, 0 4px 12px rgba(0,0,0,.05) !important; }
+    
+    .outline-info:hover   { box-shadow: 0 0 0 2px #36b9cc, 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-warning:hover{ box-shadow: 0 0 0 2px var(--pn-gold), 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-brand:hover  { box-shadow: 0 0 0 2px var(--pn-green), 0 8px 15px rgba(0,0,0,.05) !important; }
+    .outline-danger:hover { box-shadow: 0 0 0 2px #e74a3b, 0 8px 15px rgba(0,0,0,.05) !important; }
 </style>
 
 <div class="container-fluid">
@@ -219,14 +209,52 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         <div class="col-xl-8 col-lg-7">
             <div class="row section-spacing">
                 <div class="col-12">
-                    <div class="hero-card d-flex align-items-center justify-content-between shadow">
-                        <div>
-                            <h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Halo, Administrator!</h1>
-                            <p class="mb-0 text-white-50 h5">Selamat datang di Panel Kontrol SI-APIC Pengadilan Negeri Yogyakarta.</p>
+                    
+                    <div id="heroCarousel" class="carousel slide hero-card shadow" data-ride="carousel" data-interval="5000">
+                        
+                        <div class="carousel-inner">
+                            <div class="carousel-item active">
+                                <div class="hero-content">
+                                    <div>
+                                        <h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Halo, Administrator!</h1>
+                                        <p class="mb-0 text-white-50 h5">Selamat datang di Panel Kontrol SI-APIC Pengadilan Negeri Yogyakarta.</p>
+                                    </div>
+                                    <div class="d-none d-md-block"><i class="fas fa-chart-line fa-4x text-white-50"></i></div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-item">
+                                <div class="hero-content">
+                                    <div>
+                                        <h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Status Pengajuan</h1>
+                                        <p class="mb-0 text-white-50 h5">Saat ini terdapat <strong><?php echo $d_pending['total']; ?></strong> permohonan cuti yang menunggu persetujuan Anda.</p>
+                                    </div>
+                                    <div class="d-none d-md-block"><i class="fas fa-file-signature fa-4x text-white-50"></i></div>
+                                </div>
+                            </div>
+
+                            <div class="carousel-item">
+                                <div class="hero-content">
+                                    <div>
+                                        <h1 class="font-weight-bold mb-2" style="font-size: 2rem;">Sistem Terintegrasi</h1>
+                                        <p class="mb-0 text-white-50 h5">Kelola data cuti pegawai dengan cepat, akurat, dan transparan melalui SI-APIC.</p>
+                                    </div>
+                                    <div class="d-none d-md-block"><i class="fas fa-network-wired fa-4x text-white-50"></i></div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="d-none d-md-block"><i class="fas fa-chart-line fa-4x text-white-50"></i></div>
+
+                        <a class="carousel-control-prev" href="#heroCarousel" role="button" data-slide="prev">
+                            <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a class="carousel-control-next" href="#heroCarousel" role="button" data-slide="next">
+                            <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                            <span class="sr-only">Next</span>
+                        </a>
+
                     </div>
-                </div>
+                    </div>
             </div>
 
             <div class="row mb-4">
@@ -270,7 +298,7 @@ while($row = mysqli_fetch_assoc($query_libur)) {
         </div>
 
         <div class="col-xl-4 col-lg-5 mb-4">
-<div class="card card-modern calendar-card-fix shadow-sm outline-pn">
+            <div class="card card-modern calendar-card-fix shadow-sm outline-pn">
                 <div class="card-body p-3">
                     <div id="calendar"></div>
                     <div id="libur-list-container" class="mt-3" style="max-height: 60px; overflow-y: auto;"></div>
@@ -307,7 +335,6 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                                     <th class="text-center" style="width: 25%;">Status</th>
                                 </tr>
                             </thead>
-
                             <tbody>
                                 <?php while($row = mysqli_fetch_array($sql_latest)) {
                                     $badge = ($row['status'] == 'Diajukan') ? "warning" : (($row['status'] == 'Disetujui') ? "success" : "danger");
@@ -318,13 +345,11 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                                         <div class="nama"><?= htmlspecialchars($row['nama_lengkap']) ?></div>
                                         <div class="jabatan"><?= htmlspecialchars($row['jabatan']) ?></div>
                                     </td>
-
                                     <td class="text-center">
                                         <div class="waktu"><?= htmlspecialchars($waktu) ?></div>
                                     </td>
-
                                     <td class="text-center">
-                                        <a href="index.php?page=validasi_cuti"
+                                        <a href="index.php?page=validasi_cuti" 
                                            class="badge badge-pill badge-<?= $badge ?> badge-mini badge-link">
                                             <?= htmlspecialchars($row['status']) ?>
                                         </a>
@@ -332,11 +357,9 @@ while($row = mysqli_fetch_assoc($query_libur)) {
                                 </tr>
                                 <?php } ?>
                             </tbody>
-
                         </table>
                     </div>
                 </div>
-
             </div>
         </div>
     </div>

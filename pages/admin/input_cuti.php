@@ -118,7 +118,7 @@ if (isset($_POST['simpan_cuti'])) {
             }
 
             if ($lanjut_simpan) {
-               
+                
                 $query_insert = "INSERT INTO pengajuan_cuti 
                     (id_user, id_atasan, id_jenis, tgl_mulai, tgl_selesai, lama_hari, dipotong_n, dipotong_n1, alasan, alamat_cuti, status, tgl_pengajuan, nomor_surat, ttd_pejabat, plh_nama, plh_nip) 
                     VALUES 
@@ -374,7 +374,7 @@ if (isset($_POST['simpan_cuti'])) {
                     <i class="fas fa-chevron-down text-muted small"></i>
                 </div>
 
-                <div class="collapse show" id="collapseKetentuan">
+                <div class="collapse" id="collapseKetentuan">
                     <div class="card-body pt-0 pb-3">
                         <ul class="list-unstyled small text-muted mb-0" style="line-height: 1.6;">
                             <li class="mb-3">

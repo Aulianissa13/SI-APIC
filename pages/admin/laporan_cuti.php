@@ -152,7 +152,7 @@ $nama_bulan = [
                         </select>
                     </div>
                     <div class="col-md-4 mb-3">
-                        <button type="submit" class="btn-pn-solid"><i class="fas fa-download mr-2"></i>Download Excel</button>
+                        <button type="submit" class="btn-pn-solid"><i class="fas fa-file-excel mr-2"></i>Export</button>
                     </div>
                 </div>
             </form>
@@ -161,7 +161,7 @@ $nama_bulan = [
 
     <div class="card card-pn-custom">
         <div class="card-header-green">
-            <div><i class="fas fa-calendar-week mr-2"></i><span class="font-weight-bold">Data Cuti Per Periode</span></div>
+            <div><i class="fas fa-calendar-week mr-2"></i><span class="font-weight-bold">Export Cuti Per Periode</span></div>
         </div>
         <div class="card-body p-4">
             

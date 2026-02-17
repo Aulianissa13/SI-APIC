@@ -245,7 +245,7 @@ $no = $halaman_awal + 1;
                             <label class="form-label-pn">Pilih Atasan Langsung <span class="text-danger">*</span></label>
                             <div class="input-group-clean">
                                 <div class="input-icon-clean"><i class="fas fa-user-tie"></i></div>
-                                <input class="form-control-clean" list="list_atasan" id="input_atasan" placeholder="Ketik nama atasan..." required>
+                                <input class="form-control-clean" list="list_atasan" id="input_atasan" placeholder="Pilih atasan langsung..." required>
                             </div>
                             <datalist id="list_atasan">
                                 <?php
@@ -274,7 +274,7 @@ $no = $halaman_awal + 1;
                         <div class="mb-3">
                             <label class="form-label-pn">Jam Kepulangan <span class="text-danger">*</span></label>
                             <div class="input-group-clean">
-                                <div class="input-icon-clean"><i class="fas fa-sign-out-alt"></i></div>
+                                <div class="input-icon-clean"><i class="fas fa-walking"></i></div>
                                 <input type="text" name="jam_pulang" class="form-control-clean flatpickr-time" required placeholder="13:00">
                             </div>
                             <small class="text-muted mt-1 d-block">*Jam Anda akan meninggalkan kantor.</small>
@@ -285,7 +285,7 @@ $no = $halaman_awal + 1;
                             <div class="input-group-clean textarea-group">
                                 <div class="input-icon-clean"><i class="fas fa-align-left"></i></div>
                                 <textarea name="keperluan" class="form-control-clean" rows="2"
-                                          placeholder="Contoh: Acara keluarga mendadak, Sakit, dll..." required></textarea>
+                                          placeholder="Contoh: Acara mendadak, Sakit, dll..." required></textarea>
                             </div>
                         </div>
 
@@ -318,7 +318,7 @@ $no = $halaman_awal + 1;
                          style="background-color: #fff8e1; border-left: 4px solid var(--pn-gold); color: #333; font-size: 0.85rem;">
                         <i class="fas fa-exclamation-circle text-warning mr-2" style="font-size: 1.1rem;"></i>
                         <span style="line-height: 1.2;">
-                            Catatan: Bukti izin pulang awal <b>wajib diserahkan</b> ke <b>Bagian Kepegawaian</b> atau Satpam saat meninggalkan lokasi.
+                            Catatan: Bukti izin pulang awal <b>wajib diserahkan</b> ke <b>Bagian Kepegawaian</b> sebelum meninggalkan kantor.
                         </span>
                     </div>
 

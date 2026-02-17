@@ -1,13 +1,25 @@
 </div>
         </div>
+    
     <footer class="sticky-footer bg-white">
         <div class="container my-auto">
             <div class="copyright text-center my-auto">
-                <span>Copyright &copy; SI-APIC Pengadilan Negeri Yogyakarta 2026</span>
+                
+                <div class="font-weight-bold text-dark mb-1">
+                    SI-APIC <span class="mx-1">&bull;</span> Bekerja Sama dengan Pengadilan Negeri Yogyakarta
+                </div>
+                
+                <div class="small text-secondary mb-2">
+                    Project Akademik Prodi Sistem Informasi UPN "Veteran" Yogyakarta
+                </div>
+
+                <div class="small text-muted">
+                    Versi 1.0.0 | &copy; 2026
+                </div>
+
             </div>
         </div>
     </footer>
-
     </div>
     </div>
 <div class="modal fade" id="logoutModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel" aria-hidden="true">
@@ -33,17 +45,13 @@
 <script src="assets/vendor/jquery-easing/jquery.easing.min.js"></script>
 <script src="assets/js/sb-admin-2.min.js"></script>
 
-<!-- DataTables untuk manage_libur -->
 <link rel="stylesheet" href="https://cdn.datatables.net/1.13.4/css/jquery.dataTables.min.css">
 <script src="https://cdn.datatables.net/1.13.4/js/jquery.dataTables.min.js"></script>
 
-<!-- Initialize DataTable for manage_libur page -->
 <script>
 $(document).ready(function() {
     // Only run on manage_libur page
     if (window.location.href.indexOf('manage_libur') > -1) {
-        console.log('Initializing DataTable for manage_libur');
-
         if ($('#dataTableLibur').length > 0) {
             const table = $('#dataTableLibur').DataTable({
                 destroy: true,
@@ -64,10 +72,6 @@ $(document).ready(function() {
             $('#customSearchBox').on('input', function() {
                 table.search($(this).val()).draw();
             });
-
-            console.log('DataTable initialized successfully');
-        } else {
-            console.error('Table #dataTableLibur not found');
         }
     }
 });

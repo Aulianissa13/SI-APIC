@@ -24,9 +24,8 @@ if (!isset($_GET['id'])) { die("<h3>ERROR:</h3> <p>ID tidak ditemukan di URL.</p
 $id_pengajuan = (int)$_GET['id'];
 
 /**
- * FIX: panggil kolom penting secara eksplisit biar ga “ilang”
- * - nomor_surat -> AS nomor_surat
- * - plh_nama, plh_nip ikut dipastikan kebaca
+ * FIX: Menambahkan 'pengajuan_cuti.masa_kerja AS masa_kerja_input'
+ * agar inputan masa kerja saat pengajuan terbaca.
  */
 $sql = "
 SELECT 
@@ -34,6 +33,9 @@ SELECT
     pengajuan_cuti.nomor_surat AS nomor_surat,
     pengajuan_cuti.plh_nama AS plh_nama,
     pengajuan_cuti.plh_nip AS plh_nip,
+    
+    /* AMBIL MASA KERJA DARI INPUTAN CUTI */
+    pengajuan_cuti.masa_kerja AS masa_kerja_input,
 
     jenis_cuti.nama_jenis,
 
@@ -44,7 +46,7 @@ SELECT
     users.pangkat,
     users.unit_kerja,
     users.no_telepon,
-    users.masa_kerja,
+    users.masa_kerja, /* Ini masa kerja default dari profil user */
     users.kuota_cuti_sakit,
 
     users.sisa_cuti_n  AS u_sisa_n_realtime,
@@ -64,9 +66,6 @@ $data  = mysqli_fetch_array($query);
 
 if (!$data) { die("<h3>DATA TIDAK DITEMUKAN:</h3> <p>ID Pengajuan: $id_pengajuan tidak valid.</p>"); }
 
-/**
- * Kalau ini kosong, berarti sumbernya dari proses insert (proses_cuti.php)
- */
 $nomor_surat_safe = !empty($data['nomor_surat']) ? $data['nomor_surat'] : '..................';
 
 
@@ -109,7 +108,7 @@ switch ($id_jenis) {
         break;
     case 2: // SAKIT
         $sisa_sakit = isset($data['kuota_cuti_sakit']) ? (int)$data['kuota_cuti_sakit'] : 0;
-        $ket_sakit = "Diambil " . $lama_ambil . " hari, Sisa " . $sisa_sakit . " hari";
+        $ket_sakit = " Sisa " . $sisa_sakit . " hari";
         break;
     case 3: $ket_besar   = "Diambil " . $lama_ambil . " hari"; break;
     case 4: $ket_lahir   = "Diambil " . $lama_ambil . " hari"; break;
@@ -361,7 +360,19 @@ $nama_jenis_final = ucwords(strtolower($data['nama_jenis']));
             </tr>
             <tr>
                 <td>Unit Kerja</td><td>Pengadilan Negeri Yogyakarta</td>
-                <td>Masa Kerja</td><td><?php echo isset($data['masa_kerja']) ? $data['masa_kerja'] : '-'; ?></td>
+                <td>Masa Kerja</td>
+                <td>
+                    <?php 
+                    // FIX: Prioritaskan inputan masa kerja dari form pengajuan
+                    if (!empty($data['masa_kerja_input'])) {
+                        echo $data['masa_kerja_input'];
+                    } elseif (!empty($data['masa_kerja'])) {
+                        echo $data['masa_kerja'];
+                    } else {
+                        echo '-';
+                    }
+                    ?>
+                </td>
             </tr>
         </table>
 

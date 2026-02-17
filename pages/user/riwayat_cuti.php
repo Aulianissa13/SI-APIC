@@ -24,7 +24,19 @@ $batas   = 10;
 $halaman = isset($_GET['halaman']) ? (int)$_GET['halaman'] : 1;
 $halaman_awal = ($halaman > 1) ? ($halaman * $batas) - $batas : 0;
 
-$query_jumlah = mysqli_query($koneksi, "SELECT count(*) AS total FROM pengajuan_cuti WHERE id_user='$id_user'");
+// --- LOGIKA PENCARIAN (BARU) ---
+$keyword = "";
+$search_sql = "";
+if (isset($_GET['keyword'])) {
+    $keyword = $_GET['keyword'];
+    // Filter berdasarkan Nama Jenis, Alasan, atau Status
+    $search_sql = " AND (jenis_cuti.nama_jenis LIKE '%$keyword%' OR pengajuan_cuti.alasan LIKE '%$keyword%' OR pengajuan_cuti.status LIKE '%$keyword%') ";
+}
+
+// Update Query Jumlah (Perlu JOIN agar bisa hitung berdasarkan pencarian nama_jenis)
+$query_jumlah = mysqli_query($koneksi, "SELECT count(*) AS total FROM pengajuan_cuti 
+                                        JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis
+                                        WHERE pengajuan_cuti.id_user='$id_user' $search_sql");
 $data_jumlah  = mysqli_fetch_assoc($query_jumlah);
 $total_data   = $data_jumlah['total'];
 $total_halaman = ceil($total_data / $batas);
@@ -76,6 +88,35 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
     .pagination .page-item.disabled .page-link { color: #6c757d; }
 
     .text-pn { color: var(--pn-green) !important; }
+
+    /* --- STYLE SEARCH BAR BARU --- */
+    .search-wrapper { position: relative; width: 100%; max-width: 300px; }
+    .search-input-inside {
+        width: 100%;
+        height: 35px; /* Sedikit disesuaikan */
+        padding: 4px 34px 4px 14px !important;
+        border-radius: 20px !important;
+        border: none;
+        background-color: rgba(255,255,255,0.9);
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        outline: none;
+        box-sizing: border-box;
+        color: #333;
+    }
+    .search-input-inside:focus { 
+        background-color: #fff;
+        box-shadow: 0 0 0 3px rgba(249, 168, 37, 0.4); 
+    }
+    .search-icon-inside { 
+        position: absolute; 
+        right: 12px; 
+        top: 50%; 
+        transform: translateY(-50%); 
+        color: var(--pn-green); 
+        pointer-events: none; 
+        font-size: 0.9rem;
+    }
 </style>
 
 <div class="container-fluid mb-5">
@@ -92,6 +133,14 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
             <div class="font-weight-bold" style="font-size: 1.1rem;">
                 <i class="fas fa-history mr-2"></i> Data Riwayat Pengajuan
             </div>
+
+            <form action="index.php" method="GET" class="search-wrapper">
+                <input type="hidden" name="page" value="<?php echo $page_current; ?>">
+                <input type="text" name="keyword" class="search-input-inside" 
+                       placeholder="Cari alasan, jenis, status..." 
+                       value="<?php echo htmlspecialchars($keyword); ?>" autocomplete="off">
+                <i class="fas fa-search search-icon-inside"></i>
+            </form>
         </div>
 
         <div class="card-body p-0">
@@ -111,10 +160,10 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
                         </thead>
                         <tbody>
                             <?php
-                            // Query Data dengan LIMIT pagination
+                            // Query Data dengan LIMIT pagination + SEARCH SQL
                             $query = mysqli_query($koneksi, "SELECT * FROM pengajuan_cuti 
                                                              JOIN jenis_cuti ON pengajuan_cuti.id_jenis = jenis_cuti.id_jenis 
-                                                             WHERE pengajuan_cuti.id_user='$id_user' 
+                                                             WHERE pengajuan_cuti.id_user='$id_user' $search_sql
                                                              ORDER BY id_pengajuan DESC 
                                                              LIMIT $halaman_awal, $batas");
                             
@@ -177,7 +226,7 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
                             <?php 
                                 } 
                             } else {
-                                echo "<tr><td colspan='7' class='text-center py-5 text-muted'><i class='fas fa-folder-open fa-3x mb-3'></i><br>Belum ada riwayat pengajuan cuti.</td></tr>";
+                                echo "<tr><td colspan='7' class='text-center py-5 text-muted'><i class='fas fa-folder-open fa-3x mb-3'></i><br>Data tidak ditemukan.</td></tr>";
                             }
                             ?>
                         </tbody>
@@ -193,18 +242,18 @@ $page_current = isset($_GET['page']) ? $_GET['page'] : 'riwayat';
                         <nav aria-label="Page navigation">
                             <ul class="pagination pagination-sm m-0">
                                 <?php if($halaman > 1): ?>
-                                    <li class="page-item"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $halaman - 1; ?>">&laquo;</a></li>
+                                    <li class="page-item"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $halaman - 1; ?>&keyword=<?php echo $keyword; ?>">&laquo;</a></li>
                                 <?php else: ?>
                                     <li class="page-item disabled"><span class="page-link">&laquo;</span></li>
                                 <?php endif; ?>
                                 
                                 <?php for($x = 1; $x <= $total_halaman; $x++): 
                                     $active_class = ($x == $halaman) ? 'active' : ''; ?>
-                                    <li class="page-item <?php echo $active_class; ?>"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $x; ?>"><?php echo $x; ?></a></li>
+                                    <li class="page-item <?php echo $active_class; ?>"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $x; ?>&keyword=<?php echo $keyword; ?>"><?php echo $x; ?></a></li>
                                 <?php endfor; ?>
                                 
                                 <?php if($halaman < $total_halaman): ?>
-                                    <li class="page-item"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $halaman + 1; ?>">&raquo;</a></li>
+                                    <li class="page-item"><a class="page-link" href="index.php?page=<?php echo $page_current; ?>&halaman=<?php echo $halaman + 1; ?>&keyword=<?php echo $keyword; ?>">&raquo;</a></li>
                                 <?php else: ?>
                                     <li class="page-item disabled"><span class="page-link">&raquo;</span></li>
                                 <?php endif; ?>
