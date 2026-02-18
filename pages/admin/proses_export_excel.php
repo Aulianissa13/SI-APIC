@@ -25,30 +25,44 @@ $spreadsheet = new Spreadsheet();
 $sheet = $spreadsheet->getActiveSheet();
 
 // ===================================================================================
-// KONDISI 1: LAPORAN HARIAN (RANGE TANGGAL) - DITAMBAHKAN KOLOM JABATAN
+// KONDISI 1: LAPORAN HARIAN (RANGE TANGGAL) - F4 LANDSCAPE + NO SURAT
 // ===================================================================================
 if ($tipe_laporan == 'harian') {
     
     $tgl_awal  = isset($_GET['tgl_awal']) ? $_GET['tgl_awal'] : date('Y-m-01');
     $tgl_akhir = isset($_GET['tgl_akhir']) ? $_GET['tgl_akhir'] : date('Y-m-d');
 
-    // Setup Halaman A4 Landscape
+    // --- SETUP HALAMAN F4 LANDSCAPE ---
     $sheet->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
-    $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_A4);
+    
+    // PAPERSIZE_FOLIO biasanya digunakan untuk F4 (8.5 x 13 inch)
+    $sheet->getPageSetup()->setPaperSize(PageSetup::PAPERSIZE_FOLIO); 
+    
     $sheet->getPageMargins()->setTop(0.5)->setRight(0.5)->setLeft(0.5)->setBottom(0.5);
 
-    // Judul (Diperlebar dari G ke H)
-    $sheet->mergeCells("A1:H1");
+    // Judul (Diperlebar dari A sampai I karena ada 9 kolom)
+    $sheet->mergeCells("A1:I1");
     $sheet->setCellValue("A1", "LAPORAN CUTI PEGAWAI");
     $sheet->getStyle("A1")->getFont()->setBold(true)->setSize(14);
     $sheet->getStyle("A1")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-    $sheet->mergeCells("A2:H2");
+    $sheet->mergeCells("A2:I2");
     $sheet->setCellValue("A2", "PERIODE: " . date('d-m-Y', strtotime($tgl_awal)) . " s/d " . date('d-m-Y', strtotime($tgl_akhir)));
     $sheet->getStyle("A2")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-    // Header Tabel (Ditambah JABATAN)
-    $headers = ['NO', 'NAMA PEGAWAI', 'NIP', 'JABATAN', 'JENIS CUTI', 'TGL MULAI', 'TGL SELESAI', 'LAMA (HARI)'];
+    // Header Tabel (9 Kolom)
+    $headers = [
+        'NO', 
+        'NAMA PEGAWAI', 
+        'NIP', 
+        'JABATAN', 
+        'JENIS CUTI', 
+        'NOMOR SURAT',  // <--- Kolom Baru
+        'TGL MULAI', 
+        'TGL SELESAI', 
+        'LAMA (HARI)'
+    ];
+
     $col = 'A';
     foreach ($headers as $header) {
         $sheet->setCellValue($col . '4', $header);
@@ -56,16 +70,17 @@ if ($tipe_laporan == 'harian') {
         $col++;
     }
 
-    // Style Header (Range diperlebar sampai H4)
+    // Style Header (Range diperlebar sampai I4)
     $styleHeader = [
         'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '004d00']],
-        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
+        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
     ];
-    $sheet->getStyle("A4:H4")->applyFromArray($styleHeader);
+    $sheet->getStyle("A4:I4")->applyFromArray($styleHeader);
 
-    // Query Data (Tambahkan u.jabatan)
+    // Query Data
+    // Pastikan select p.* mengambil kolom no_surat
     $query = "SELECT p.*, u.nama_lengkap, u.nip, u.jabatan, j.nama_jenis
               FROM pengajuan_cuti p
               JOIN users u ON p.id_user = u.id_user
@@ -80,7 +95,7 @@ if ($tipe_laporan == 'harian') {
 
     if (mysqli_num_rows($result) > 0) {
         while ($row = mysqli_fetch_assoc($result)) {
-            // Hitung hari
+            // Hitung hari jika tidak ada di DB atau 0
             $lama = $row['lama_hari'];
             if ($lama <= 0) {
                 $d1 = new DateTime($row['tgl_mulai']);
@@ -88,42 +103,48 @@ if ($tipe_laporan == 'harian') {
                 $lama = $d2->diff($d1)->days + 1;
             }
 
+            // --- ISI DATA ---
             $sheet->setCellValue("A$row_num", $no++);
             $sheet->setCellValue("B$row_num", $row['nama_lengkap']);
             $sheet->setCellValueExplicit("C$row_num", $row['nip'], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_STRING);
-            
-            // Masukkan Jabatan di D, geser kolom lainnya
             $sheet->setCellValue("D$row_num", strtoupper($row['jabatan'])); 
             $sheet->setCellValue("E$row_num", $row['nama_jenis']);
-            $sheet->setCellValue("F$row_num", date('d-m-Y', strtotime($row['tgl_mulai'])));
-            $sheet->setCellValue("G$row_num", date('d-m-Y', strtotime($row['tgl_selesai'])));
-            $sheet->setCellValue("H$row_num", $lama);
             
+            // Kolom F: Nomor Surat
+            // Ubah 'no_surat' sesuai nama kolom di database Anda jika berbeda
+            $sheet->setCellValue("F$row_num", $row['nomor_surat'] ?? '-'); 
+
+            $sheet->setCellValue("G$row_num", date('d-m-Y', strtotime($row['tgl_mulai'])));
+            $sheet->setCellValue("H$row_num", date('d-m-Y', strtotime($row['tgl_selesai'])));
+            $sheet->setCellValue("I$row_num", $lama);
+            
+            // Formatting Alignment
             $sheet->getStyle("A$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
-            $sheet->getStyle("C$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // NIP Center
-            $sheet->getStyle("F$row_num:H$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Tanggal Center
+            $sheet->getStyle("C$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); 
+            $sheet->getStyle("F$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // No Surat Center
+            $sheet->getStyle("G$row_num:I$row_num")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER); // Tanggal Center
 
             $row_num++;
         }
     } else {
-        $sheet->mergeCells("A5:H5");
+        $sheet->mergeCells("A5:I5");
         $sheet->setCellValue("A5", "Tidak ada data cuti disetujui pada periode ini.");
         $sheet->getStyle("A5")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
         $row_num++;
     }
 
-    // Border Data (Diperlebar sampai H)
+    // Border Data (Sampai I)
     $styleData = [
         'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]]
     ];
-    $sheet->getStyle("A5:H" . ($row_num - 1))->applyFromArray($styleData);
+    $sheet->getStyle("A5:I" . ($row_num - 1))->applyFromArray($styleData);
 
     $filename = "Laporan_Cuti_Range_" . date('Ymd', strtotime($tgl_awal)) . "_sd_" . date('Ymd', strtotime($tgl_akhir)) . ".xlsx";
 
 } 
 
 // ===================================================================================
-// KONDISI 2: LAPORAN BULANAN (MATRIX TANGGAL) - TIDAK DIUBAH (Sesuai Permintaan)
+// KONDISI 2: LAPORAN BULANAN (MATRIX TANGGAL) - TIDAK DIUBAH
 // ===================================================================================
 else {
 
@@ -146,7 +167,7 @@ else {
     if ($q_libur) {
         while ($r = mysqli_fetch_assoc($q_libur)) { $libur_nasional[] = $r['tanggal']; }
     }
-    // Fallback manual jika tabel kosong (Opsional)
+    // Fallback manual jika tabel kosong
     if(empty($libur_nasional)) {
         $libur_nasional = ["$tahun-01-01", "$tahun-08-17", "$tahun-12-25"];
     }

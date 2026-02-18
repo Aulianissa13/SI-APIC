@@ -3,7 +3,7 @@
 
 // Pastikan koneksi database sudah ada sebelumnya
 
-$get_pegawai = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users WHERE role='user'");
+$get_pegawai = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM users WHERE role='user' OR role='admin'");
 $d_pegawai = mysqli_fetch_assoc($get_pegawai);
 
 $get_pending = mysqli_query($koneksi, "SELECT COUNT(*) as total FROM pengajuan_cuti WHERE status='Diajukan'");

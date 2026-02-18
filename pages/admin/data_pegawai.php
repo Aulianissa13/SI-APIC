@@ -70,8 +70,9 @@ if (isset($_POST['edit'])) {
     $ct_n         = $_POST['sisa_cuti_n'];
     $ct_n1        = $_POST['sisa_cuti_n1'];
     $ct_sakit     = $_POST['kuota_cuti_sakit'];
+    $halaman_aktif = isset($_POST['halaman_aktif']) ? $_POST['halaman_aktif'] : 1;
 
-    if (!empty($_POST['password'])) {
+   if (!empty($_POST['password'])) {
         $password = md5($_POST['password']);
         $query_update = "UPDATE users SET nip='$nip', nama_lengkap='$nama_lengkap', password='$password', jabatan='$jabatan', pangkat='$pangkat', role='$role', status_akun='$status_akun', sisa_cuti_n='$ct_n', sisa_cuti_n1='$ct_n1', kuota_cuti_sakit='$ct_sakit', is_atasan='$is_atasan' WHERE id_user='$id_user'";
     } else {
@@ -79,8 +80,17 @@ if (isset($_POST['edit'])) {
     }
     
     $run_update = mysqli_query($koneksi, $query_update);
+
     if ($run_update) {
-        $swal_script = "Swal.fire({ title: 'Berhasil!', text: 'Data Pegawai diperbarui.', icon: 'success' }).then(() => { window.location = 'index.php?page=data_pegawai'; });";
+        // 2. Modifikasi bagian window.location
+        // Pastikan parameter '&halaman=' sesuai dengan nama variabel pagination di kodemu (misal: &page_no=, &p=, atau &halaman=)
+        $swal_script = "Swal.fire({ 
+            title: 'Berhasil!', 
+            text: 'Data Pegawai diperbarui.', 
+            icon: 'success' 
+        }).then(() => { 
+            window.location = 'index.php?page=data_pegawai&halaman=" . $halaman_aktif . "'; 
+        });";
     } else {
         $swal_script = "Swal.fire({ title: 'Gagal!', text: '" . mysqli_error($koneksi) . "', icon: 'error' });";
     }
@@ -92,7 +102,7 @@ if (isset($_GET['toggle_status'])) {
     $row = mysqli_fetch_array($cek);
     $new_status = ($row['status_akun'] == 'aktif') ? 'tidak_aktif' : 'aktif';
     mysqli_query($koneksi, "UPDATE users SET status_akun='$new_status' WHERE id_user='$id'");
-    echo "<script>window.location='index.php?page=data_pegawai';</script>";
+    echo "<script>window.location='index.php?page=data_pegawai&halaman=" . $halaman . "';</script>";
 }
 
 $batas = 10;
@@ -418,6 +428,9 @@ $nomor = $halaman_awal + 1;
                             <form method="POST">
                                 <div class="modal-body text-left text-dark">
                                     <input type="hidden" name="id_user" value="<?php echo $data['id_user']; ?>">
+                                    
+                                    <input type="hidden" name="halaman_aktif" value="<?php echo isset($_GET['halaman']) ? $_GET['halaman'] : 1; ?>">
+
                                     <h6 class="font-weight-bold text-success border-bottom pb-2 mb-3">Identitas</h6>
                                     <div class="row">
                                         <div class="col-md-6 form-group">
